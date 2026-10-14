@@ -1,0 +1,21 @@
+[submodule "src/Services/Catalog"]
+	path = src/Services/Catalog
+	url = git@github.com:Nexus-Be/CatalogService.git
+[submodule "src/Services/Auction"]
+	path = src/Services/Auction
+	url = git@github.com:Nexus-Be/AuctionService.git
+[submodule "src/Services/Audit"]
+	path = src/Services/Audit
+	url = git@github.com:Nexus-Be/AuditService.git
+[submodule "src/Services/Commerce"]
+	path = src/Services/Commerce
+	url = git@github.com:Nexus-Be/CommerceService.git
+[submodule "src/Services/Fulfillment"]
+	path = src/Services/Fulfillment
+	url = git@github.com:Nexus-Be/FulfillmentService.git
+[submodule "src/Services/Notification"]
+	path = src/Services/Notification
+	url = git@github.com:Nexus-Be/NotificationService.git
+[submodule "src/Services/User"]
+	path = src/Services/User
+	url = git@github.com:Nexus-Be/UserService.git
