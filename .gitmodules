@@ -19,3 +19,6 @@
 [submodule "src/Services/User"]
 	path = src/Services/User
 	url = git@github.com:Nexus-Be/UserService.git
+[submodule "src/Services/ApiGateway"]
+	path = src/Services/ApiGateway
+	url = git@github.com:Nexus-Be/ApiGateway.git
