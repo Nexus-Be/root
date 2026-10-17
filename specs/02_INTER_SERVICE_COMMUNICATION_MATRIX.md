@@ -25,14 +25,14 @@ Tài liệu này xác định ranh giới giữa giao tiếp **đồng bộ (gRP
 | **ApiGateway** | `CommerceService` | gRPC | `GetCart`, `AddCartItem`, `CreateOrder` | Thao tác giỏ hàng và đặt hàng |
 | **ApiGateway** | `AuctionService` | gRPC | `ListAuctions`, `CreateAuction`, `PlaceBid` | Tham gia và tạo phòng đấu giá |
 | **ApiGateway** | `FulfillmentService`| gRPC | `CalculateShippingFee`, `GetShipmentTracking` | Tra cước và vận đơn |
-| **ApiGateway** | `AuditService` | gRPC | `QueryAuditLogs`, `ListAuditEventTypes` | Xem nhật ký kiểm toán hệ thống |
+| **ApiGateway** | `LogService` | gRPC | `QueryLogs`, `ListLogEventTypes` | Xem nhật ký hệ thống |
 | **ApiGateway** | `WalletService` | gRPC | `GetWallet`, `Deposit`, `Withdraw`, `Transfer` | Tra cứu số dư và giao dịch ví |
 | **CommerceService**| RabbitMQ | Event | `OrderSubmittedEvent` | Bắn tin nhắn đơn hàng mới được tạo |
 | `CatalogService` | RabbitMQ | Event | `StockReservedEvent` / `StockReservationFailedEvent` | Giữ kho ảo cho sản phẩm trong đơn |
 | `WalletService` | RabbitMQ | Event | `PaymentCompletedEvent` / `PaymentFailedEvent` | Trừ số dư tiền trong ví người mua |
 | `FulfillmentService`| RabbitMQ | Event | `ShipmentCreatedEvent` | Tạo phiếu xuất kho và đóng gói hàng |
 | `NotificationService`| RabbitMQ | Consumer | Nghe mọi sự kiện trạng thái đơn, ví, đấu giá | Gửi email / push thông báo cho user |
-| `AuditService` | RabbitMQ | Consumer | Nghe toàn bộ Domain Events trên Event Bus | Ghi chép nhật ký kiểm toán bất biến |
+| `LogService` | RabbitMQ | Consumer | Nghe toàn bộ Domain Events trên Event Bus | Ghi chép nhật ký hệ thống tập trung |
 
 ---
 

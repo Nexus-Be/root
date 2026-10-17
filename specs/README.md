@@ -27,11 +27,11 @@ Mỗi service repository bên trong `src/Services/` là một Git Repository đ�
 | 1 | **UserService** | `src/Services/User/` | [UserService Spec Kit](../src/Services/User/specs/README.md) | Đăng ký, đăng nhập, phát hành JWT, User Profile, phân quyền RBAC, xét duyệt Seller. | `8001` |
 | 2 | **CatalogService** | `src/Services/Catalog/` | [CatalogService Spec Kit](../src/Services/Catalog/specs/README.md) | Danh mục (Categories), sản phẩm (Products), quản lý kho ảo của người bán (Seller Inventory). | `8002` |
 | 3 | **CommerceService** | `src/Services/Commerce/` | [CommerceService Spec Kit](../src/Services/Commerce/specs/README.md) | Giỏ hàng (Cart), đơn hàng (Orders), Điều phối Checkout Saga State Machine. | `8003` |
-| 4 | **AuditService** | `src/Services/Audit/` | [AuditService Spec Kit](../src/Services/Audit/specs/README.md) | Lưu vết kiểm toán (Audit Logs), danh mục sự kiện kiểm toán (Event Types), nghe RabbitMQ. | `8004` |
+| 4 | **LogService** | `src/Services/Log/` | [LogService Spec Kit](../src/Services/Log/specs/README.md) | Quản lý nhật ký hệ thống tập trung (Logs), danh mục sự kiện log (Event Types), nghe RabbitMQ. | `8004` |
 | 5 | **AuctionService** | `src/Services/Auction/` | [AuctionService Spec Kit](../src/Services/Auction/specs/README.md) | Phiên đấu giá (Auctions), lượt đặt giá (Bids), quy tắc trả giá và chốt phiên. | `8005` |
 | 6 | **FulfillmentService** | `src/Services/Fulfillment/` | [FulfillmentService Spec Kit](../src/Services/Fulfillment/specs/README.md) | Tồn kho kho bãi vật lý, tính cước vận chuyển (Quotes), tra cứu vận đơn (Tracking). | `8006` |
 | 7 | **NotificationService** | `src/Services/Notification/` | [NotificationService Spec Kit](../src/Services/Notification/specs/README.md) | Thông báo cá nhân, đánh dấu đã đọc, cài đặt nhận thông báo (Preferences). | `8007` |
-| 8 | **WalletService** *(Quy hoạch)* | *(Tích hợp gRPC)* | *(Trong Gateway & Proto)* | Ví điện tử riêng biệt, số dư, nạp/rút tiền, chuyển tiền nội bộ, thanh toán đơn hàng. | `8008` |
+| 8 | **WalletService** | `src/Services/Wallet/` | [WalletService Spec Kit](../src/Services/Wallet/specs/README.md) | Ví điện tử riêng biệt, số dư, nạp/rút tiền, chuyển tiền nội bộ, thanh toán đơn hàng. | `8008` |
 
 *(Lưu ý: Thư mục `Project.CleanArchitecture/` ở root là template khung kiến trúc mẫu, không thuộc phạm vi vận hành của các microservices sản phẩm).*
 

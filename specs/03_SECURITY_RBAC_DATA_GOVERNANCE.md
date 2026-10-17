@@ -13,8 +13,8 @@ Hệ thống Nexus phân cấp 5 cấp độ vai trò (Roles) có tính kế th�
 | **anonymous** | 0 | Người dùng vãng lai chưa đăng nhập. | Đăng ký, đăng nhập, xem danh mục, tìm sản phẩm, xem phòng đấu giá công khai. |
 | **buyer** (hoặc `authenticated`) | 1 | Khách hàng đã đăng nhập có tài khoản hợp lệ. | Xem/sửa hồ sơ cá nhân (`/users/me`), giỏ hàng (`/commerce/cart`), đặt đơn hàng, ví tiền, đặt giá đấu giá (`/bids`). |
 | **seller** | 2 | Người bán hàng đã được quản trị viên phê duyệt (Kế thừa quyền `buyer`). | Đăng bán sản phẩm, cập nhật giá, điều chỉnh kho ảo (`/seller/inventory`), tạo phiên đấu giá, xem đơn hàng của shop (`/seller/orders`). |
-| **staff** | 3 | Nhân viên vận hành sàn (Kế thừa quyền `buyer`). | Xem danh sách người dùng (`/admin/users`), xét duyệt hồ sơ seller (`/admin/sellers/{id}/approve`), xem toàn bộ đơn sàn (`/admin/orders`), xem audit logs (`/audit/logs`). |
-| **admin** | 4 | Quản trị viên hệ thống (Kế thừa quyền `staff`, `seller`, `buyer`). | Tạo tài khoản admin/staff, gán role người dùng (`/admin/users/{id}/roles`), cấu hình danh mục sản phẩm, bật/tắt sự kiện audit. |
+| **staff** | 3 | Nhân viên vận hành sàn (Kế thừa quyền `buyer`). | Xem danh sách người dùng (`/admin/users`), xét duyệt hồ sơ seller (`/admin/sellers/{id}/approve`), xem toàn bộ đơn sàn (`/admin/orders`), xem nhật ký hệ thống (`/log/logs`). |
+| **admin** | 4 | Quản trị viên hệ thống (Kế thừa quyền `staff`, `seller`, `buyer`). | Tạo tài khoản admin/staff, gán role người dùng (`/admin/users/{id}/roles`), cấu hình danh mục sản phẩm, bật/tắt sự kiện ghi log. |
 | **gateway-admin** | 5 | Quản trị hạ tầng kỹ thuật Gateway (Chặn hoàn toàn bypass). | Xem/đổi trạng thái Mock/Real các service (`/gateway/modes`), bật/tắt mode auth (`/gateway/mode`), nạp lại mock definitions (`/mock-engine/reload`). |
 
 ---

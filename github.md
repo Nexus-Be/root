@@ -4,5 +4,6 @@ commerce: git@github.com:Nexus-Be/CommerceService.git
 auction: git@github.com:Nexus-Be/AuctionService.git
 fulfillment: git@github.com:Nexus-Be/FulfillmentService.git
 notification: git@github.com:Nexus-Be/NotificationService.git
-audit: git@github.com:Nexus-Be/AuditService.git
+log: git@github.com:Nexus-Be/LogService.git
 apigateway: git@github.com:Nexus-Be/ApiGateway.git
+wallet: git@github.com:Nexus-Be/WalletService.git

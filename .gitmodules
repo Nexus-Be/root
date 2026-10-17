@@ -4,6 +4,9 @@
 [submodule "src/Services/Auction"]
 	path = src/Services/Auction
 	url = git@github.com:Nexus-Be/AuctionService.git
+[submodule "src/Services/Log"]
+	path = src/Services/Log
+	url = git@github.com:Nexus-Be/LogService.git
 [submodule "src/Services/Audit"]
 	path = src/Services/Audit
 	url = git@github.com:Nexus-Be/AuditService.git
@@ -22,3 +25,6 @@
 [submodule "src/Services/ApiGateway"]
 	path = src/Services/ApiGateway
 	url = git@github.com:Nexus-Be/ApiGateway.git
+[submodule "src/Services/Wallet"]
+	path = src/Services/Wallet
+	url = git@github.com:Nexus-Be/WalletService.git

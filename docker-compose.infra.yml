@@ -1,0 +1,221 @@
+version: "3.8"
+
+services:
+  # =========================================================================
+  # 1. SHARED PLATFORM INFRASTRUCTURE
+  # =========================================================================
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: nexus-shared-rabbitmq
+    ports:
+      - "5672:5672"    # AMQP protocol
+      - "15672:15672"  # Management Web UI (guest / guest)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexus-shared-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: nexus-shared-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./infra/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+      - "3200:3200"  # Tempo HTTP API
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: nexus-shared-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - ./infra/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+    depends_on:
+      - tempo
+    restart: unless-stopped
+
+  # =========================================================================
+  # 2. MICROSERVICES DATABASES (PostgreSQL 16)
+  # =========================================================================
+
+  user-db:
+    image: postgres:16-alpine
+    container_name: nexus-user-db
+    environment:
+      POSTGRES_DB: usermanagement_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d usermanagement_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  catalog-db:
+    image: postgres:16-alpine
+    container_name: nexus-catalog-db
+    environment:
+      POSTGRES_DB: category_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - catalog_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d category_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  commerce-db:
+    image: postgres:16-alpine
+    container_name: nexus-commerce-db
+    environment:
+      POSTGRES_DB: commerce_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - commerce_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d commerce_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  log-db:
+    image: postgres:16-alpine
+    container_name: nexus-log-db
+    environment:
+      POSTGRES_DB: log_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - log_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d log_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  auction-db:
+    image: postgres:16-alpine
+    container_name: nexus-auction-db
+    environment:
+      POSTGRES_DB: auction_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    volumes:
+      - auction_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auction_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  fulfillment-db:
+    image: postgres:16-alpine
+    container_name: nexus-fulfillment-db
+    environment:
+      POSTGRES_DB: fulfillment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+    volumes:
+      - fulfillment_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fulfillment_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  notification-db:
+    image: postgres:16-alpine
+    container_name: nexus-notification-db
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5438:5432"
+    volumes:
+      - notification_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d notification_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  wallet-db:
+    image: postgres:16-alpine
+    container_name: nexus-wallet-db
+    environment:
+      POSTGRES_DB: wallet_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5439:5432"
+    volumes:
+      - wallet_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d wallet_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  tempo_data:
+  user_db_data:
+  catalog_db_data:
+  commerce_db_data:
+  log_db_data:
+  auction_db_data:
+  fulfillment_db_data:
+  notification_db_data:
+  wallet_db_data:

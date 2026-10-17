@@ -12,7 +12,7 @@ Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ s
 | **UserService** | N/A | `8001` | PostgreSQL | `5432` | `usermanagement_db` | RabbitMQ: `5672` |
 | **CatalogService** | N/A | `8002` | PostgreSQL | `5433` | `category_db` | RabbitMQ: `5672` |
 | **CommerceService** | N/A | `8003` | PostgreSQL | `5434` | `commerce_db` | RabbitMQ: `5672` |
-| **AuditService** | N/A | `8004` | PostgreSQL | `5435` | `audit_db` | RabbitMQ: `5672` |
+| **LogService** | N/A | `8004` | PostgreSQL | `5435` | `log_db` | RabbitMQ: `5672` |
 | **AuctionService** | N/A | `8005` | PostgreSQL | `5436` | `auction_db` | RabbitMQ: `5672` |
 | **FulfillmentService** | N/A | `8006` | PostgreSQL | `5437` | `fulfillment_db` | RabbitMQ: `5672` |
 | **NotificationService** | N/A | `8007` | PostgreSQL | `5438` | `notification_db` | RabbitMQ: `5672` |

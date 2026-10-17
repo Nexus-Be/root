@@ -1,0 +1,443 @@
+version: "3.8"
+
+services:
+  # =========================================================================
+  # 1. SHARED PLATFORM INFRASTRUCTURE
+  # =========================================================================
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: nexus-shared-rabbitmq
+    ports:
+      - "5672:5672"    # AMQP protocol
+      - "15672:15672"  # Management Web UI (guest / guest)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexus-shared-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: nexus-shared-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./infra/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+      - "3200:3200"  # Tempo HTTP API
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: nexus-shared-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - ./infra/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+    depends_on:
+      - tempo
+    restart: unless-stopped
+
+  # =========================================================================
+  # 2. MICROSERVICES DATABASES (PostgreSQL 16)
+  # =========================================================================
+
+  user-db:
+    image: postgres:16-alpine
+    container_name: nexus-user-db
+    environment:
+      POSTGRES_DB: usermanagement_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d usermanagement_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  catalog-db:
+    image: postgres:16-alpine
+    container_name: nexus-catalog-db
+    environment:
+      POSTGRES_DB: category_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - catalog_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d category_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  commerce-db:
+    image: postgres:16-alpine
+    container_name: nexus-commerce-db
+    environment:
+      POSTGRES_DB: commerce_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - commerce_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d commerce_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  log-db:
+    image: postgres:16-alpine
+    container_name: nexus-log-db
+    environment:
+      POSTGRES_DB: log_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - log_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d log_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  auction-db:
+    image: postgres:16-alpine
+    container_name: nexus-auction-db
+    environment:
+      POSTGRES_DB: auction_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    volumes:
+      - auction_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auction_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  fulfillment-db:
+    image: postgres:16-alpine
+    container_name: nexus-fulfillment-db
+    environment:
+      POSTGRES_DB: fulfillment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+    volumes:
+      - fulfillment_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fulfillment_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  notification-db:
+    image: postgres:16-alpine
+    container_name: nexus-notification-db
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5438:5432"
+    volumes:
+      - notification_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d notification_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  wallet-db:
+    image: postgres:16-alpine
+    container_name: nexus-wallet-db
+    environment:
+      POSTGRES_DB: wallet_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5439:5432"
+    volumes:
+      - wallet_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d wallet_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # =========================================================================
+  # 3. API GATEWAY & MICROSERVICES APPLICATIONS
+  # =========================================================================
+
+  gateway:
+    build:
+      context: ./src/Services/ApiGateway/Nexus.Gateway
+      dockerfile: Dockerfile
+    container_name: nexus-apigateway
+    ports:
+      - "8000:8000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Gateway__RedisConnectionString=redis:6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - Gateway__Services__users__Address=http://user-service:8001
+      - Gateway__Services__catalog__Address=http://catalog-service:8002
+      - Gateway__Services__commerce__Address=http://commerce-service:8003
+      - Gateway__Services__log__Address=http://log-service:8004
+      - Gateway__Services__auction__Address=http://auction-service:8005
+      - Gateway__Services__fulfillment__Address=http://fulfillment-service:8006
+      - Gateway__Services__notification__Address=http://notification-service:8007
+      - Gateway__Services__wallet__Address=http://wallet-service:8008
+    depends_on:
+      redis:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ./src/Services/User
+      dockerfile: Dockerfile
+    container_name: nexus-user-service
+    ports:
+      - "8001:8001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=user-db;Port=5432;Database=usermanagement_db;Username=postgres;Password=postgres
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Port=5672
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    depends_on:
+      user-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
+
+  catalog-service:
+    build:
+      context: ./src/Services/Catalog
+      dockerfile: Dockerfile
+    container_name: nexus-catalog-service
+    ports:
+      - "8002:8002"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=catalog-db;Port=5432;Database=category_db;Username=postgres;Password=postgres
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Port=5672
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
+
+  commerce-service:
+    build:
+      context: ./src/Services/Commerce
+      dockerfile: Dockerfile
+    container_name: nexus-commerce-service
+    ports:
+      - "8003:8003"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=commerce-db;Port=5432;Database=commerce_db;Username=postgres;Password=postgres
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Port=5672
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    depends_on:
+      commerce-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
+
+  log-service:
+    build:
+      context: ./src/Services/Log
+      dockerfile: Dockerfile
+    container_name: nexus-log-service
+    ports:
+      - "8004:8004"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=log-db;Port=5432;Database=log_db;Username=postgres;Password=postgres
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Port=5672
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    depends_on:
+      log-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
+
+  auction-service:
+    build:
+      context: ./src/Services/Auction
+      dockerfile: Dockerfile
+    container_name: nexus-auction-service
+    ports:
+      - "8005:8005"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=auction-db;Port=5432;Database=auction_db;Username=postgres;Password=postgres
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Port=5672
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    depends_on:
+      auction-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
+
+  fulfillment-service:
+    build:
+      context: ./src/Services/Fulfillment
+      dockerfile: Dockerfile
+    container_name: nexus-fulfillment-service
+    ports:
+      - "8006:8006"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=fulfillment-db;Port=5432;Database=fulfillment_db;Username=postgres;Password=postgres
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Port=5672
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    depends_on:
+      fulfillment-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./src/Services/Notification
+      dockerfile: Dockerfile
+    container_name: nexus-notification-service
+    ports:
+      - "8007:8007"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=notification-db;Port=5432;Database=notification_db;Username=postgres;Password=postgres
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Port=5672
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
+
+  wallet-service:
+    build:
+      context: ./src/Services/Wallet
+      dockerfile: Dockerfile
+    container_name: nexus-wallet-service
+    ports:
+      - "8008:8008"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=wallet-db;Port=5432;Database=wallet_db;Username=postgres;Password=postgres
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Port=5672
+      - RabbitMq__User=guest
+      - RabbitMq__Password=guest
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    depends_on:
+      wallet-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  tempo_data:
+  user_db_data:
+  catalog_db_data:
+  commerce_db_data:
+  log_db_data:
+  auction_db_data:
+  fulfillment_db_data:
+  notification_db_data:
+  wallet_db_data:

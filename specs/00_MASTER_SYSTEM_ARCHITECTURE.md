@@ -18,11 +18,11 @@ Tài liệu này cung cấp sơ đồ kiến trúc mức cao (System Architectur
                    ▼
   ┌───────────────┬─┴─────────────┬───────────────┬───────────────┐
   ▼               ▼               ▼               ▼               ▼
-UserService    CatalogService  CommerceService  AuditService   AuctionService ... (+ Fulfillment, Notification, Wallet)
+UserService    CatalogService  CommerceService  LogService     AuctionService ... (+ Fulfillment, Notification, Wallet)
 (Port 8001)    (Port 8002)     (Port 8003)      (Port 8004)    (Port 8005)        (Ports 8006, 8007, 8008)
   │               │               │               │               │                  │
   ▼               ▼               ▼               ▼               ▼                  ▼
-[User DB]     [Catalog DB]    [Commerce DB]   [Audit DB]      [Auction DB]      [Fulfillment DB, Notification DB...]
+[User DB]     [Catalog DB]    [Commerce DB]   [Log DB]        [Auction DB]      [Fulfillment DB, Notification DB...]
 (Port 5432)   (Port 5433)     (Port 5434)     (Port 5435)     (Port 5436)       (Ports 5437, 5438, 5439)
   │               │               │               │               │                  │
   └───────────────┴───────────────┼───────────────┴───────────────┴──────────────────┘
@@ -46,7 +46,7 @@ UserService    CatalogService  CommerceService  AuditService   AuctionService ..
 
 3. **Hai Trục Giao Tiếp Song Song**:
    - **Đồng bộ (Synchronous Query/Command)**: Dùng **gRPC Protobuf v3** cho các tác vụ cần kết quả tức thì (xác thực token, kiểm tra số dư, đọc chi tiết sản phẩm).
-   - **Bất đồng bộ (Asynchronous Event-Driven)**: Dùng **RabbitMQ + MassTransit 8.4.1** cho các sự kiện trạng thái thay đổi (`OrderCreated`, `InventoryReserved`, `PaymentCompleted`, `AuditLogged`).
+   - **Bất đồng bộ (Asynchronous Event-Driven)**: Dùng **RabbitMQ + MassTransit 8.4.1** cho các sự kiện trạng thái thay đổi (`OrderCreated`, `InventoryReserved`, `PaymentCompleted`, `LogRecorded`).
 
 4. **Quản Lý Giao Dịch Phân Tán Bằng Saga State Machine**:
    - Không sử dụng Distributed Transaction / 2-Phase Commit (2PC).
@@ -64,5 +64,5 @@ UserService    CatalogService  CommerceService  AuditService   AuctionService ..
 | **Online Bidding & Auction** | `AuctionService` | Phòng đấu giá trực tuyến, bước giá, quy tắc đặt giá, thời gian đếm ngược, xác định người thắng. | Auctions, Bids, AuctionParticipants. |
 | **Physical Fulfillment & Logistics**| `FulfillmentService` | Kho vật lý lưu trữ thực tế, quản lý vận đơn, tính cước vận chuyển, theo dõi hành trình giao nhận. | Warehouses, PhysicalStock, Shipments, Carriers. |
 | **Customer Notifications** | `NotificationService` | Đa kênh thông báo (In-app, Push, Email), lưu lịch sử thông báo, cấu hình tùy chọn người dùng. | Notifications, NotificationPreferences. |
-| **System Auditing & Compliance** | `AuditService` | Ghi nhận bất biến mọi thay đổi trong hệ thống phục vụ thanh tra, kiểm tra và bảo mật. | AuditLogs, AuditEventTypes. |
+| **Centralized Logging & System Auditing** | `LogService` | Thu thập nhật ký tập trung và lưu vết bất biến mọi thay đổi trong hệ thống. | Logs, LogEventTypes. |
 | **Digital Wallet & Payments** | `WalletService` | Tài khoản ví điện tử khách hàng, nạp tiền, rút tiền về tài khoản ngân hàng, chuyển tiền nội bộ. | Wallets, WalletTransactions, BankAccounts. |

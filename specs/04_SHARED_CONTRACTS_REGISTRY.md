@@ -16,7 +16,7 @@ Toàn bộ 8 Microservices và ApiGateway đều tuân theo bản định nghĩa
 4. `AuctionApi`: Quản lý phiên đấu giá, đặt giá bid, danh sách bids.
 5. `FulfillmentApi`: Tra cứu tồn kho kho bãi, tính cước vận chuyển, theo dõi vận đơn.
 6. `NotificationApi`: Quản lý danh sách thông báo, đánh dấu đã đọc, tùy chọn nhận thông báo.
-7. `AuditApi`: Tra cứu nhật ký kiểm toán, quản lý danh mục event type.
+7. `LogApi`: Tra cứu nhật ký hệ thống, quản lý danh mục event type log.
 8. `WalletApi`: Quản lý số dư ví, nạp tiền, rút tiền, chuyển tiền, lịch sử giao dịch.
 
 ---
@@ -54,11 +54,11 @@ Các sự kiện bất đồng bộ được chia sẻ qua namespace `Nexus.Cont
 
 | Tên Event Interface / Record | Service Phát Hành (Publisher) | Services Tiêu Thụ (Consumers) | Payload Chính |
 |:---|:---:|:---:|:---|
-| `IOrderSubmittedEvent` | `CommerceService` | `CatalogService`, `NotificationService`, `AuditService` | `OrderId`, `UserId`, `Items: [{ ProductId, Quantity }]`, `TotalAmount` |
-| `IStockReservedEvent` | `CatalogService` | `CommerceService`, `WalletService`, `AuditService` | `OrderId`, `ReservationId`, `Timestamp` |
+| `IOrderSubmittedEvent` | `CommerceService` | `CatalogService`, `NotificationService`, `LogService` | `OrderId`, `UserId`, `Items: [{ ProductId, Quantity }]`, `TotalAmount` |
+| `IStockReservedEvent` | `CatalogService` | `CommerceService`, `WalletService`, `LogService` | `OrderId`, `ReservationId`, `Timestamp` |
 | `IStockReservationFailedEvent` | `CatalogService` | `CommerceService`, `NotificationService` | `OrderId`, `Reason`, `Timestamp` |
 | `IPaymentCompletedEvent` | `WalletService` | `CommerceService`, `FulfillmentService`, `NotificationService` | `OrderId`, `TransactionId`, `Amount`, `Timestamp` |
 | `IPaymentFailedEvent` | `WalletService` | `CommerceService`, `CatalogService` *(Bù trừ)* | `OrderId`, `Reason`, `Timestamp` |
-| `IShipmentCreatedEvent` | `FulfillmentService` | `CommerceService`, `NotificationService`, `AuditService` | `OrderId`, `TrackingCode`, `EstimatedDelivery` |
-| `IAuctionEndedEvent` | `AuctionService` | `CommerceService`, `NotificationService`, `AuditService` | `AuctionId`, `WinnerUserId`, `WinningAmount` |
-| `IAuditEventOccurred` | Mọi service | `AuditService` | `ServiceName`, `EventType`, `ActorUserId`, `EntityName`, `EntityId`, `DetailsJson` |
+| `IShipmentCreatedEvent` | `FulfillmentService` | `CommerceService`, `NotificationService`, `LogService` | `OrderId`, `TrackingCode`, `EstimatedDelivery` |
+| `IAuctionEndedEvent` | `AuctionService` | `CommerceService`, `NotificationService`, `LogService` | `AuctionId`, `WinnerUserId`, `WinningAmount` |
+| `ILogEventOccurred` | Mọi service | `LogService` | `ServiceName`, `EventType`, `ActorUserId`, `EntityName`, `EntityId`, `DetailsJson` |
