@@ -1,0 +1,279 @@
+// =====================================================================
+// Project Nexus - Catalog Service
+// Chuẩn hóa theo quy ước Microservices: PascalCase, PK là Id,
+// 4 trường vòng đời CreatedAt, UpdatedAt, DeletedAt, IsDeleted,
+// Xóa Inbox/Outbox (dùng MassTransit), Bổ sung bảng AuditLogs.
+// =====================================================================
+
+Project ProjectNexusCatalogService {
+  database_type: 'PostgreSQL'
+  Note: 'Catalog Service - Project Nexus. Mỗi service có DB riêng, không có FK vật lý xuyên service.'
+}
+
+// ---------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------
+Enum ProductStatus {
+  Draft    [note: 'Bản nháp, chưa hiển thị']
+  Active   [note: 'Đang bán, hiển thị cho Buyer']
+  Inactive [note: 'Tạm ngưng bán, ẩn khỏi tìm kiếm']
+}
+
+Enum SaleType {
+  Regular [note: 'Bán thường (mặc định)']
+  Auction [note: 'Chỉ đấu giá, không bán thường']
+}
+
+Enum VariantStatus {
+  Active   [note: 'Biến thể đang bán']
+  Inactive [note: 'Tạm ngưng riêng biến thể này']
+}
+
+Enum ProductInactiveReason {
+  SellerPaused [note: 'Seller tạm nghỉ bán']
+  Discontinued [note: 'Ngừng kinh doanh']
+  AdminLocked  [note: 'Admin khóa (vi phạm, bị báo cáo). Chỉ Admin được mở lại']
+  Other        [note: 'Lý do khác']
+}
+
+Enum VariantInactiveReason {
+  OutOfStock   [note: 'Hết hàng (seller tự chọn, Catalog không biết tồn kho)']
+  Discontinued [note: 'Ngừng kinh doanh biến thể này']
+  Other        [note: 'Lý do khác']
+}
+
+Enum ReviewStatus {
+  Published [note: 'Đang hiển thị, được tính vào điểm']
+  Hidden    [note: 'Admin/Support ẩn do kiểm duyệt']
+}
+
+Enum AuditAction {
+  ProductCreate  [note: 'Tạo sản phẩm']
+  ProductUpdate  [note: 'Cập nhật sản phẩm']
+  ProductDelete  [note: 'Xóa sản phẩm']
+  CategoryCreate [note: 'Tạo danh mục']
+  CategoryUpdate [note: 'Cập nhật danh mục']
+  CategoryDelete [note: 'Xóa danh mục']
+  ReviewModerate [note: 'Kiểm duyệt đánh giá']
+}
+
+// ---------------------------------------------------------------------
+// NHÓM 1: DANH MỤC, SẢN PHẨM, BIẾN THỂ, ẢNH
+// ---------------------------------------------------------------------
+
+Table Categories {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ParentId uuid [note: 'NULL = danh mục gốc. Tự tham chiếu (cây)']
+  Name varchar(255) [not null]
+  Description varchar(1000)
+  Level smallint [not null, note: '1..3 = level cha + 1 (CATEGORY_MAX_LEVEL = 3)']
+  SortOrder int [not null, default: 0]
+  IsDisabled boolean [not null, default: false, note: 'Tạm ẩn/vô hiệu hóa danh mục khỏi hiển thị']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ParentId [name: 'idx_Categories_ParentId']
+    (ParentId, Name) [unique, name: 'ux_Categories_Parent_Name']
+  }
+
+  Note: 'Cây danh mục tối đa 3 cấp'
+}
+
+Table Products {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  SellerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  CategoryId uuid [not null]
+  Name varchar(255) [not null]
+  Description text
+  Brand varchar(100)
+  SaleType SaleType [not null, default: 'Regular']
+  Status ProductStatus [not null, default: 'Draft']
+  StatusReason ProductInactiveReason [note: 'Lý do ngừng bán. Bắt buộc khi Status = INACTIVE, NULL khi trạng thái khác']
+  Specifications jsonb [note: 'Thông số chung, chỉ để hiển thị']
+  PublishedAt timestamptz [note: 'Lần đầu chuyển sang ACTIVE']
+  CreatedBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  UpdatedBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (CategoryId, Status) [name: 'idx_Products_Category_Status']
+    SellerId [name: 'idx_Products_SellerId']
+    (Status, CreatedAt) [name: 'idx_Products_Status_Created']
+  }
+
+  Note: 'Sản phẩm toàn sàn. Giá nằm ở ProductVariants.Price'
+}
+
+Table ProductVariants {
+  Id uuid [pk, default: `gen_random_uuid()`, note: 'Đóng vai trò là SkuId cho Fulfillment/Commerce/Auction']
+  ProductId uuid [not null]
+  SkuCode varchar(50) [not null]
+  Name varchar(255) [not null, note: 'vd Đen / 128GB hoặc Mặc định']
+  Price numeric(18,2) [note: 'NULL khi DRAFT hoặc AUCTION. REGULAR + ACTIVE phải > 0']
+  Currency char(3) [not null, default: 'VND']
+  IsActive boolean [not null, default: false, note: 'Mỗi sản phẩm chỉ duy nhất 1 variant mặc định được active']
+  HasOrder boolean [not null, default: false, note: 'Bản sao từ event OrderCreated']
+  Status VariantStatus [not null, default: 'Active']
+  StatusReason VariantInactiveReason [note: 'Lý do ngừng bán. Bắt buộc khi Status = Inactive, NULL khi trạng thái khác']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ProductId [name: 'idx_ProductVariants_ProductId']
+    SkuCode [unique, name: 'ux_ProductVariants_SkuCode']
+    (ProductId, IsActive) [name: 'idx_ProductVariants_Default']
+    (Id, ProductId) [unique, name: 'uq_ProductVariants_Id_Product']
+    Price [name: 'idx_ProductVariants_Price']
+  }
+
+  Note: 'Tồn kho quản lý theo SKU. Mỗi sản phẩm có ít nhất 1 variant'
+}
+
+Table ProductVariantAttributes {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  VariantId uuid [not null]
+  AttrName varchar(50) [not null, note: 'color, storage, size...']
+  AttrValue varchar(100) [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (VariantId, AttrName) [unique, name: 'uq_ProductVariantAttributes_Variant_Attr']
+    (AttrName, AttrValue) [name: 'idx_ProductVariantAttributes_Name_Value']
+  }
+
+  Note: 'Nguồn duy nhất của thuộc tính SKU'
+}
+
+Table ProductImages {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ProductId uuid [not null]
+  VariantId uuid [note: 'NULL = ảnh chung. Có giá trị = ảnh riêng của variant']
+  Url varchar(500) [not null, note: 'Key/URL trên object storage']
+  AltText varchar(255)
+  IsActive boolean [not null, default: false, note: 'Chỉ duy nhất 1 ảnh chính đại diện được active']
+  SortOrder smallint [not null, default: 0]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (ProductId, SortOrder) [name: 'idx_ProductImages_Product_Sort']
+    ProductId [name: 'idx_ProductImages_Product']
+  }
+
+  Note: 'Tối đa 5 ảnh/sản phẩm'
+}
+
+// ---------------------------------------------------------------------
+// NHÓM 2: ĐÁNH GIÁ SẢN PHẨM & LỊCH SỬ MUA
+// ---------------------------------------------------------------------
+
+Table ProductRatingStats {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ProductId uuid [unique, not null]
+  StarSum int [not null, default: 0, note: 'Tổng sao của các review PUBLISHED']
+  ReviewCount int [not null, default: 0, note: 'Số review PUBLISHED']
+  AvgRating numeric(3,2) [note: 'StarSum / ReviewCount']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ProductId [name: 'idx_ProductRatingStats_ProductId']
+    AvgRating [name: 'idx_ProductRatingStats_AvgRating']
+  }
+
+  Note: 'Tổng hợp để hiển thị nhanh đánh giá sao'
+}
+
+Table PurchaseRecords {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  BuyerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  OrderId uuid [not null, note: 'Cross-service Ref -> CommerceService.Orders.Id']
+  ProductId uuid [not null]
+  CompletedAt timestamptz [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (BuyerId, ProductId, OrderId) [unique, name: 'uq_PurchaseRecords_Buyer_Product_Order']
+    (Id, ProductId, BuyerId) [unique, name: 'uq_PurchaseRecords_Id_Product_Buyer']
+    ProductId [name: 'idx_PurchaseRecords_ProductId']
+    OrderId [name: 'idx_PurchaseRecords_OrderId']
+  }
+
+  Note: 'Bản sao đã mua từ event OrderCompleted để chứng minh buyer đã mua trước khi đánh giá'
+}
+
+Table ProductReviews {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  PurchaseRecordId uuid [not null]
+  ProductId uuid [not null]
+  BuyerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  Rating smallint [not null, note: 'CHECK 1..5']
+  Comment varchar(2000)
+  Status ReviewStatus [not null, default: 'Published']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    PurchaseRecordId [unique, name: 'uq_ProductReviews_Purchase']
+    (ProductId, CreatedAt) [name: 'idx_ProductReviews_Product_Created']
+  }
+
+  Note: 'Mỗi giao dịch tối đa 1 đánh giá, không tự đánh giá mình'
+}
+
+// ---------------------------------------------------------------------
+// NHÓM 3: NHẬT KÝ HỆ THỐNG (AUDIT LOGS)
+// ---------------------------------------------------------------------
+
+Table AuditLogs {
+  Id uuid [pk, note: 'Guid.CreateVersion7()']
+  ServiceName varchar(100) [not null, note: 'Tên Service phát sinh log']
+  TraceId varchar(100) [note: 'Mã TraceId từ Activity.Current?.TraceId']
+  UserId varchar(100) [note: 'ID người thao tác']
+  UserName varchar(150) [note: 'Tên/Email người thao tác tại thời điểm log']
+  Action AuditAction [not null, note: 'Loại hành động kiểm toán']
+  EntityName varchar(100) [not null, note: 'Tên bảng/Class bị tác động']
+  EntityId varchar(100) [not null, note: 'Khóa chính của bản ghi bị tác động']
+  OldValues jsonb [note: 'Chuỗi JSON chứa các cột trước khi sửa/xóa']
+  NewValues jsonb [note: 'Chuỗi JSON chứa các cột sau khi thêm/sửa']
+  ChangedColumns jsonb [note: 'Mảng JSON lưu nhanh tên các cột bị sửa']
+  IpAddress varchar(45) [note: 'Địa chỉ IPv4 hoặc IPv6']
+  UserAgent varchar(500) [note: 'Thiết bị/Trình duyệt của người dùng']
+  CreatedAt timestamptz [not null, default: `now()`, note: 'DateTime.UtcNow']
+  IsSynced boolean [not null, default: false, note: 'Worker gom đẩy về AuditService']
+}
+
+// ---------------------------------------------------------------------
+// QUAN HỆ KHÓA NGOẠI NỘI BỘ (INTERNAL RELATIONSHIPS)
+// ---------------------------------------------------------------------
+
+Ref: Categories.ParentId > Categories.Id
+Ref: Products.CategoryId > Categories.Id
+Ref: ProductVariants.ProductId > Products.Id
+Ref: ProductVariantAttributes.VariantId > ProductVariants.Id
+Ref: ProductImages.ProductId > Products.Id
+Ref: ProductImages.VariantId > ProductVariants.Id
+Ref: ProductRatingStats.ProductId - Products.Id
+Ref: PurchaseRecords.ProductId > Products.Id
+Ref: ProductReviews.PurchaseRecordId > PurchaseRecords.Id
+Ref: ProductReviews.ProductId > Products.Id

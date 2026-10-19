@@ -1,0 +1,314 @@
+// ====================================================================================
+// Project Nexus - Notification & Messaging Service
+// Chuẩn hóa theo quy ước Microservices: PascalCase, PK là Id uuid,
+// 4 trường vòng đời CreatedAt, UpdatedAt, DeletedAt, IsDeleted,
+// Xóa Inbox/Outbox (dùng MassTransit), Bổ sung bảng AuditLogs.
+// ====================================================================================
+
+Project ProjectNexusNotificationService {
+  database_type: 'PostgreSQL'
+  Note: 'PROJECT NEXUS - NOTIFICATION & MESSAGING INFRASTRUCTURE DATABASE SCHEMA'
+}
+
+// ====================================================================================
+// ENUMS
+// ====================================================================================
+
+Enum NotificationStatus {
+  Pending   [note: 'Khởi tạo, đang gửi']
+  Completed [note: 'Gửi thành công toàn bộ kênh']
+  Partial   [note: 'Gửi thành công một phần']
+  Failed    [note: 'Thất bại toàn bộ kênh']
+}
+
+Enum DeliveryStatus {
+  Pending [note: 'Chờ worker gửi']
+  Sending [note: 'Đang gọi API gửi']
+  Sent    [note: 'Gửi thành công']
+  Failed  [note: 'Gửi thất bại']
+  Skipped [note: 'Bỏ qua do user chặn tin']
+}
+
+Enum ChannelType {
+  Email [note: 'Email']
+  Push  [note: 'Thông báo đẩy']
+  InApp [note: 'Thông báo trong ứng dụng']
+  Sms   [note: 'Tin nhắn SMS']
+}
+
+Enum ChannelProvider {
+  Smtp     [note: 'Máy chủ SMTP']
+  Sendgrid [note: 'SendGrid']
+  Fcm      [note: 'Firebase Cloud Messaging']
+  Apns     [note: 'Apple Push Notification']
+}
+
+Enum ChannelScope {
+  All      [note: 'Gửi toàn bộ kênh']
+  Specific [note: 'Gửi kênh chỉ định']
+}
+
+Enum NotificationType {
+  OrderPaid         [note: 'Đơn hàng đã thanh toán']
+  OrderShipped      [note: 'Đơn hàng đang giao']
+  AuctionOutbid     [note: 'Bị trả giá cao hơn']
+  AuctionWon        [note: 'Thắng đấu giá']
+  ReputationPenalty [note: 'Trừ điểm uy tín']
+  SecurityAlert     [note: 'Cảnh báo bảo mật']
+  Otp               [note: 'Mã xác thực']
+  Promotion         [note: 'Khuyến mại']
+}
+
+Enum DevicePlatform {
+  Web     [note: 'Trình duyệt Web']
+  Ios     [note: 'Hệ điều hành iOS']
+  Android [note: 'Hệ điều hành Android']
+}
+
+Enum LogAction {
+  Created     [note: 'Đã tạo bản ghi']
+  Rendered    [note: 'Đã biên dịch template']
+  Dispatching [note: 'Đang gửi']
+  Sent        [note: 'Đã gửi thành công']
+  Failed      [note: 'Gửi thất bại']
+  Retry       [note: 'Lập lịch gửi lại']
+  Suppressed  [note: 'Bị hủy do token chết/chặn']
+}
+
+Enum LogLevel {
+  Info  [note: 'Thông tin']
+  Warn  [note: 'Cảnh báo']
+  Error [note: 'Lỗi']
+}
+
+Enum BrokerHealthStatus {
+  Up       [note: 'Hoạt động tốt']
+  Degraded [note: 'Chập chờn/quá tải']
+  Down     [note: 'Mất kết nối']
+}
+
+Enum AuditAction {
+  ChannelCreate    [note: 'Tạo kênh mới']
+  ChannelUpdate    [note: 'Cập nhật kênh']
+  TemplateCreate   [note: 'Tạo mẫu thông báo']
+  TemplateUpdate   [note: 'Cập nhật mẫu']
+  PreferenceUpdate [note: 'Cập nhật tùy chọn nhận tin']
+  DeviceRegister   [note: 'Đăng ký thiết bị']
+}
+
+// ====================================================================================
+// 1. PHÂN HỆ KÊNH, MẪU & CẤU HÌNH THÔNG BÁO (CHANNELS, TEMPLATES & PREFERENCES)
+// ====================================================================================
+
+Table NotificationChannels {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  Code ChannelType [unique, not null]
+  Name varchar(100) [not null]
+  Provider ChannelProvider
+  Config jsonb [note: 'Non-secret settings']
+  IsDisabled boolean [not null, default: false, note: 'Tạm ẩn/vô hiệu hóa kênh']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table NotificationTemplates {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  Code varchar(100) [not null, note: 'Unique per locale']
+  NotificationType NotificationType [not null]
+  ChannelCode ChannelType [not null]
+  SubjectTemplate text
+  BodyTemplate text [note: 'Liquid / Handlebars']
+  IsMandatory boolean [not null, default: false]
+  Locale varchar(10) [not null, default: 'vi-VN', note: 'vi-VN | en-US']
+  IsActive boolean [not null, default: true, note: 'Bản mẫu đang active cho locale']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (Code, Locale) [unique, name: 'uq_NotificationTemplates_Code_Locale']
+    ChannelCode [name: 'idx_NotificationTemplates_ChannelCode']
+  }
+}
+
+Table NotificationPreferences {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  UserId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  NotificationType NotificationType [not null]
+  ChannelCode ChannelType [not null]
+  IsDisabled boolean [not null, default: false, note: 'Người dùng tắt nhận thông báo từ kênh này']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    UserId [name: 'idx_NotificationPreferences_UserId']
+    ChannelCode [name: 'idx_NotificationPreferences_ChannelCode']
+  }
+}
+
+Table DeviceTokens {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  UserId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  Platform DevicePlatform [not null]
+  Token text [unique, not null]
+  IsActive boolean [not null, default: true, note: 'Token đang active trên thiết bị']
+  LastSeenAt timestamptz
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    UserId [name: 'idx_DeviceTokens_UserId']
+  }
+}
+
+// ====================================================================================
+// 2. PHÂN HỆ THÔNG BÁO, LƯỢT GỬI & NHẬT KÝ (NOTIFICATIONS, DELIVERIES & LOGS)
+// ====================================================================================
+
+Table Notifications {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  UserId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  SourceEventId uuid [note: 'Idempotency Anchor']
+  TemplateId uuid [note: 'Nullable for Ad-hoc']
+  NotificationType NotificationType
+  ChannelScope ChannelScope [default: 'All']
+  Title varchar(255)
+  Body text [note: 'Rendered Snapshot']
+  Payload jsonb [note: 'Deep link metadata']
+  IsRead boolean [not null, default: false]
+  ReadAt timestamptz
+  Status NotificationStatus [not null, default: 'Pending']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    UserId [name: 'idx_Notifications_UserId']
+    Status [name: 'idx_Notifications_Status']
+  }
+}
+
+Table NotificationDeliveries {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  NotificationId uuid [not null]
+  ChannelCode ChannelType [not null]
+  Destination text [note: 'Email | Device Token']
+  Status DeliveryStatus [not null, default: 'Pending']
+  AttemptCount int [not null, default: 0, note: 'Max 3']
+  LastAttemptAt timestamptz
+  NextRetryAt timestamptz
+  ErrorCode varchar(100)
+  ErrorMessage text
+  RowVersion bigint [not null, default: 0]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    NotificationId [name: 'idx_NotificationDeliveries_NotificationId']
+    NextRetryAt [name: 'idx_NotificationDeliveries_NextRetryAt']
+  }
+}
+
+Table NotificationLogs {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  NotificationId uuid
+  DeliveryId uuid
+  Action LogAction [not null]
+  Level LogLevel [not null, default: 'Info']
+  Message text
+  Metadata jsonb
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    NotificationId [name: 'idx_NotificationLogs_NotificationId']
+    DeliveryId [name: 'idx_NotificationLogs_DeliveryId']
+  }
+}
+
+// ====================================================================================
+// 3. PHÂN HỆ HẠ TẦNG SỰ KIỆN & GIÁM SÁT (EVENT LOGS & HEALTH CHECKS)
+// ====================================================================================
+
+Table EventLogs {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  OccurredAt timestamptz [not null]
+  EventId uuid
+  EventType varchar(100) [not null]
+  SourceService varchar(100) [not null]
+  ActorId uuid
+  ActorRole varchar(50)
+  TargetId uuid
+  Payload jsonb
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (Id, OccurredAt) [name: 'idx_EventLogs_Id_OccurredAt']
+    EventType [name: 'idx_EventLogs_EventType']
+  }
+}
+
+Table BrokerHealthChecks {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  BrokerName varchar(50) [not null, default: 'rabbitmq']
+  Status BrokerHealthStatus [not null, default: 'Up']
+  LatencyMs int
+  QueueDepth int
+  Detail text
+  CheckedAt timestamptz [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+// ====================================================================================
+// 4. NHÓM NHẬT KÝ HỆ THỐNG (AUDIT LOGS)
+// ====================================================================================
+
+Table AuditLogs {
+  Id uuid [pk, note: 'Guid.CreateVersion7()']
+  ServiceName varchar(100) [not null, note: 'Tên Service phát sinh log']
+  TraceId varchar(100) [note: 'Mã TraceId từ Activity.Current?.TraceId']
+  UserId varchar(100) [note: 'ID người thao tác']
+  UserName varchar(150) [note: 'Tên/Email người thao tác tại thời điểm log']
+  Action AuditAction [not null, note: 'Loại hành động kiểm toán']
+  EntityName varchar(100) [not null, note: 'Tên bảng/Class bị tác động']
+  EntityId varchar(100) [not null, note: 'Khóa chính của bản ghi bị tác động']
+  OldValues jsonb [note: 'Chuỗi JSON chứa các cột trước khi sửa/xóa']
+  NewValues jsonb [note: 'Chuỗi JSON chứa các cột sau khi thêm/sửa']
+  ChangedColumns jsonb [note: 'Mảng JSON lưu nhanh tên các cột bị sửa']
+  IpAddress varchar(45) [note: 'Địa chỉ IPv4 hoặc IPv6']
+  UserAgent varchar(500) [note: 'Thiết bị/Trình duyệt của người dùng']
+  CreatedAt timestamptz [not null, default: `now()`, note: 'DateTime.UtcNow']
+  IsSynced boolean [not null, default: false, note: 'Worker gom đẩy về AuditService']
+}
+
+// ====================================================================================
+// QUAN HỆ KHÓA NGOẠI NỘI BỘ (INTERNAL RELATIONSHIPS)
+// ====================================================================================
+
+Ref: NotificationTemplates.ChannelCode > NotificationChannels.Code
+Ref: NotificationDeliveries.ChannelCode > NotificationChannels.Code
+Ref: NotificationPreferences.ChannelCode > NotificationChannels.Code
+
+Ref: Notifications.TemplateId > NotificationTemplates.Id
+
+Ref: NotificationDeliveries.NotificationId > Notifications.Id [delete: cascade]
+Ref: NotificationLogs.NotificationId > Notifications.Id [delete: cascade]
+Ref: NotificationLogs.DeliveryId > NotificationDeliveries.Id [delete: cascade]

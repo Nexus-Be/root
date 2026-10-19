@@ -1,0 +1,221 @@
+// ====================================================================================
+// Project Nexus - Wallet & Payment Service
+// Chuẩn hóa theo quy ước Microservices: PascalCase, PK là Id uuid,
+// 4 trường vòng đời CreatedAt, UpdatedAt, DeletedAt, IsDeleted,
+// Bổ sung bảng AuditLogs.
+// ====================================================================================
+
+Project ProjectNexusWalletService {
+  database_type: 'PostgreSQL'
+  Note: 'PROJECT NEXUS - WALLET & PAYMENT SERVICE DATABASE SCHEMA'
+}
+
+// ====================================================================================
+// ENUMS
+// ====================================================================================
+
+Enum CurrencyCode {
+  Vnd [note: 'Việt Nam Đồng']
+  Usd [note: 'Đô la Mỹ']
+}
+
+Enum WalletTransactionType {
+  TopupVnpay         [note: 'Nạp tiền qua VNPay']
+  PurchaseDebit      [note: 'Trừ tiền thanh toán đơn hàng']
+  RefundCredit       [note: 'Hoàn tiền vào ví']
+  EscrowCredit       [note: 'Giữ tiền cọc/ký quỹ']
+  EscrowRelease      [note: 'Giải tỏa ký quỹ']
+  WithdrawalDebit    [note: 'Trừ tiền rút về ngân hàng']
+  WithdrawalReversal [note: 'Hoàn tiền rút thất bại']
+  PlatformFeeCredit  [note: 'Thu phí nền tảng']
+  AdjustmentCredit   [note: 'Cộng tiền điều chỉnh']
+  AdjustmentDebit    [note: 'Trừ tiền điều chỉnh']
+}
+
+Enum TransactionStatus {
+  Pending   [note: 'Đang xử lý']
+  Success   [note: 'Thành công']
+  Failed    [note: 'Thất bại']
+  Cancelled [note: 'Đã hủy']
+}
+
+Enum TopupStatus {
+  Pending [note: 'Chờ thanh toán']
+  Success [note: 'Nạp thành công']
+  Failed  [note: 'Nạp thất bại']
+  Expired [note: 'Hết hạn thanh toán']
+}
+
+Enum WithdrawalStatus {
+  Pending    [note: 'Chờ duyệt']
+  Approved   [note: 'Đã duyệt']
+  Processing [note: 'Đang chuyển khoản']
+  Completed  [note: 'Rút thành công']
+  Rejected   [note: 'Bị từ chối']
+  Failed     [note: 'Chuyển tiền lỗi']
+}
+
+Enum IpnProcessingStatus {
+  Processed        [note: 'Xử lý thành công']
+  Duplicate        [note: 'Gửi trùng lặp']
+  InvalidSignature [note: 'Sai chữ ký bảo mật']
+  OrderNotFound    [note: 'Không tìm thấy đơn hàng']
+  InvalidAmount    [note: 'Sai lệch số tiền']
+  SystemError      [note: 'Lỗi hệ thống']
+}
+
+Enum AuditAction {
+  WalletCreate       [note: 'Tạo ví mới']
+  TopupRequest       [note: 'Tạo yêu cầu nạp tiền']
+  TopupSuccess       [note: 'Nạp tiền thành công']
+  TopupFail          [note: 'Nạp tiền thất bại']
+  WithdrawalRequest  [note: 'Yêu cầu rút tiền']
+  WithdrawalApprove  [note: 'Duyệt yêu cầu rút tiền']
+  WithdrawalReject   [note: 'Từ chối rút tiền']
+  WithdrawalComplete [note: 'Hoàn tất rút tiền']
+  BalanceAdjustment  [note: 'Điều chỉnh số dư']
+}
+
+// ====================================================================================
+// 1. PHÂN HỆ VÍ ĐIỆN TỬ & GIAO DỊCH NỘI BỘ (WALLETS & TRANSACTIONS)
+// ====================================================================================
+
+Table Wallets {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  UserId uuid [unique, not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  Balance numeric(18,2) [not null, default: 0]
+  LockedBalance numeric(18,2) [not null, default: 0]
+  Currency CurrencyCode [not null, default: 'Vnd']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    UserId [name: 'idx_Wallets_UserId']
+  }
+  Note: 'Ví điện tử của người dùng trên sàn'
+}
+
+Table WalletTransactions {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  WalletId uuid [not null]
+  Type WalletTransactionType [not null]
+  Amount numeric(18,2) [not null]
+  BalanceBefore numeric(18,2) [not null]
+  BalanceAfter numeric(18,2) [not null]
+  ReferenceId uuid [note: 'ID đơn hàng / giao dịch nạp rút liên quan']
+  Status TransactionStatus [not null, default: 'Pending']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    WalletId [name: 'idx_WalletTransactions_WalletId']
+    (WalletId, CreatedAt) [name: 'idx_WalletTransactions_Wallet_Created']
+    ReferenceId [name: 'idx_WalletTransactions_ReferenceId']
+  }
+  Note: 'Biến động số dư ví (Ledger)'
+}
+
+// ====================================================================================
+// 2. PHÂN HỆ NẠP TIỀN, RÚT TIỀN & CỔNG VNPAY (TOPUPS, WITHDRAWALS & VNPAY LOGS)
+// ====================================================================================
+
+Table WalletTopups {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  WalletId uuid [not null]
+  VnpTxnRef varchar(100) [unique, not null, note: 'Mã tham chiếu giao dịch gửi sang VNPay']
+  VnpTransactionNo varchar(100)
+  VnpBankCode varchar(50)
+  Amount numeric(18,2) [not null]
+  Status TopupStatus [not null, default: 'Pending']
+  RawResponse jsonb
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    WalletId [name: 'idx_WalletTopups_WalletId']
+    VnpTxnRef [name: 'idx_WalletTopups_VnpTxnRef']
+  }
+  Note: 'Lệnh nạp tiền vào ví qua cổng thanh toán'
+}
+
+Table WithdrawalRequests {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  WalletId uuid [not null]
+  Amount numeric(18,2) [not null]
+  Fee numeric(18,2) [not null, default: 0]
+  NetAmount numeric(18,2) [not null]
+  BankName varchar(100) [not null]
+  BankAccountNumber varchar(50) [not null]
+  BankAccountHolder varchar(150) [not null]
+  Status WithdrawalStatus [not null, default: 'Pending']
+  ProcessedBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  GatewayReferenceId varchar(100)
+  ProcessedAt timestamptz
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    WalletId [name: 'idx_WithdrawalRequests_WalletId']
+    Status [name: 'idx_WithdrawalRequests_Status']
+  }
+  Note: 'Yêu cầu rút tiền từ ví về tài khoản ngân hàng'
+}
+
+Table VnpayIpnLogs {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  VnpTxnRef varchar(100) [not null, note: 'Liên kết logic với WalletTopups.VnpTxnRef']
+  VnpResponseCode varchar(50)
+  VnpTransactionNo varchar(100)
+  ClientIp varchar(45)
+  RawPayload jsonb
+  ProcessingStatus IpnProcessingStatus [not null, default: 'Processed']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    VnpTxnRef [name: 'idx_VnpayIpnLogs_VnpTxnRef']
+    ProcessingStatus [name: 'idx_VnpayIpnLogs_Status']
+  }
+  Note: 'Nhật ký webhook IPN nhận từ cổng VNPay'
+}
+
+// ====================================================================================
+// 3. NHÓM NHẬT KÝ HỆ THỐNG (AUDIT LOGS)
+// ====================================================================================
+
+Table AuditLogs {
+  Id uuid [pk, note: 'Guid.CreateVersion7()']
+  ServiceName varchar(100) [not null, note: 'Tên Service phát sinh log']
+  TraceId varchar(100) [note: 'Mã TraceId từ Activity.Current?.TraceId']
+  UserId varchar(100) [note: 'ID người thao tác']
+  UserName varchar(150) [note: 'Tên/Email người thao tác tại thời điểm log']
+  Action AuditAction [not null, note: 'Loại hành động kiểm toán']
+  EntityName varchar(100) [not null, note: 'Tên bảng/Class bị tác động']
+  EntityId varchar(100) [not null, note: 'Khóa chính của bản ghi bị tác động']
+  OldValues jsonb [note: 'Chuỗi JSON chứa các cột trước khi sửa/xóa']
+  NewValues jsonb [note: 'Chuỗi JSON chứa các cột sau khi thêm/sửa']
+  ChangedColumns jsonb [note: 'Mảng JSON lưu nhanh tên các cột bị sửa']
+  IpAddress varchar(45) [note: 'Địa chỉ IPv4 hoặc IPv6']
+  UserAgent varchar(500) [note: 'Thiết bị/Trình duyệt của người dùng']
+  CreatedAt timestamptz [not null, default: `now()`, note: 'DateTime.UtcNow']
+  IsSynced boolean [not null, default: false, note: 'Worker gom đẩy về AuditService']
+}
+
+// ====================================================================================
+// QUAN HỆ KHÓA NGOẠI NỘI BỘ (INTERNAL RELATIONSHIPS)
+// ====================================================================================
+
+Ref: WalletTransactions.WalletId > Wallets.Id [delete: cascade]
+Ref: WalletTopups.WalletId > Wallets.Id [delete: cascade]
+Ref: WithdrawalRequests.WalletId > Wallets.Id [delete: cascade]
+Ref: VnpayIpnLogs.VnpTxnRef > WalletTopups.VnpTxnRef

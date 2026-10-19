@@ -1,0 +1,371 @@
+// ============================================================================
+// Project Nexus - Auction Service
+// Chuẩn hóa theo quy ước Microservices: PascalCase, PK là Id,
+// 4 trường vòng đời CreatedAt, UpdatedAt, DeletedAt, IsDeleted,
+// Xóa Inbox/Outbox (dùng MassTransit), Bổ sung bảng AuditLogs.
+// ============================================================================
+
+Project ProjectNexusAuctionService {
+  database_type: 'PostgreSQL'
+  Note: 'Auction Service Database Schema - Project Nexus'
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+Enum AuctionStatus {
+  Draft     [note: 'Mới tạo, chờ Fulfillment giữ kho']
+  Scheduled [note: 'Đã giữ kho, chờ bắt đầu']
+  Running   [note: 'Đang diễn ra, nhận đặt giá']
+  Ended     [note: 'Đã khóa phiên, chờ xử lý đơn']
+  Settled   [note: 'Hoàn tất, đã thanh toán & chấp nhận']
+  Failed    [note: 'Thất bại do không ai bid, quá hạn hoặc hủy']
+  Cancelled [note: 'Admin hủy phiên']
+}
+
+Enum SagaState {
+  OrderRequested  [note: 'Đã gửi kết quả sang Commerce, chờ tạo đơn']
+  AwaitingPayment [note: 'Đơn đã tạo, chờ người thắng thanh toán']
+  AwaitingSeller  [note: 'Đã thanh toán, chờ seller chấp nhận/từ chối']
+  Completed       [note: 'Hoàn tất, phiên sang Settled']
+  Failed          [note: 'Thất bại, phiên sang Failed']
+}
+
+Enum SagaType {
+  AuctionOrderSaga [note: 'Luồng đấu giá -> đơn hàng -> thanh toán']
+}
+
+Enum IdempotencyScope {
+  Bid        [note: 'Thao tác đặt giá']
+  Settlement [note: 'Thao tác chốt phiên']
+}
+
+Enum BidInvalidationReason {
+  BidderBanned [note: 'Người đặt giá bị khóa tài khoản']
+}
+
+Enum AuditAction {
+  AuctionCreate [note: 'Tạo phiên đấu giá']
+  AuctionUpdate [note: 'Cập nhật phiên đấu giá']
+  AuctionCancel [note: 'Hủy phiên đấu giá']
+  BidPlace      [note: 'Đặt giá']
+  BidInvalidate [note: 'Hủy lượt đặt giá']
+  AuctionSettle [note: 'Quyết toán phiên đấu giá']
+  ConfigUpdate  [note: 'Cập nhật cấu hình']
+}
+
+// ----------------------------------------------------------------------------
+// NHÓM 1: PHIÊN ĐẤU GIÁ (AUCTION CORE)
+// ----------------------------------------------------------------------------
+
+Table Auctions {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ProductId uuid [not null, note: 'Cross-service Ref -> CatalogService.Products.Id']
+  SkuId uuid [note: 'Cross-service Ref -> CatalogService.ProductVariants.Id']
+  SellerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  SnapshotProductTitle text [note: 'Product title copied at creation time']
+  RecreatedFromAuctionId uuid [note: 'Self-ref to the failed auction this one recreates']
+  StartPriceAmount numeric(18,2) [not null, note: 'VND']
+  BidStepAmount numeric(18,2) [not null, note: 'VND, fixed for the whole auction']
+  ScheduledStartAt timestamptz [not null]
+  OriginalEndAt timestamptz [not null, note: 'End time BEFORE any anti-sniping extension']
+  MinReputationToBid int [not null, note: 'Snapshot from AuctionConfigs at creation']
+  MinReputationToSell int [not null, note: 'Snapshot from AuctionConfigs at creation']
+  AntiSnipingExtensionMinutes int [not null, note: 'Snapshot from AuctionConfigs at creation']
+  MaxExtensionCount int [not null, note: 'Snapshot from AuctionConfigs at creation']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (SellerId, CreatedAt) [name: 'ix_Auctions_Seller_Created']
+    ProductId [name: 'ix_Auctions_ProductId']
+    RecreatedFromAuctionId [name: 'ix_Auctions_RecreatedFrom']
+  }
+
+  Note: 'Định nghĩa phiên đấu giá toàn sàn'
+}
+
+Table AuctionStates {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  AuctionId uuid [unique, not null, note: '1-1 với Auctions.Id']
+  Status AuctionStatus [not null, default: 'Draft']
+  CurrentPriceAmount numeric(18,2) [note: 'NULL = chưa có bid nào']
+  CurrentWinnerId uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  BidCount int [not null, default: 0]
+  ExtensionCount int [not null, default: 0]
+  ScheduledEndAt timestamptz [not null, note: 'Thời gian kết thúc hiện tại (đã gồm gia hạn)']
+  StartedAt timestamptz
+  EndedAt timestamptz
+  RowVersion bigint [not null, default: 0, note: 'Optimistic lock']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (Status, ScheduledEndAt) [name: 'ix_AuctionStates_Status_End']
+    CurrentWinnerId [name: 'ix_AuctionStates_Winner']
+  }
+
+  Note: 'Bảng nóng ghi nhận trạng thái realtime của phiên'
+}
+
+Table ProductOpenAuctions {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ProductId uuid [unique, not null, note: 'Cross-service Ref -> CatalogService.Products.Id']
+  AuctionId uuid [unique, not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  Note: 'Khóa sản phẩm chỉ thuộc 1 phiên đấu giá mở tại 1 thời điểm'
+}
+
+// ----------------------------------------------------------------------------
+// NHÓM 2: ĐẶT GIÁ (BIDDING)
+// ----------------------------------------------------------------------------
+
+Table Bids {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  AuctionId uuid [not null]
+  BidSeq int [not null, note: 'Thứ tự lượt đặt giá']
+  BidderId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  Amount numeric(18,2) [not null]
+  PlacedAt timestamptz [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (AuctionId, Amount) [unique, name: 'uq_Bids_Auction_Amount']
+    (AuctionId, BidSeq) [unique, name: 'uq_Bids_Auction_Seq']
+    (BidderId, PlacedAt) [name: 'ix_Bids_BidderId']
+  }
+
+  Note: 'Lưu trữ các lượt đặt giá hợp lệ'
+}
+
+Table BidInvalidations {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  BidId uuid [unique, not null, note: '1-1 với Bids.Id']
+  Reason BidInvalidationReason [not null]
+  InvalidatedAt timestamptz [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  Note: 'Hủy tư cách bid khi người dùng bị ban'
+}
+
+Table BidHistories {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  AuctionId uuid [not null]
+  BidId uuid [not null]
+  SequenceNo int [not null]
+  BidderId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  DisplayName text [note: 'Tên che mờ bảo vệ danh tính']
+  Amount numeric(18,2) [not null]
+  PlacedAt timestamptz [not null]
+  IsOutbid boolean [not null, default: false]
+  IsWinning boolean [not null, default: false]
+  IsInvalidated boolean [not null, default: false]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (AuctionId, SequenceNo) [unique, name: 'uq_BidHistories_Auction_Seq']
+    BidId [unique, name: 'uq_BidHistories_BidId']
+    BidderId [name: 'ix_BidHistories_BidderId']
+  }
+
+  Note: 'Read model phục vụ hiển thị lịch sử đấu giá'
+}
+
+Table AuctionExtensions {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  AuctionId uuid [not null]
+  TriggerBidId uuid
+  SequenceNo int [not null]
+  PreviousEndAt timestamptz [not null]
+  NewEndAt timestamptz [not null]
+  ExtendedAt timestamptz [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (AuctionId, SequenceNo) [unique, name: 'uq_AuctionExtensions_Auction_Seq']
+    TriggerBidId [name: 'ix_AuctionExtensions_TriggerBidId']
+  }
+
+  Note: 'Ghi nhận gia hạn chống bắn tỉa (anti-sniping)'
+}
+
+// ----------------------------------------------------------------------------
+// NHÓM 3: KẾT QUẢ, THANH TOÁN VÀ LỊCH SỬ
+// ----------------------------------------------------------------------------
+
+Table AuctionResults {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  AuctionId uuid [unique, not null]
+  WinningBidId uuid
+  WinnerId uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  FinalPriceAmount numeric(18,2)
+  DeterminedAt timestamptz [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    WinningBidId [name: 'ix_AuctionResults_WinningBidId']
+    WinnerId [name: 'ix_AuctionResults_WinnerId']
+  }
+
+  Note: 'Kết quả cuối cùng của phiên đấu giá'
+}
+
+Table AuctionSettlements {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  AuctionId uuid [unique, not null]
+  OrderId uuid [note: 'Cross-service Ref -> CommerceService.AuctionOrders.Id']
+  PaymentDeadlineAt timestamptz
+  PaidAt timestamptz
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    OrderId [name: 'ix_AuctionSettlements_OrderId']
+    PaymentDeadlineAt [name: 'ix_AuctionSettlements_Deadline']
+  }
+
+  Note: 'Liên kết tiến trình thanh toán đơn hàng trúng đấu giá'
+}
+
+Table AuctionStatusHistories {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  AuctionId uuid [not null]
+  FromStatus AuctionStatus
+  ToStatus AuctionStatus [not null]
+  Reason text [note: 'Lý do hủy/chuyển trạng thái']
+  ChangedBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  ChangedAt timestamptz [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (AuctionId, ChangedAt) [name: 'ix_AuctionStatusHistories_Auction']
+  }
+}
+
+// ----------------------------------------------------------------------------
+// NHÓM 4: CẤU HÌNH VÀ HẠ TẦNG SAGA
+// ----------------------------------------------------------------------------
+
+Table AuctionConfigs {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ConfigKey varchar(100) [not null]
+  ConfigValue jsonb [not null]
+  Description text
+  Version int [not null]
+  IsActive boolean [not null, default: true, note: 'Chỉ 1 phiên bản của mỗi key được active']
+  UpdatedBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (ConfigKey, Version) [unique, name: 'uq_AuctionConfigs_Key_Version']
+    UpdatedBy [name: 'ix_AuctionConfigs_UpdatedBy']
+  }
+
+  Note: 'Cấu hình tham số đấu giá theo phiên bản'
+}
+
+Table SagaStates {
+  Id uuid [pk, default: `gen_random_uuid()`, note: 'CorrelationId = AuctionId']
+  CurrentState SagaState [not null]
+  SagaType SagaType [not null, default: 'AuctionOrderSaga']
+  StateData jsonb [not null, default: '{}']
+  RowVersion bigint [not null, default: 0]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  Note: 'Trạng thái điều phối Saga S2'
+}
+
+Table IdempotencyKeys {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  Key varchar(255) [not null]
+  Scope IdempotencyScope [not null]
+  RequestHash varchar(255) [not null]
+  ResponseStatus int
+  ResponseBody jsonb
+  ExpiresAt timestamptz [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (Key, Scope) [unique, name: 'uq_IdempotencyKeys_Key_Scope']
+  }
+
+  Note: 'Chống trùng lặp yêu cầu đặt giá và thanh toán'
+}
+
+// ----------------------------------------------------------------------------
+// NHÓM 5: NHẬT KÝ HỆ THỐNG (AUDIT LOGS)
+// ----------------------------------------------------------------------------
+
+Table AuditLogs {
+  Id uuid [pk, note: 'Guid.CreateVersion7()']
+  ServiceName varchar(100) [not null, note: 'Tên Service phát sinh log']
+  TraceId varchar(100) [note: 'Mã TraceId từ Activity.Current?.TraceId']
+  UserId varchar(100) [note: 'ID người thao tác']
+  UserName varchar(150) [note: 'Tên/Email người thao tác tại thời điểm log']
+  Action AuditAction [not null, note: 'Loại hành động kiểm toán']
+  EntityName varchar(100) [not null, note: 'Tên bảng/Class bị tác động']
+  EntityId varchar(100) [not null, note: 'Khóa chính của bản ghi bị tác động']
+  OldValues jsonb [note: 'Chuỗi JSON chứa các cột trước khi sửa/xóa']
+  NewValues jsonb [note: 'Chuỗi JSON chứa các cột sau khi thêm/sửa']
+  ChangedColumns jsonb [note: 'Mảng JSON lưu nhanh tên các cột bị sửa']
+  IpAddress varchar(45) [note: 'Địa chỉ IPv4 hoặc IPv6']
+  UserAgent varchar(500) [note: 'Thiết bị/Trình duyệt của người dùng']
+  CreatedAt timestamptz [not null, default: `now()`, note: 'DateTime.UtcNow']
+  IsSynced boolean [not null, default: false, note: 'Worker gom đẩy về AuditService']
+}
+
+// ----------------------------------------------------------------------------
+// QUAN HỆ KHÓA NGOẠI NỘI BỘ (INTERNAL RELATIONSHIPS)
+// ----------------------------------------------------------------------------
+
+Ref: Auctions.RecreatedFromAuctionId > Auctions.Id [delete: restrict]
+Ref: AuctionStates.AuctionId - Auctions.Id [delete: restrict]
+Ref: ProductOpenAuctions.AuctionId - Auctions.Id [delete: restrict]
+Ref: AuctionResults.AuctionId - Auctions.Id [delete: restrict]
+Ref: AuctionSettlements.AuctionId - Auctions.Id [delete: restrict]
+Ref: Bids.AuctionId > Auctions.Id [delete: restrict]
+Ref: BidInvalidations.BidId - Bids.Id [delete: restrict]
+Ref: BidHistories.AuctionId > Auctions.Id [delete: restrict]
+Ref: BidHistories.BidId - Bids.Id [delete: restrict]
+Ref: AuctionExtensions.AuctionId > Auctions.Id [delete: restrict]
+Ref: AuctionExtensions.TriggerBidId > Bids.Id [delete: restrict]
+Ref: AuctionResults.WinningBidId > Bids.Id [delete: restrict]
+Ref: AuctionStatusHistories.AuctionId > Auctions.Id [delete: restrict]

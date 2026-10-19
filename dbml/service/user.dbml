@@ -1,0 +1,369 @@
+Project ProjectNexusUserService {
+  database_type: 'PostgreSQL'
+  Note: 'PROJECT NEXUS - USER SERVICE DATABASE SCHEMA'
+}
+
+// ====================================================================================
+// ENUMS
+// ====================================================================================
+
+Enum UserStatus {
+  PendingVerification [note: 'Người dùng mới đăng ký, chờ kích hoạt OTP']
+  Active              [note: 'Đang hoạt động bình thường']
+  Banned              [note: 'Bị khóa tài khoản do vi phạm']
+  Deleted             [note: 'Đã xóa tài khoản (áp dụng cơ chế xóa mềm)']
+}
+
+Enum RoleType {
+  Buyer        [note: 'Khách mua hàng & tham gia đấu giá']
+  Seller       [note: 'Người bán hàng & mở phiên đấu giá']
+  SupportStaff [note: 'Nhân viên hỗ trợ']
+  Admin        [note: 'Quản trị viên tối cao sàn']
+}
+
+Enum Gender {
+  Unspecified [note: 'Chưa xác định / Không tiết lộ']
+  Male        [note: 'Nam']
+  Female      [note: 'Nữ']
+  Other       [note: 'Khác']
+}
+
+Enum SellerProfileStatus {
+  Pending  [note: 'Chờ Support Staff thẩm định và duyệt']
+  Approved [note: 'Đã duyệt cấp quyền Seller']
+  Rejected [note: 'Bị từ chối']
+}
+
+Enum TrustLevel {
+  Untrusted [note: '0-39: Bị khóa toàn bộ đấu giá']
+  Probation [note: '40-49: Cảnh báo, chỉ được bid']
+  Standard  [note: '50-69: Tiêu chuẩn, khởi tạo mặc định']
+  Good      [note: '70-89: Tốt, mở tối đa 5 phiên']
+  Excellent [note: '90-100: Xuất sắc, đối tác vàng']
+}
+
+Enum ReferenceType {
+  Order   [note: 'Đơn hàng mua sắm']
+  Auction [note: 'Phiên đấu giá']
+  Dispute [note: 'Tranh chấp / Khiếu nại']
+  System  [note: 'Can thiệp từ hệ thống hoặc Admin']
+}
+
+Enum ReputationChangeReason {
+  PositiveReview        [note: 'Đánh giá tốt 4-5 sao (+1)']
+  NegativeReview        [note: 'Đánh giá xấu 1-2 sao (-1 hoặc -2)']
+  OrderCompleted        [note: 'Hoàn thành đơn hàng thành công (+1)']
+  AuctionPaymentTimeout [note: 'Thắng đấu giá nhưng quá hạn trả tiền (-10)']
+  DisputeCompensation   [note: 'Đền bù điểm sau khi giải quyết tranh chấp']
+  ManualAdjustment      [note: 'Admin can thiệp điều chỉnh thủ công']
+  ViolationPenalty      [note: 'Phạt trừ điểm do gian lận hoặc vi phạm']
+}
+
+Enum ReviewerRole {
+  Buyer  [note: 'Người mua gửi đánh giá người bán']
+  Seller [note: 'Người bán gửi đánh giá người mua']
+}
+
+Enum ConfigDataType {
+  String  [note: 'Chuỗi ký tự']
+  Int     [note: 'Số nguyên']
+  Decimal [note: 'Số thập phân']
+  Boolean [note: 'Đúng/Sai']
+  Json    [note: 'Chuỗi JSON']
+}
+
+Enum AuditAction {
+  UserUpdate         [note: 'Cập nhật thông tin tài khoản']
+  UserBan            [note: 'Khóa tài khoản']
+  UserUnban          [note: 'Mở khóa tài khoản']
+  SellerApprove      [note: 'Phê duyệt hồ sơ mở shop']
+  SellerReject       [note: 'Từ chối hồ sơ mở shop']
+  RoleAssign         [note: 'Gán vai trò quyền hạn']
+  SoftDelete         [note: 'Xóa mềm bản ghi dữ liệu']
+  ReputationAdjust   [note: 'Điều chỉnh điểm uy tín thủ công']
+  PasswordReset      [note: 'Đặt lại mật khẩu']
+  SystemConfigUpdate [note: 'Thay đổi tham số cấu hình sàn']
+}
+
+// ====================================================================================
+// PHÂN HỆ 1: NGƯỜI DÙNG & TÀI KHOẢN CỐT LÕI (CORE USERS)
+// ====================================================================================
+
+Table Users {
+  Id uuid [pk, default: `uuid_generate_v4()`]
+  Email varchar(255) [unique, not null]
+  PasswordHash varchar(255) [not null]
+  FirstName varchar(100) [not null]
+  LastName varchar(100) [not null]
+  PhoneNumber varchar(20)
+  IdentifyNumber varchar(50)
+  Gender Gender [default: 'Unspecified']
+  DateOfBirth date
+  Address text
+  Status UserStatus [not null, default: 'Active']
+  EmailVerifiedAt timestamptz
+  BannedAt timestamptz
+  BannedBy uuid
+  BanReason varchar(500)
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    Email [name: 'idx_Users_Email']
+    (Status, IsDeleted) [name: 'idx_Users_Status_Deleted']
+    (FirstName, LastName) [name: 'idx_Users_Name']
+  }
+  Note: 'Định danh người dùng toàn sàn'
+}
+
+Table RefreshTokens {
+  Id uuid [pk, default: `uuid_generate_v4()`]
+  UserId uuid [not null]
+  TokenHash varchar(255) [unique, not null]
+  DeviceInfo varchar(255)
+  IpAddress varchar(45)
+  IsDisabled boolean [not null, default: false, note: 'Thu hồi token / vô hiệu hóa phiên']
+  ExpiresAt timestamptz [not null]
+  RevokedAt timestamptz
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    UserId [name: 'idx_RefreshTokens_UserId']
+    TokenHash [name: 'idx_RefreshTokens_TokenHash']
+    (UserId, IsDisabled, ExpiresAt) [name: 'idx_RefreshTokens_Active']
+  }
+  Note: 'Quản lý phiên đa thiết bị'
+}
+
+// ====================================================================================
+// PHÂN HỆ 2: PHÂN QUYỀN ĐỘNG DYNAMIC RBAC (ROLES & PERMISSIONS)
+// ====================================================================================
+
+Table Roles {
+  Id int [pk, increment]
+  RoleCode RoleType [unique, not null]
+  RoleName varchar(100) [not null]
+  Description text
+  IsActive boolean [not null, default: false, note: 'Chỉ 1 role mặc định được active cho người dùng mới']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  Note: 'Vai trò người dùng'
+}
+
+Table UserRoles {
+  Id uuid [pk, default: `uuid_generate_v4()`]
+  UserId uuid [not null]
+  RoleId int [not null]
+  AssignedAt timestamptz [not null, default: `now()`]
+  AssignedBy uuid
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (UserId, RoleId) [unique, name: 'uq_UserRoles_User_Role']
+    UserId [name: 'idx_UserRoles_UserId']
+    RoleId [name: 'idx_UserRoles_RoleId']
+  }
+  Note: 'Quan hệ N-N: Một user có thể vừa là Buyer vừa là Seller'
+}
+
+Table Permissions {
+  Id int [pk, increment]
+  PermissionCode varchar(100) [unique, not null]
+  PermissionName varchar(150) [not null]
+  Category varchar(50) [not null]
+  Description text
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    PermissionCode [name: 'idx_Permissions_Code']
+    Category [name: 'idx_Permissions_Category']
+  }
+  Note: 'Danh mục 60+ đặc quyền toàn hệ thống'
+}
+
+Table RolePermissions {
+  Id uuid [pk, default: `uuid_generate_v4()`]
+  RoleId int [not null]
+  PermissionId int [not null]
+  AssignedAt timestamptz [not null, default: `now()`]
+  AssignedBy uuid
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (RoleId, PermissionId) [unique, name: 'uq_RolePermissions_Role_Perm']
+    RoleId [name: 'idx_RolePermissions_Role']
+    PermissionId [name: 'idx_RolePermissions_Perm']
+  }
+  Note: 'Ma trận phân quyền động Role-Permission'
+}
+
+// ====================================================================================
+// PHÂN HỆ 3: HỒ SƠ GIAN HÀNG & KHO HÀNG GHN (SELLER PROFILES)
+// ====================================================================================
+
+Table SellerProfiles {
+  Id uuid [pk, default: `uuid_generate_v4()`]
+  UserId uuid [unique, not null]
+  ShopName varchar(100) [unique, not null]
+  PickupAddress varchar(255) [not null]
+  ProvinceId int [not null]
+  DistrictId int [not null]
+  WardCode varchar(50) [not null]
+  Hotline varchar(20) [not null]
+  Status SellerProfileStatus [not null, default: 'Pending']
+  RejectionReason text
+  ReviewedBy uuid
+  ReviewedAt timestamptz
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    Status [name: 'idx_SellerProfiles_Status']
+  }
+  Note: 'Đã lược bỏ thông tin ngân hàng sang Wallet Service'
+}
+
+// ====================================================================================
+// PHÂN HỆ 4: HỆ THỐNG ĐIỂM UY TÍN & ĐÁNH GIÁ (REPUTATION & REVIEWS)
+// ====================================================================================
+
+Table ReputationScores {
+  Id uuid [pk, default: `uuid_generate_v4()`]
+  UserId uuid [unique, not null]
+  CurrentScore int [not null, default: 50]
+  TrustLevel TrustLevel [not null, default: 'Standard']
+  TotalPositiveReviews int [not null, default: 0]
+  TotalNegativeReviews int [not null, default: 0]
+  PenaltyCount int [not null, default: 0]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  Note: 'Điểm uy tín tổng hợp - Mặc định 50 điểm'
+}
+
+Table ReputationLogs {
+  Id int [pk, increment]
+  UserId uuid [not null]
+  ChangeAmount int [not null]
+  Reason ReputationChangeReason [not null]
+  ReferenceType ReferenceType
+  ReferenceId varchar(100)
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (UserId, ReferenceType, ReferenceId, Reason) [unique, name: 'uq_ReputationLogs_Ref']
+    UserId [name: 'idx_ReputationLogs_UserId']
+    (ReferenceType, ReferenceId) [name: 'idx_ReputationLogs_Ref']
+  }
+  Note: 'Nhật ký biến động điểm số uy tín'
+}
+
+Table UserReviews {
+  Id uuid [pk, default: `uuid_generate_v4()`]
+  ReviewerId uuid [not null]
+  RevieweeId uuid [not null]
+  ReviewerRole ReviewerRole [not null, default: 'Buyer']
+  ReferenceType ReferenceType [not null]
+  ReferenceId varchar(100) [not null]
+  Rating int [not null, note: 'CHECK (Rating BETWEEN 1 AND 5)']
+  Comment text
+  IsDisputed boolean [not null, default: false]
+  IsDisabled boolean [not null, default: false, note: 'Tạm ẩn đánh giá']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (ReviewerId, ReferenceType, ReferenceId) [unique, name: 'uq_UserReviews_Transaction']
+    ReviewerId [name: 'idx_UserReviews_Reviewer']
+    RevieweeId [name: 'idx_UserReviews_Reviewee']
+    (ReferenceType, ReferenceId) [name: 'idx_UserReviews_Reference']
+  }
+  Note: 'Đánh giá con người 2 chiều Buyer <-> Seller theo đơn hàng'
+}
+
+// ====================================================================================
+// PHÂN HỆ 5: CẤU HÌNH HỆ THỐNG TOÀN SÀN (SYSTEM CONFIGS)
+// ====================================================================================
+
+Table SystemConfigs {
+  Id uuid [pk, default: `uuid_generate_v4()`]
+  ConfigKey varchar(100) [unique, not null]
+  ConfigValue varchar(255) [not null]
+  DataType ConfigDataType [not null, default: 'String']
+  Description text
+  UpdatedBy uuid
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ConfigKey [name: 'idx_SystemConfigs_Key']
+  }
+  Note: 'Tham số động toàn sàn'
+}
+
+// ====================================================================================
+// PHÂN HỆ 6: NHẬT KÝ HỆ THỐNG (AUDIT LOGS)
+// ====================================================================================
+
+Table AuditLogs {
+  Id uuid [pk, note: 'Guid.CreateVersion7()']
+  ServiceName varchar(100) [not null, note: 'Tên Service phát sinh log']
+  TraceId varchar(100) [note: 'Mã TraceId từ Activity.Current?.TraceId']
+  UserId varchar(100) [note: 'ID người thao tác']
+  UserName varchar(150) [note: 'Tên/Email người thao tác tại thời điểm log']
+  Action AuditAction [not null, note: 'Loại hành động kiểm toán']
+  EntityName varchar(100) [not null, note: 'Tên bảng/Class bị tác động']
+  EntityId varchar(100) [not null, note: 'Khóa chính của bản ghi bị tác động']
+  OldValues jsonb [note: 'Chuỗi JSON chứa các cột trước khi sửa/xóa']
+  NewValues jsonb [note: 'Chuỗi JSON chứa các cột sau khi thêm/sửa']
+  ChangedColumns jsonb [note: 'Mảng JSON lưu nhanh tên các cột bị sửa']
+  IpAddress varchar(45) [note: 'Địa chỉ IPv4 hoặc IPv6']
+  UserAgent varchar(500) [note: 'Thiết bị/Trình duyệt của người dùng']
+  CreatedAt timestamptz [not null, default: `now()`, note: 'DateTime.UtcNow']
+  IsSynced boolean [not null, default: false, note: 'Worker gom đẩy về AuditService']
+}
+
+// ====================================================================================
+// QUAN HỆ KHÓA NGOẠI NỘI BỘ (INTERNAL RELATIONSHIPS)
+// ====================================================================================
+
+Ref: Users.BannedBy > Users.Id
+Ref: RefreshTokens.UserId > Users.Id [delete: cascade]
+Ref: UserRoles.UserId > Users.Id [delete: cascade]
+Ref: UserRoles.RoleId > Roles.Id [delete: cascade]
+Ref: RolePermissions.RoleId > Roles.Id [delete: cascade]
+Ref: RolePermissions.PermissionId > Permissions.Id [delete: cascade]
+Ref: SellerProfiles.UserId - Users.Id [delete: cascade]
+Ref: ReputationScores.UserId - Users.Id [delete: cascade]
+Ref: ReputationLogs.UserId > Users.Id [delete: cascade]
+Ref: UserReviews.ReviewerId > Users.Id [delete: cascade]
+Ref: UserReviews.RevieweeId > Users.Id [delete: cascade]
+Ref: SystemConfigs.UpdatedBy > Users.Id

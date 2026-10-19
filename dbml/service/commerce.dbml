@@ -1,0 +1,394 @@
+// ====================================================================================
+// Project Nexus - Order & Cart (Commerce) Service
+// Chuẩn hóa theo quy ước Microservices: PascalCase, PK là Id,
+// 4 trường vòng đời CreatedAt, UpdatedAt, DeletedAt, IsDeleted,
+// Bổ sung bảng AuditLogs.
+// ====================================================================================
+
+Project ProjectNexusOrderService {
+  database_type: 'PostgreSQL'
+  Note: 'PROJECT NEXUS - ORDER & CART SERVICE DATABASE SCHEMA'
+}
+
+// ====================================================================================
+// ENUMS
+// ====================================================================================
+
+Enum CartStatus {
+  Active    [note: 'Giỏ hàng đang hoạt động']
+  Abandoned [note: 'Giỏ hàng bị bỏ quên']
+  Converted [note: 'Đã chuyển thành đơn hàng']
+}
+
+Enum CheckoutGroupStatus {
+  PendingPayment [note: 'Chờ thanh toán']
+  Paid           [note: 'Đã thanh toán']
+  Failed         [note: 'Thanh toán thất bại']
+  Expired        [note: 'Hết hạn thanh toán']
+  Cancelled      [note: 'Đã hủy phiên']
+}
+
+Enum DiscountScopeType {
+  Global   [note: 'Toàn sàn']
+  Shop     [note: 'Từng shop']
+  Category [note: 'Theo danh mục']
+  Product  [note: 'Theo sản phẩm']
+}
+
+Enum DiscountType {
+  Percentage  [note: 'Giảm theo %']
+  FixedAmount [note: 'Giảm số tiền cố định']
+}
+
+Enum DiscountStatus {
+  Draft   [note: 'Bản nháp']
+  Active  [note: 'Đang kích hoạt']
+  Expired [note: 'Hết hạn']
+}
+
+Enum DiscountScopeRefType {
+  Category [note: 'Danh mục']
+  Product  [note: 'Sản phẩm']
+  Shop     [note: 'Shop người bán']
+}
+
+Enum DiscountUsageStatus {
+  Reserved [note: 'Đang giữ chỗ']
+  Used     [note: 'Đã áp dụng thành công']
+  Released [note: 'Đã giải phóng']
+  Expired  [note: 'Giữ chỗ hết hạn']
+}
+
+Enum OrderStatus {
+  PendingPayment [note: 'Chờ thanh toán']
+  Paid           [note: 'Đã thanh toán']
+  SellerAccepted [note: 'Người bán đã nhận đơn']
+  Shipped        [note: 'Đang giao hàng']
+  Delivered      [note: 'Đã giao hàng']
+  Completed      [note: 'Đã hoàn thành']
+  Cancelled      [note: 'Đã hủy đơn']
+}
+
+Enum OrderActorRole {
+  Buyer  [note: 'Người mua']
+  Seller [note: 'Người bán']
+  Admin  [note: 'Quản trị viên']
+  System [note: 'Hệ thống tự động']
+}
+
+Enum InvoiceStatus {
+  Generated [note: 'Đã tạo hóa đơn']
+  Paid      [note: 'Đã thanh toán']
+  Cancelled [note: 'Đã hủy']
+  Refunded  [note: 'Đã hoàn tiền']
+}
+
+Enum CancellationReasonCode {
+  BuyerChangedMind [note: 'Người mua đổi ý']
+  OutOfStock       [note: 'Hết hàng']
+  PaymentTimeout   [note: 'Quá hạn thanh toán']
+  SellerRejected   [note: 'Người bán từ chối']
+  Other            [note: 'Lý do khác']
+}
+
+Enum AuditAction {
+  CartCheckout    [note: 'Thanh toán giỏ hàng']
+  OrderCreate     [note: 'Tạo đơn hàng']
+  OrderPay        [note: 'Thanh toán đơn hàng']
+  OrderAccept     [note: 'Xác nhận đơn hàng']
+  OrderCancel     [note: 'Hủy đơn hàng']
+  DiscountCreate  [note: 'Tạo mã giảm giá']
+  DiscountUpdate  [note: 'Cập nhật mã giảm giá']
+  InvoiceGenerate [note: 'Tạo hóa đơn']
+}
+
+// ====================================================================================
+// 1. NHÓM GIỎ HÀNG & THANH TOÁN (CARTS & CHECKOUT)
+// ====================================================================================
+
+Table Carts {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  BuyerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  Status CartStatus [not null, default: 'Active']
+  ItemCount int [not null, default: 0]
+  SubtotalAmount numeric(18,2) [not null, default: 0]
+  LastActivityAt timestamptz [not null, default: `now()`]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table CartItems {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  CartId uuid [not null]
+  ProductId uuid [not null, note: 'Cross-service Ref -> CatalogService.Products.Id']
+  SkuId uuid [note: 'Cross-service Ref -> CatalogService.ProductVariants.Id']
+  SellerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  Quantity int [not null]
+  UnitPriceSnapshot numeric(18,2) [not null]
+  ProductNameSnapshot text [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table CheckoutGroups {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  CartId uuid
+  BuyerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  Status CheckoutGroupStatus [not null, default: 'PendingPayment']
+  TotalAmount numeric(18,2) [not null]
+  PaymentDeadlineAt timestamptz [not null]
+  RowVersion bigint [not null, default: 0]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+// ====================================================================================
+// 2. NHÓM MÃ GIẢM GIÁ (DISCOUNT CODES)
+// ====================================================================================
+
+Table DiscountCodes {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  Code varchar(100) [unique, not null]
+  Name varchar(255) [not null]
+  ScopeType DiscountScopeType [not null]
+  OwnerSellerId uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  DiscountType DiscountType [not null]
+  DiscountValue numeric(18,2) [not null]
+  MaxDiscountAmount numeric(18,2)
+  MinOrderAmount numeric(18,2) [not null, default: 0]
+  MaxUsesTotal int
+  MaxUsesPerUser int
+  UsedCount int [not null, default: 0]
+  ReservedCount int [not null, default: 0]
+  IsDisabled boolean [not null, default: false, note: 'Tạm ẩn mã giảm giá khỏi danh sách hiển thị']
+  Status DiscountStatus [not null, default: 'Draft']
+  StartsAt timestamptz
+  EndsAt timestamptz
+  CreatedBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table DiscountCodeScopes {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  DiscountCodeId uuid [not null]
+  ScopeRefType DiscountScopeRefType [not null]
+  ScopeRefId uuid [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table DiscountCodeUsages {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  DiscountCodeId uuid [not null]
+  UserId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  OrderId uuid
+  CheckoutGroupId uuid
+  Status DiscountUsageStatus [not null, default: 'Reserved']
+  DiscountAmount numeric(18,2) [not null, default: 0]
+  ReservedAt timestamptz [not null, default: `now()`]
+  UsedAt timestamptz
+  ReleasedAt timestamptz
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+// ====================================================================================
+// 3. NHÓM ĐƠN HÀNG THƯƠNG MẠI & ĐẤU GIÁ (ORDERS & AUCTION ORDERS)
+// ====================================================================================
+
+Table Orders {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  OrderNo varchar(100) [unique, not null]
+  BuyerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  SellerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  CheckoutGroupId uuid [not null]
+  Status OrderStatus [not null, default: 'PendingPayment']
+  ShippingAddress jsonb [not null]
+  ContactPhone varchar(20) [not null]
+  ItemsAmount numeric(18,2) [not null, default: 0]
+  ProductDiscountAmount numeric(18,2) [not null, default: 0]
+  ShopDiscountAmount numeric(18,2) [not null, default: 0]
+  PlatformMarkupAmount numeric(18,2) [not null, default: 0]
+  SystemDiscountAmount numeric(18,2) [not null, default: 0]
+  ShippingFeeAmount numeric(18,2) [not null, default: 0]
+  TotalAmount numeric(18,2) [not null, default: 0]
+  SellerReceiveAmount numeric(18,2) [not null, default: 0]
+  PlatformFeeAmount numeric(18,2) [not null, default: 0]
+  PaymentDeadlineAt timestamptz [not null]
+  SellerRespondDeadlineAt timestamptz
+  PaidAt timestamptz
+  SellerAcceptedAt timestamptz
+  ShippedAt timestamptz
+  DeliveredAt timestamptz
+  CompletedAt timestamptz
+  CancelledAt timestamptz
+  RowVersion bigint [not null, default: 0]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table OrderItems {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  OrderId uuid [not null]
+  ProductId uuid [not null, note: 'Cross-service Ref -> CatalogService.Products.Id']
+  SkuId uuid [not null, note: 'Cross-service Ref -> CatalogService.ProductVariants.Id']
+  SellerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  ProductNameSnapshot text [not null]
+  SkuCodeSnapshot varchar(100)
+  SkuAttributesSnapshot jsonb [not null, default: `{}`]
+  ImageUrlSnapshot text
+  Quantity int [not null]
+  UnitPrice numeric(18,2) [not null]
+  UnitPriceAfterDiscount numeric(18,2) [not null]
+  LineTotal numeric(18,2) [not null]
+  DiscountCodeId uuid
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table AuctionOrders {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  OrderNo varchar(100) [unique, not null]
+  AuctionId uuid [unique, not null, note: 'Cross-service Ref -> AuctionService.Auctions.Id']
+  BuyerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  SellerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  WinningBidId uuid [not null, note: 'Cross-service Ref -> AuctionService.Bids.Id']
+  ProductId uuid [not null, note: 'Cross-service Ref -> CatalogService.Products.Id']
+  SkuId uuid [note: 'Cross-service Ref -> CatalogService.ProductVariants.Id']
+  ProductNameSnapshot text [not null]
+  WinningAmount numeric(18,2) [not null]
+  ShippingAddress jsonb
+  ContactPhone varchar(20)
+  ShippingFeeAmount numeric(18,2)
+  TotalAmount numeric(18,2)
+  SellerReceiveAmount numeric(18,2) [not null]
+  PlatformFeeAmount numeric(18,2) [not null]
+  Status OrderStatus [not null, default: 'PendingPayment']
+  PaymentDeadlineAt timestamptz [not null]
+  SellerRespondDeadlineAt timestamptz
+  PaidAt timestamptz
+  SellerAcceptedAt timestamptz
+  ShippedAt timestamptz
+  DeliveredAt timestamptz
+  CompletedAt timestamptz
+  CancelledAt timestamptz
+  RowVersion bigint [not null, default: 0]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+// ====================================================================================
+// 4. NHÓM LỊCH SỬ, HÓA ĐƠN & HỦY ĐƠN (HISTORY, INVOICES & CANCELLATIONS)
+// ====================================================================================
+
+Table OrderStatusHistories {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  OrderId uuid
+  AuctionOrderId uuid
+  FromStatus OrderStatus
+  ToStatus OrderStatus [not null]
+  ChangedBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  ActorRole OrderActorRole [not null, default: 'System']
+  Reason text
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table OrderInvoices {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  InvoiceNo varchar(100) [unique, not null]
+  OrderId uuid
+  AuctionOrderId uuid
+  TotalAmount numeric(18,2) [not null]
+  FileUrl text
+  Status InvoiceStatus [not null, default: 'Generated']
+  IssuedAt timestamptz [not null, default: `now()`]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table OrderCancellations {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  OrderId uuid
+  AuctionOrderId uuid
+  CancelledBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
+  ActorRole OrderActorRole [not null]
+  ReasonCode CancellationReasonCode [not null]
+  ReasonNote text
+  WasPaid boolean [not null, default: false]
+  InventoryReleased boolean [not null, default: false]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+// ====================================================================================
+// 5. NHÓM NHẬT KÝ HỆ THỐNG (AUDIT LOGS)
+// ====================================================================================
+
+Table AuditLogs {
+  Id uuid [pk, note: 'Guid.CreateVersion7()']
+  ServiceName varchar(100) [not null, note: 'Tên Service phát sinh log']
+  TraceId varchar(100) [note: 'Mã TraceId từ Activity.Current?.TraceId']
+  UserId varchar(100) [note: 'ID người thao tác']
+  UserName varchar(150) [note: 'Tên/Email người thao tác tại thời điểm log']
+  Action AuditAction [not null, note: 'Loại hành động kiểm toán']
+  EntityName varchar(100) [not null, note: 'Tên bảng/Class bị tác động']
+  EntityId varchar(100) [not null, note: 'Khóa chính của bản ghi bị tác động']
+  OldValues jsonb [note: 'Chuỗi JSON chứa các cột trước khi sửa/xóa']
+  NewValues jsonb [note: 'Chuỗi JSON chứa các cột sau khi thêm/sửa']
+  ChangedColumns jsonb [note: 'Mảng JSON lưu nhanh tên các cột bị sửa']
+  IpAddress varchar(45) [note: 'Địa chỉ IPv4 hoặc IPv6']
+  UserAgent varchar(500) [note: 'Thiết bị/Trình duyệt của người dùng']
+  CreatedAt timestamptz [not null, default: `now()`, note: 'DateTime.UtcNow']
+  IsSynced boolean [not null, default: false, note: 'Worker gom đẩy về AuditService']
+}
+
+// ====================================================================================
+// QUAN HỆ KHÓA NGOẠI NỘI BỘ (INTERNAL RELATIONSHIPS)
+// ====================================================================================
+
+Ref: CartItems.CartId > Carts.Id [delete: cascade]
+Ref: CheckoutGroups.CartId > Carts.Id
+Ref: Orders.CheckoutGroupId > CheckoutGroups.Id
+
+Ref: DiscountCodeScopes.DiscountCodeId > DiscountCodes.Id [delete: cascade]
+Ref: DiscountCodeUsages.DiscountCodeId > DiscountCodes.Id [delete: cascade]
+Ref: DiscountCodeUsages.OrderId > Orders.Id
+Ref: DiscountCodeUsages.CheckoutGroupId > CheckoutGroups.Id
+
+Ref: OrderItems.OrderId > Orders.Id [delete: cascade]
+Ref: OrderItems.DiscountCodeId > DiscountCodes.Id
+
+Ref: OrderStatusHistories.OrderId > Orders.Id [delete: cascade]
+Ref: OrderStatusHistories.AuctionOrderId > AuctionOrders.Id [delete: cascade]
+
+Ref: OrderInvoices.OrderId - Orders.Id
+Ref: OrderInvoices.AuctionOrderId - AuctionOrders.Id
+
+Ref: OrderCancellations.OrderId - Orders.Id
+Ref: OrderCancellations.AuctionOrderId - AuctionOrders.Id

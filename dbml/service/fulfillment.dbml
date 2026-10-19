@@ -1,0 +1,299 @@
+// ====================================================================================
+// Project Nexus - Inventory & Shipping (Fulfillment) Service
+// Chuẩn hóa theo quy ước Microservices: PascalCase, PK là Id uuid,
+// Chuẩn hóa kiểu dữ liệu liên service (SkuId, OrderId thành uuid thay vì bigint),
+// 4 trường vòng đời CreatedAt, UpdatedAt, DeletedAt, IsDeleted,
+// Bổ sung bảng AuditLogs.
+// ====================================================================================
+
+Project ProjectNexusInventoryShippingService {
+  database_type: 'PostgreSQL'
+  Note: 'PROJECT NEXUS - INVENTORY & SHIPPING SERVICE DATABASE SCHEMA'
+}
+
+// ====================================================================================
+// ENUMS
+// ====================================================================================
+
+Enum WarehouseType {
+  SellerWarehouse   [note: 'Kho của người bán']
+  PlatformWarehouse [note: 'Kho trung tâm sàn']
+  Consignment       [note: 'Kho ký gửi đấu giá']
+}
+
+Enum InventoryReservationStatus {
+  Pending   [note: 'Đang giữ chỗ']
+  Confirmed [note: 'Đã xác nhận trừ kho']
+  Released  [note: 'Đã giải phóng']
+  Expired   [note: 'Hết hạn giữ chỗ']
+}
+
+Enum InventoryReservationReferenceType {
+  Order           [note: 'Đơn hàng']
+  AuctionCheckout [note: 'Phiên đấu giá']
+  Manual          [note: 'Thủ công']
+}
+
+Enum InventoryMovementType {
+  Inbound    [note: 'Nhập kho']
+  Outbound   [note: 'Xuất kho']
+  Reserve    [note: 'Giữ chỗ']
+  Release    [note: 'Giải phóng giữ chỗ']
+  Adjustment [note: 'Kiểm kê điều chỉnh']
+  Return     [note: 'Nhập lại do trả hàng']
+}
+
+Enum InventoryLedgerReferenceType {
+  Order       [note: 'Đơn hàng']
+  Reservation [note: 'Lệnh giữ chỗ']
+  Audit       [note: 'Kiểm kê']
+  StockIn     [note: 'Phiếu nhập kho']
+}
+
+Enum ShippingServiceType {
+  Standard [note: 'Giao tiêu chuẩn']
+  Express  [note: 'Giao hỏa tốc']
+  SameDay  [note: 'Giao trong ngày']
+}
+
+Enum ShipmentStatus {
+  ReadyToPick    [note: 'Chờ nhặt hàng']
+  Picking        [note: 'Đang nhặt hàng']
+  Packed         [note: 'Đã đóng gói']
+  HandedOver     [note: 'Đã bàn giao vận chuyển']
+  InTransit      [note: 'Đang vận chuyển']
+  Delivered      [note: 'Giao thành công']
+  DeliveryFailed [note: 'Giao thất bại']
+  Returned       [note: 'Đã hoàn về']
+  Cancelled      [note: 'Đã hủy']
+}
+
+Enum ShipmentEventStatus {
+  Created        [note: 'Tạo kiện hàng']
+  PickedUp       [note: 'Đã lấy hàng']
+  InTransit      [note: 'Đang trung chuyển']
+  OutForDelivery [note: 'Đang đi giao']
+  Delivered      [note: 'Giao thành công']
+  DeliveryFailed [note: 'Giao thất bại']
+  Returned       [note: 'Đã hoàn kho']
+}
+
+Enum AuditAction {
+  WarehouseCreate    [note: 'Tạo kho mới']
+  WarehouseUpdate    [note: 'Cập nhật thông tin kho']
+  InventoryAdjust    [note: 'Điều chỉnh tồn kho']
+  StockIn            [note: 'Nhập kho']
+  ReservationCreate  [note: 'Tạo giữ chỗ tồn kho']
+  ReservationConfirm [note: 'Xác nhận trừ kho']
+  ReservationRelease [note: 'Giải phóng giữ chỗ']
+  ShipmentCreate     [note: 'Tạo đơn vận chuyển']
+  ShipmentDispatch   [note: 'Bàn giao vận chuyển']
+  ShipmentDeliver    [note: 'Giao hàng thành công']
+}
+
+// ====================================================================================
+// 1. PHÂN HỆ KHO BÃI & TỒN KHO (WAREHOUSES & INVENTORY)
+// ====================================================================================
+
+Table Warehouses {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  Code varchar(50) [unique, not null]
+  Name varchar(255) [not null]
+  Type WarehouseType [default: 'PlatformWarehouse']
+  Address text
+  IsDisabled boolean [not null, default: false, note: 'Tạm ẩn/vô hiệu hóa kho']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table InventoryItems {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  SkuId uuid [not null, note: 'Cross-service Ref -> CatalogService.ProductVariants.Id']
+  WarehouseId uuid [not null]
+  TotalQuantity int [not null, default: 0]
+  ReservedQuantity int [not null, default: 0]
+  UnavailableQuantity int [not null, default: 0]
+  AvailableQuantity int [not null, default: 0]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (SkuId, WarehouseId) [unique, name: 'uq_InventoryItems_Sku_Warehouse']
+    SkuId [name: 'idx_InventoryItems_SkuId']
+    WarehouseId [name: 'idx_InventoryItems_WarehouseId']
+  }
+}
+
+Table InventoryReservations {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ReferenceType InventoryReservationReferenceType [not null]
+  ReferenceId varchar(100) [not null]
+  Status InventoryReservationStatus [not null, default: 'Pending']
+  ExpiresAt timestamptz
+  ConfirmedAt timestamptz
+  ReleasedAt timestamptz
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (ReferenceType, ReferenceId) [name: 'idx_InventoryReservations_Ref']
+  }
+}
+
+Table InventoryReservationItems {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ReservationId uuid [not null]
+  InventoryItemId uuid [not null]
+  Quantity int [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ReservationId [name: 'idx_InventoryReservationItems_Reservation']
+    InventoryItemId [name: 'idx_InventoryReservationItems_Item']
+  }
+}
+
+Table InventoryLedgers {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  InventoryItemId uuid [not null]
+  MovementType InventoryMovementType [not null]
+  Quantity int [not null]
+  ReservationId uuid
+  ReferenceType InventoryLedgerReferenceType
+  ReferenceId varchar(100)
+  Note text
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    InventoryItemId [name: 'idx_InventoryLedgers_Item']
+    ReservationId [name: 'idx_InventoryLedgers_Reservation']
+  }
+}
+
+// ====================================================================================
+// 2. PHÂN HỆ VẬN CHUYỂN & ĐỐI TÁC GIAO VẬN (SHIPMENTS & CARRIERS)
+// ====================================================================================
+
+Table Carriers {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  Code varchar(50) [unique, not null]
+  Name varchar(255) [not null]
+  Priority int [not null, default: 0]
+  IsDisabled boolean [not null, default: false, note: 'Tạm ẩn/vô hiệu hóa đối tác vận chuyển']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+}
+
+Table Shipments {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  OrderId uuid [not null, note: 'Cross-service Ref -> CommerceService.Orders.Id']
+  WarehouseId uuid [not null]
+  CarrierId uuid [not null]
+  ServiceType ShippingServiceType [default: 'Standard']
+  ShippingFee numeric(18,2) [not null, default: 0]
+  TrackingNumber varchar(100)
+  Status ShipmentStatus [not null, default: 'ReadyToPick']
+  ReceiverName varchar(150) [not null]
+  ReceiverPhone varchar(20) [not null]
+  ReceiverAddress text [not null]
+  EstimatedDeliveryAt timestamptz
+  DeliveredAt timestamptz
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    OrderId [name: 'idx_Shipments_OrderId']
+    CarrierId [name: 'idx_Shipments_CarrierId']
+    WarehouseId [name: 'idx_Shipments_WarehouseId']
+    TrackingNumber [name: 'idx_Shipments_TrackingNumber']
+  }
+}
+
+Table ShipmentItems {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ShipmentId uuid [not null]
+  SkuId uuid [not null, note: 'Cross-service Ref -> CatalogService.ProductVariants.Id']
+  Quantity int [not null]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ShipmentId [name: 'idx_ShipmentItems_ShipmentId']
+    SkuId [name: 'idx_ShipmentItems_SkuId']
+  }
+}
+
+Table ShipmentEvents {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ShipmentId uuid [not null]
+  CarrierStatus varchar(50)
+  Status ShipmentEventStatus [not null]
+  Description text
+  ExternalEventId varchar(100)
+  OccurredAt timestamptz [not null]
+  RawPayload jsonb
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ShipmentId [name: 'idx_ShipmentEvents_ShipmentId']
+    OccurredAt [name: 'idx_ShipmentEvents_OccurredAt']
+  }
+}
+
+// ====================================================================================
+// 3. NHÓM NHẬT KÝ HỆ THỐNG (AUDIT LOGS)
+// ====================================================================================
+
+Table AuditLogs {
+  Id uuid [pk, note: 'Guid.CreateVersion7()']
+  ServiceName varchar(100) [not null, note: 'Tên Service phát sinh log']
+  TraceId varchar(100) [note: 'Mã TraceId từ Activity.Current?.TraceId']
+  UserId varchar(100) [note: 'ID người thao tác']
+  UserName varchar(150) [note: 'Tên/Email người thao tác tại thời điểm log']
+  Action AuditAction [not null, note: 'Loại hành động kiểm toán']
+  EntityName varchar(100) [not null, note: 'Tên bảng/Class bị tác động']
+  EntityId varchar(100) [not null, note: 'Khóa chính của bản ghi bị tác động']
+  OldValues jsonb [note: 'Chuỗi JSON chứa các cột trước khi sửa/xóa']
+  NewValues jsonb [note: 'Chuỗi JSON chứa các cột sau khi thêm/sửa']
+  ChangedColumns jsonb [note: 'Mảng JSON lưu nhanh tên các cột bị sửa']
+  IpAddress varchar(45) [note: 'Địa chỉ IPv4 hoặc IPv6']
+  UserAgent varchar(500) [note: 'Thiết bị/Trình duyệt của người dùng']
+  CreatedAt timestamptz [not null, default: `now()`, note: 'DateTime.UtcNow']
+  IsSynced boolean [not null, default: false, note: 'Worker gom đẩy về AuditService']
+}
+
+// ====================================================================================
+// QUAN HỆ KHÓA NGOẠI NỘI BỘ (INTERNAL RELATIONSHIPS)
+// ====================================================================================
+
+Ref: InventoryItems.WarehouseId > Warehouses.Id
+Ref: InventoryReservationItems.ReservationId > InventoryReservations.Id [delete: cascade]
+Ref: InventoryReservationItems.InventoryItemId > InventoryItems.Id
+Ref: InventoryLedgers.InventoryItemId > InventoryItems.Id
+Ref: InventoryLedgers.ReservationId > InventoryReservations.Id
+
+Ref: Shipments.WarehouseId > Warehouses.Id
+Ref: Shipments.CarrierId > Carriers.Id
+Ref: ShipmentItems.ShipmentId > Shipments.Id [delete: cascade]
+Ref: ShipmentEvents.ShipmentId > Shipments.Id [delete: cascade]

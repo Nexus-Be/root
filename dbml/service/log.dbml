@@ -1,0 +1,186 @@
+// ====================================================================================
+// Project Nexus - Centralized Logging & Audit Service
+// Quản lý kho tập trung Audit Logs toàn hệ thống Microservices & Metadata file log.
+// Chuẩn hóa: PascalCase, PK là Id uuid, 4 trường vòng đời CreatedAt, UpdatedAt, DeletedAt, IsDeleted.
+// ====================================================================================
+
+Project ProjectNexusLogService {
+  database_type: 'PostgreSQL'
+  Note: 'PROJECT NEXUS - CENTRALIZED LOGGING & AUDIT SERVICE DATABASE SCHEMA'
+}
+
+// ====================================================================================
+// ENUMS
+// ====================================================================================
+
+Enum CentralAuditAction {
+  Create     [note: 'Thêm mới']
+  Update     [note: 'Cập nhật']
+  Delete     [note: 'Xóa dữ liệu']
+  Login      [note: 'Đăng nhập']
+  Logout     [note: 'Đăng xuất']
+  Approve    [note: 'Phê duyệt']
+  Reject     [note: 'Từ chối']
+  SoftDelete [note: 'Xóa mềm']
+  Export     [note: 'Xuất dữ liệu']
+  Other      [note: 'Khác']
+}
+
+Enum AuditSyncStatus {
+  Completed [note: 'Đồng bộ thành công']
+  Partial   [note: 'Đồng bộ một phần']
+  Failed    [note: 'Đồng bộ thất bại']
+}
+
+Enum AppEnvironment {
+  Development [note: 'Môi trường phát triển']
+  Staging     [note: 'Môi trường kiểm thử']
+  Production  [note: 'Môi trường thực tế']
+}
+
+Enum AlertSeverity {
+  Low      [note: 'Thấp']
+  Medium   [note: 'Trung bình']
+  High     [note: 'Cao']
+  Critical [note: 'Nghiêm trọng']
+}
+
+Enum SecurityRuleType {
+  MassDelete          [note: 'Xóa dữ liệu hàng loạt']
+  BalanceTampering    [note: 'Can thiệp số dư trái phép']
+  PrivilegeEscalation [note: 'Leo thang đặc quyền']
+  SuspiciousLogin     [note: 'Đăng nhập bất thường']
+  RateLimitExceeded   [note: 'Vượt giới hạn tần suất']
+}
+
+Enum AlertStatus {
+  Open          [note: 'Mới tạo']
+  Investigating [note: 'Đang điều tra']
+  Resolved      [note: 'Đã giải quyết']
+  Dismissed     [note: 'Bỏ qua / Báo động giả']
+}
+
+// ====================================================================================
+// 1. KHO LƯU TRỮ AUDIT LOG TẬP TRUNG TOÀN SÀN (CENTRALIZED AUDIT LOGS)
+// ====================================================================================
+
+Table CentralAuditLogs {
+  Id uuid [pk, note: 'Guid.CreateVersion7() kế thừa từ từng service']
+  ServiceName varchar(100) [not null, note: 'Tên Service phát sinh log (UserService, OrderService...)']
+  TraceId varchar(100) [note: 'Mã TraceId lấy từ Activity.Current?.TraceId']
+  UserId varchar(100) [note: 'ID người thao tác']
+  UserName varchar(150) [note: 'Tên/Email tại thời điểm thao tác']
+  Action CentralAuditAction [not null]
+  EntityName varchar(100) [not null, note: 'Tên bảng/Class bị tác động']
+  EntityId varchar(100) [not null, note: 'Khóa chính bản ghi bị tác động']
+  OldValues jsonb [note: 'Chuỗi JSON chứa các cột trước khi sửa/xóa']
+  NewValues jsonb [note: 'Chuỗi JSON chứa các cột sau khi thêm/sửa']
+  ChangedColumns jsonb [note: 'Mảng JSON lưu nhanh tên các cột bị sửa']
+  IpAddress varchar(45) [note: 'Địa chỉ IPv4 hoặc IPv6 của client']
+  UserAgent varchar(500) [note: 'Thiết bị/Trình duyệt người dùng']
+  SyncedAt timestamptz [not null, default: `now()`, note: 'Thời điểm Worker đẩy về Log Service']
+  CreatedAt timestamptz [not null, default: `now()`, note: 'Thời điểm sự kiện diễn ra ở Service gốc (UtcNow)']
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ServiceName [name: 'idx_CentralAuditLogs_ServiceName']
+    TraceId [name: 'idx_CentralAuditLogs_TraceId']
+    UserId [name: 'idx_CentralAuditLogs_UserId']
+    (EntityName, EntityId) [name: 'idx_CentralAuditLogs_Entity']
+    (ServiceName, CreatedAt) [name: 'idx_CentralAuditLogs_Service_Created']
+    Action [name: 'idx_CentralAuditLogs_Action']
+  }
+  Note: 'Kho lưu trữ và tra cứu Audit Log tập trung của toàn bộ hệ thống'
+}
+
+// ====================================================================================
+// 2. THEO DÕI TIẾN TRÌNH ĐỒNG BỘ BATCH (AUDIT SYNC BATCHES)
+// ====================================================================================
+
+Table AuditSyncBatches {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ServiceName varchar(100) [not null, note: 'Tên Service gửi batch']
+  BatchSize int [not null, note: 'Số lượng bản ghi trong batch (vd: 100)']
+  FirstRecordId varchar(100)
+  LastRecordId varchar(100)
+  Status AuditSyncStatus [not null, default: 'Completed']
+  StartedAt timestamptz [not null]
+  CompletedAt timestamptz
+  ErrorMessage text
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ServiceName [name: 'idx_AuditSyncBatches_ServiceName']
+    (ServiceName, CreatedAt) [name: 'idx_AuditSyncBatches_Created']
+  }
+  Note: 'Nhật ký các đợt đồng bộ từ Worker của từng Service'
+}
+
+// ====================================================================================
+// 3. DANH MỤC & METADATA CỦA FILE APPLICATION LOG (APP LOG FILE CATALOGS)
+// ====================================================================================
+
+Table AppLogFileCatalogs {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ServiceName varchar(100) [not null, note: 'Tên Service sinh ra file log']
+  Environment AppEnvironment [not null, default: 'Production']
+  LogDate date [not null, note: 'Ngày của file log']
+  FilePath varchar(500) [not null, note: 'Đường dẫn vật lý / Object Storage URL của file log']
+  FileSizeBytes bigint [not null, default: 0]
+  Checksum varchar(64) [note: 'SHA-256 Checksum đảm bảo tính toàn vẹn']
+  TotalLines int [not null, default: 0]
+  ErrorCount int [not null, default: 0]
+  WarningCount int [not null, default: 0]
+  IsActive boolean [not null, default: true, note: 'File log của ngày hiện tại đang được ghi']
+  IsDisabled boolean [not null, default: false, note: 'Tạm ẩn file log khỏi giao diện tra cứu']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    (ServiceName, LogDate) [unique, name: 'uq_AppLogFileCatalogs_Service_Date']
+    ServiceName [name: 'idx_AppLogFileCatalogs_ServiceName']
+  }
+  Note: 'Chỉ mục quản lý các file Application Log lưu trên ổ đĩa / File Storage'
+}
+
+// ====================================================================================
+// 4. CẢNH BÁO AN NINH & BẤT THƯỜNG (SECURITY AUDIT ALERTS)
+// ====================================================================================
+
+Table SecurityAuditAlerts {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  AlertTitle varchar(255) [not null]
+  Severity AlertSeverity [not null, default: 'High']
+  ServiceName varchar(100) [not null]
+  CentralAuditLogId uuid [not null]
+  TriggeredRule SecurityRuleType [not null]
+  Description text
+  Status AlertStatus [not null, default: 'Open']
+  ResolvedBy uuid [note: 'ID của Admin/Security Officer xử lý']
+  ResolvedAt timestamptz
+  ResolutionNote text
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    Severity [name: 'idx_SecurityAuditAlerts_Severity']
+    Status [name: 'idx_SecurityAuditAlerts_Status']
+    CentralAuditLogId [name: 'idx_SecurityAuditAlerts_AuditLogId']
+  }
+  Note: 'Cảnh báo tự động khi phát hiện thao tác nhạy cảm từ các Service'
+}
+
+// ====================================================================================
+// QUAN HỆ KHÓA NGOẠI NỘI BỘ (INTERNAL RELATIONSHIPS)
+// ====================================================================================
+
+Ref: SecurityAuditAlerts.CentralAuditLogId > CentralAuditLogs.Id [delete: cascade]
