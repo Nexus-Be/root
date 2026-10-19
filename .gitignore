@@ -1,3 +1,16 @@
 Project.CleanArchitecture
 logs/
 *.log
+
+# Environment Variables & Secrets (DO NOT COMMIT)
+.env
+.env.*
+.env.local
+!.env.example
+!.env.*.example
+
+# Appsettings & Secrets (DO NOT COMMIT ORIGINALS - ONLY COMMIT *.example*)
+appsettings*.json
+!appsettings*.example.json
+!appsettings.example.json
+!appsettings.*.example.json

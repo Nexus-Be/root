@@ -7,9 +7,6 @@
 [submodule "src/Services/Log"]
 	path = src/Services/Log
 	url = git@github.com:Nexus-Be/LogService.git
-[submodule "src/Services/Audit"]
-	path = src/Services/Audit
-	url = git@github.com:Nexus-Be/AuditService.git
 [submodule "src/Services/Commerce"]
 	path = src/Services/Commerce
 	url = git@github.com:Nexus-Be/CommerceService.git
