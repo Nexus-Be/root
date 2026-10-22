@@ -7,13 +7,13 @@
 | STT | Tên Enum | Bảng & Cột CSDL | Mặc định | Mô tả nghiệp vụ |
 | :---: | :--- | :--- | :--- | :--- |
 | 1 | `CartStatus` | `Carts.Status` | `Active (0)` | Trạng thái giỏ hàng của người mua |
-| 2 | `CheckoutGroupStatus` | `CheckoutGroups.Status` | `PendingPayment (0)` | Trạng thái nhóm thanh toán đa đơn hàng |
+| 2 | `OrderStatus` | `Orders.Status` | `PendingPayment (0)` | Trạng thái đơn hàng tổng (Master Order) của người mua |
 | 3 | `DiscountScopeType` | `DiscountCodes.ScopeType` | — | Phạm vi áp dụng của mã giảm giá |
 | 4 | `DiscountType` | `DiscountCodes.DiscountType` | — | Hình thức giảm giá (phần trăm hoặc số tiền cố định) |
 | 5 | `DiscountStatus` | `DiscountCodes.Status` | `Draft (0)` | Vòng đời mã giảm giá *(đã bỏ Disabled/Deleted vì có trường riêng)* |
 | 6 | `DiscountScopeRefType` | `DiscountCodeScopes.ScopeRefType` | — | Loại đối tượng liên kết phạm vi giảm giá |
 | 7 | `DiscountUsageStatus` | `DiscountCodeUsages.Status` | `Reserved (0)` | Trạng thái giữ chỗ và sử dụng mã giảm giá |
-| 8 | `OrderStatus` | `Orders.Status`, `AuctionOrders.Status`, `OrderStatusHistories.FromStatus`, `OrderStatusHistories.ToStatus` | `PendingPayment (0)` | Vòng đời trạng thái đơn hàng thương mại & đơn đấu giá |
+| 8 | `SubOrderStatus` | `SubOrders.Status`, `AuctionOrders.Status`, `OrderStatusHistories.FromStatus`, `OrderStatusHistories.ToStatus` | `PendingPayment (0)` | Vòng đời trạng thái đơn hàng con (SubOrder từng Shop) & đơn đấu giá |
 | 9 | `OrderActorRole` | `OrderStatusHistories.ActorRole`, `OrderCancellations.ActorRole` | `System (3)` | Vai trò của tác nhân thực hiện thay đổi/hủy đơn |
 | 10 | `InvoiceStatus` | `OrderInvoices.Status` | `Generated (0)` | Trạng thái hóa đơn đơn hàng |
 | 11 | `CancellationReasonCode`| `OrderCancellations.ReasonCode` | — | Mã lý do hủy đơn hàng |
@@ -35,18 +35,18 @@
 
 ---
 
-### 2.2 CheckoutGroupStatus – Trạng Thái Nhóm Thanh Toán
-* **Bảng CSDL:** `CheckoutGroups.Status`
-* **Kiểu dữ liệu:** `Enum CheckoutGroupStatus`
-* **Mô tả:** Gom các đơn hàng từ nhiều Shop trong một lần thanh toán duy nhất.
+### 2.2 OrderStatus – Trạng Thái Đơn Hàng Tổng (Master Order)
+* **Bảng CSDL:** `Orders.Status`
+* **Kiểu dữ liệu:** `Enum OrderStatus`
+* **Mô tả:** Đơn hàng tổng của người mua khi checkout nhiều shop trong 1 lần thanh toán.
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :---: | :--- | :--- |
 | `0` | `PendingPayment` | Đang chờ người mua thanh toán tiền trước thời hạn `PaymentDeadlineAt` |
-| `1` | `Paid` | Đã thanh toán thành công toàn bộ số tiền của nhóm đơn |
-| `2` | `Failed` | Giao dịch thanh toán nhóm thất bại |
+| `1` | `Paid` | Đã thanh toán thành công toàn bộ số tiền của các đơn con |
+| `2` | `Failed` | Giao dịch thanh toán đơn hàng thất bại |
 | `3` | `Expired` | Quá thời hạn thanh toán quy định, tự động hủy giữ chỗ |
-| `4` | `Cancelled` | Người mua chủ động hủy phiên thanh toán |
+| `4` | `Cancelled` | Người mua chủ động hủy đơn hàng tổng |
 
 ---
 
@@ -112,10 +112,10 @@
 
 ---
 
-### 2.8 OrderStatus – Trạng Thái Đơn Hàng (Commerce & Đấu Giá)
-* **Bảng CSDL:** `Orders.Status`, `AuctionOrders.Status`, `OrderStatusHistories.FromStatus`, `OrderStatusHistories.ToStatus`
-* **Kiểu dữ liệu:** `Enum OrderStatus`
-* **Mô tả:** Thống nhất dùng chung cho cả đơn hàng thương mại thường và đơn hàng phát sinh từ kết quả đấu giá.
+### 2.8 SubOrderStatus – Trạng Thái Đơn Hàng Con & Đấu Giá
+* **Bảng CSDL:** `SubOrders.Status`, `AuctionOrders.Status`, `OrderStatusHistories.FromStatus`, `OrderStatusHistories.ToStatus`
+* **Kiểu dữ liệu:** `Enum SubOrderStatus`
+* **Mô tả:** Vòng đời đơn hàng chi tiết từng gian hàng (SubOrder) và đơn đấu giá (AuctionOrder).
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :---: | :--- | :--- |

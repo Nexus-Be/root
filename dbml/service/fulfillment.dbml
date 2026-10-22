@@ -100,12 +100,17 @@ Table Warehouses {
   Code varchar(50) [unique, not null]
   Name varchar(255) [not null]
   Type WarehouseType [default: 'PlatformWarehouse']
+  SellerId uuid [note: 'Cross-service Ref -> UserService.Users.Id']
   Address text
   IsDisabled boolean [not null, default: false, note: 'Tạm ẩn/vô hiệu hóa kho']
   CreatedAt timestamptz [not null, default: `now()`]
   UpdatedAt timestamptz [not null, default: `now()`]
   DeletedAt timestamptz
   IsDeleted boolean [not null, default: false]
+
+  indexes {
+    SellerId [name: 'idx_Warehouses_SellerId']
+  }
 }
 
 Table InventoryItems {

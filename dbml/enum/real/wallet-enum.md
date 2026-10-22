@@ -9,7 +9,7 @@
 | 1 | `CurrencyCode` | `Wallets.Currency` | `Vnd (0)` | Đơn vị tiền tệ hỗ trợ trên ví |
 | 2 | `WalletTransactionType` | `WalletTransactions.Type` | — | Phân loại biến động số dư sổ cái ví (Ledger) |
 | 3 | `TransactionStatus` | `WalletTransactions.Status` | `Pending (0)` | Trạng thái giao dịch biến động ví |
-| 4 | `TopupStatus` | `WalletTopups.Status` | `Pending (0)` | Trạng thái lệnh nạp tiền qua cổng thanh toán |
+| 4 | `TopupStatus` | `WalletTopups.Status`, `DirectPaymentOrders.Status` | `Pending (0)` | Trạng thái lệnh nạp tiền & đơn thanh toán trực tiếp qua cổng thanh toán |
 | 5 | `WithdrawalStatus` | `WithdrawalRequests.Status` | `Pending (0)` | Vòng đời yêu cầu rút tiền về tài khoản ngân hàng |
 | 6 | `IpnProcessingStatus` | `VnpayIpnLogs.ProcessingStatus` | `Processed (0)` | Kết quả xử lý Webhook IPN từ cổng thanh toán |
 | 7 | `AuditAction` | `AuditLogs.Action` | — | Hành động kiểm toán thao tác tài chính |
@@ -46,6 +46,7 @@
 | `7` | `PlatformFeeCredit` | Thu phí nền tảng từ doanh thu người bán |
 | `8` | `AdjustmentCredit` | Điều chỉnh cộng tiền thủ công từ Admin / đối soát |
 | `9` | `AdjustmentDebit` | Điều chỉnh trừ tiền thủ công từ Admin / đối soát |
+| `10` | `DirectVnpayDebit` | Thanh toán trực tiếp đơn hàng qua cổng VNPay (không qua ví) |
 
 ---
 
@@ -62,8 +63,8 @@
 
 ---
 
-### 2.4 TopupStatus – Trạng Thái Lệnh Nạp Tiền
-* **Bảng CSDL:** `WalletTopups.Status`
+### 2.4 TopupStatus – Trạng Thái Lệnh Nạp Tiền & Đơn Thanh Toán Trực Tiếp
+* **Bảng CSDL:** `WalletTopups.Status`, `DirectPaymentOrders.Status`
 * **Kiểu dữ liệu:** `Enum TopupStatus`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |

@@ -30,6 +30,7 @@ Enum WalletTransactionType {
   PlatformFeeCredit  [note: 'Thu phí nền tảng']
   AdjustmentCredit   [note: 'Cộng tiền điều chỉnh']
   AdjustmentDebit    [note: 'Trừ tiền điều chỉnh']
+  DirectVnpayDebit   [note: 'Thanh toán trực tiếp đơn hàng qua VNPay']
 }
 
 Enum TransactionStatus {
@@ -142,6 +143,26 @@ Table WalletTopups {
     VnpTxnRef [name: 'idx_WalletTopups_VnpTxnRef']
   }
   Note: 'Lệnh nạp tiền vào ví qua cổng thanh toán'
+}
+
+Table DirectPaymentOrders {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  OrderId uuid [not null, note: 'Cross-service Ref -> CommerceService.Orders.Id']
+  VnpTxnRef varchar(100) [unique, not null]
+  VnpTransactionNo varchar(100)
+  Amount numeric(18,2) [not null]
+  Status TopupStatus [not null, default: 'Pending']
+  RawResponse jsonb
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    OrderId [name: 'idx_DirectPaymentOrders_OrderId']
+    VnpTxnRef [name: 'idx_DirectPaymentOrders_VnpTxnRef']
+  }
+  Note: 'Đơn hàng thanh toán trực tiếp qua cổng VNPay (không qua ví)'
 }
 
 Table WithdrawalRequests {

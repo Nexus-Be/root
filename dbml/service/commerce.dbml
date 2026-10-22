@@ -20,12 +20,12 @@ Enum CartStatus {
   Converted [note: 'Đã chuyển thành đơn hàng']
 }
 
-Enum CheckoutGroupStatus {
+Enum OrderStatus {
   PendingPayment [note: 'Chờ thanh toán']
   Paid           [note: 'Đã thanh toán']
   Failed         [note: 'Thanh toán thất bại']
   Expired        [note: 'Hết hạn thanh toán']
-  Cancelled      [note: 'Đã hủy phiên']
+  Cancelled      [note: 'Đã hủy đơn']
 }
 
 Enum DiscountScopeType {
@@ -59,7 +59,7 @@ Enum DiscountUsageStatus {
   Expired  [note: 'Giữ chỗ hết hạn']
 }
 
-Enum OrderStatus {
+Enum SubOrderStatus {
   PendingPayment [note: 'Chờ thanh toán']
   Paid           [note: 'Đã thanh toán']
   SellerAccepted [note: 'Người bán đã nhận đơn']
@@ -103,7 +103,7 @@ Enum AuditAction {
 }
 
 // ====================================================================================
-// 1. NHÓM GIỎ HÀNG & THANH TOÁN (CARTS & CHECKOUT)
+// 1. NHÓM GIỎ HÀNG & ĐƠN HÀNG TỔNG (CARTS & MASTER ORDERS)
 // ====================================================================================
 
 Table Carts {
@@ -134,11 +134,11 @@ Table CartItems {
   IsDeleted boolean [not null, default: false]
 }
 
-Table CheckoutGroups {
+Table Orders {
   Id uuid [pk, default: `gen_random_uuid()`]
   CartId uuid
   BuyerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
-  Status CheckoutGroupStatus [not null, default: 'PendingPayment']
+  Status OrderStatus [not null, default: 'PendingPayment']
   TotalAmount numeric(18,2) [not null]
   PaymentDeadlineAt timestamptz [not null]
   RowVersion bigint [not null, default: 0]
@@ -146,6 +146,11 @@ Table CheckoutGroups {
   UpdatedAt timestamptz [not null, default: `now()`]
   DeletedAt timestamptz
   IsDeleted boolean [not null, default: false]
+
+  indexes {
+    BuyerId [name: 'idx_Orders_BuyerId']
+  }
+  Note: 'Đơn hàng tổng (Master Order) gom từ phiên thanh toán giỏ hàng'
 }
 
 // ====================================================================================
@@ -193,7 +198,7 @@ Table DiscountCodeUsages {
   DiscountCodeId uuid [not null]
   UserId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
   OrderId uuid
-  CheckoutGroupId uuid
+  SubOrderId uuid
   Status DiscountUsageStatus [not null, default: 'Reserved']
   DiscountAmount numeric(18,2) [not null, default: 0]
   ReservedAt timestamptz [not null, default: `now()`]
@@ -206,16 +211,16 @@ Table DiscountCodeUsages {
 }
 
 // ====================================================================================
-// 3. NHÓM ĐƠN HÀNG THƯƠNG MẠI & ĐẤU GIÁ (ORDERS & AUCTION ORDERS)
+// 3. NHÓM ĐƠN HÀNG CHI TIẾT THEO SHOP & ĐẤU GIÁ (SUB-ORDERS & AUCTION ORDERS)
 // ====================================================================================
 
-Table Orders {
+Table SubOrders {
   Id uuid [pk, default: `gen_random_uuid()`]
-  OrderNo varchar(100) [unique, not null]
+  SubOrderNo varchar(100) [unique, not null]
+  OrderId uuid [not null]
   BuyerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
   SellerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
-  CheckoutGroupId uuid [not null]
-  Status OrderStatus [not null, default: 'PendingPayment']
+  Status SubOrderStatus [not null, default: 'PendingPayment']
   ShippingAddress jsonb [not null]
   ContactPhone varchar(20) [not null]
   ItemsAmount numeric(18,2) [not null, default: 0]
@@ -240,11 +245,18 @@ Table Orders {
   UpdatedAt timestamptz [not null, default: `now()`]
   DeletedAt timestamptz
   IsDeleted boolean [not null, default: false]
+
+  indexes {
+    SubOrderNo [name: 'idx_SubOrders_SubOrderNo']
+    OrderId [name: 'idx_SubOrders_OrderId']
+    SellerId [name: 'idx_SubOrders_SellerId']
+  }
+  Note: 'Đơn hàng chi tiết theo từng Shop/Seller (SubOrder)'
 }
 
-Table OrderItems {
+Table SubOrderItems {
   Id uuid [pk, default: `gen_random_uuid()`]
-  OrderId uuid [not null]
+  SubOrderId uuid [not null]
   ProductId uuid [not null, note: 'Cross-service Ref -> CatalogService.Products.Id']
   SkuId uuid [not null, note: 'Cross-service Ref -> CatalogService.ProductVariants.Id']
   SellerId uuid [not null, note: 'Cross-service Ref -> UserService.Users.Id']
@@ -280,7 +292,7 @@ Table AuctionOrders {
   TotalAmount numeric(18,2)
   SellerReceiveAmount numeric(18,2) [not null]
   PlatformFeeAmount numeric(18,2) [not null]
-  Status OrderStatus [not null, default: 'PendingPayment']
+  Status SubOrderStatus [not null, default: 'PendingPayment']
   PaymentDeadlineAt timestamptz [not null]
   SellerRespondDeadlineAt timestamptz
   PaidAt timestamptz
@@ -302,10 +314,10 @@ Table AuctionOrders {
 
 Table OrderStatusHistories {
   Id uuid [pk, default: `gen_random_uuid()`]
-  OrderId uuid
+  SubOrderId uuid
   AuctionOrderId uuid
-  FromStatus OrderStatus
-  ToStatus OrderStatus [not null]
+  FromStatus SubOrderStatus
+  ToStatus SubOrderStatus [not null]
   ChangedBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
   ActorRole OrderActorRole [not null, default: 'System']
   Reason text
@@ -319,6 +331,7 @@ Table OrderInvoices {
   Id uuid [pk, default: `gen_random_uuid()`]
   InvoiceNo varchar(100) [unique, not null]
   OrderId uuid
+  SubOrderId uuid
   AuctionOrderId uuid
   TotalAmount numeric(18,2) [not null]
   FileUrl text
@@ -332,7 +345,7 @@ Table OrderInvoices {
 
 Table OrderCancellations {
   Id uuid [pk, default: `gen_random_uuid()`]
-  OrderId uuid
+  SubOrderId uuid
   AuctionOrderId uuid
   CancelledBy uuid [note: 'Cross-service Ref -> UserService.Users.Id']
   ActorRole OrderActorRole [not null]
@@ -373,22 +386,23 @@ Table AuditLogs {
 // ====================================================================================
 
 Ref: CartItems.CartId > Carts.Id [delete: cascade]
-Ref: CheckoutGroups.CartId > Carts.Id
-Ref: Orders.CheckoutGroupId > CheckoutGroups.Id
+Ref: Orders.CartId > Carts.Id
+Ref: SubOrders.OrderId > Orders.Id
 
 Ref: DiscountCodeScopes.DiscountCodeId > DiscountCodes.Id [delete: cascade]
 Ref: DiscountCodeUsages.DiscountCodeId > DiscountCodes.Id [delete: cascade]
 Ref: DiscountCodeUsages.OrderId > Orders.Id
-Ref: DiscountCodeUsages.CheckoutGroupId > CheckoutGroups.Id
+Ref: DiscountCodeUsages.SubOrderId > SubOrders.Id
 
-Ref: OrderItems.OrderId > Orders.Id [delete: cascade]
-Ref: OrderItems.DiscountCodeId > DiscountCodes.Id
+Ref: SubOrderItems.SubOrderId > SubOrders.Id [delete: cascade]
+Ref: SubOrderItems.DiscountCodeId > DiscountCodes.Id
 
-Ref: OrderStatusHistories.OrderId > Orders.Id [delete: cascade]
+Ref: OrderStatusHistories.SubOrderId > SubOrders.Id [delete: cascade]
 Ref: OrderStatusHistories.AuctionOrderId > AuctionOrders.Id [delete: cascade]
 
 Ref: OrderInvoices.OrderId - Orders.Id
+Ref: OrderInvoices.SubOrderId - SubOrders.Id
 Ref: OrderInvoices.AuctionOrderId - AuctionOrders.Id
 
-Ref: OrderCancellations.OrderId - Orders.Id
+Ref: OrderCancellations.SubOrderId - SubOrders.Id
 Ref: OrderCancellations.AuctionOrderId - AuctionOrders.Id
