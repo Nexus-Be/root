@@ -1,8 +1,8 @@
-# 📑 HỆ THỐNG DANH MỤC TRẠNG THÁI & ENUM — USER SERVICE
+# 📑 HỆ THỐNG DANH MỤC TRẠNG THÁI & ENUM — USER SERVICE (16 ENUMS)
 
 ---
 
-## 📌 PHẦN 1: BẢNG TỔNG HỢP NHANH TOÀN BỘ 11 ENUM HỆ THỐNG
+## 📌 PHẦN 1: BẢNG TỔNG HỢP NHANH TOÀN BỘ 16 ENUM HỆ THỐNG
 
 | STT | Tên Enum | Cột CSDL / Nơi lưu | Tóm Tắt Giá Trị (0-based) | Mục Đích Sử Dụng |
 | :-: | :--- | :--- | :--- | :--- |
@@ -17,18 +17,19 @@
 | **9** | `ConfigDataType` | `system_configs.data_type` | `String (0)`, `Int (1)`, `Decimal (2)`, `Boolean (3)`, `Json (4)` | Kiểu dữ liệu cấu hình tham số sàn |
 | **10** | `OtpType` | Redis (`otp:{type}:{email}`) | `Registration (0)`, `ForgotPassword (1)` | Loại mã xác thực OTP gửi qua email |
 | **11** | `ReviewerRole` | `user_reviews.reviewer_role` | `Buyer (0)`, `Seller (1)` | Vai trò đối tác gửi đánh giá 2 chiều |
+| **12** | `ReportViolationType` | `user_reports.violation_type` | `Fraud (0)`, `Harassment (1)`, `Counterfeit (2)`, `Spam (3)`, `Other (4)` | Phân loại hành vi vi phạm khi người dùng bị tố cáo |
+| **13** | `ReportStatus` | `user_reports.status` | `Pending (0)`, `UnderReview (1)`, `Resolved (2)`, `Rejected (3)` | Tiến trình xử lý hồ sơ tố cáo vi phạm |
+| **14** | `PenaltyViolationType`| `user_penalties.violation_type` | `PaymentTimeout (0)`, `AuctionNonPayment (1)`, `CancellationWithoutReason (2)`, `Fraud (3)`, `Other (4)` | Hành vi vi phạm dẫn đến án phạt |
+| **15** | `PenaltyType` | `user_penalties.penalty_applied` | `Warning (0)`, `DeductPoints (1)`, `SuspendBidding3Days (2)`, `BanAccount (3)`, `Other (4)` | Hình thức chế tài / xử phạt áp dụng |
+| **16** | `PenaltyStatus` | `user_penalties.status` | `Active (0)`, `Expired (1)`, `Revoked (2)` | Trạng thái hiệu lực của án phạt |
 
 ---
 
 ## 📋 PHẦN 2: CHI TIẾT TỪNG ENUM
 
 ### 1. UserStatus - Trạng Thái Tài Khoản
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `users.status` | `VARCHAR(30) / INT` | Quản lý vòng đời trạng thái tài khoản người dùng trong hệ thống. |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `users.status`
+* **Kiểu dữ liệu:** `Enum UserStatus`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
@@ -40,29 +41,21 @@
 ---
 
 ### 2. RoleType - Danh Mục 4 Vai Trò Cốt Lõi Hệ Thống
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `roles.role_code` | `VARCHAR(50)` | Đóng gói vào Claim `Roles` trong JWT Token để điều hướng giao diện Dashboard. |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `roles.role_code`
+* **Kiểu dữ liệu:** `Enum RoleType`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
 | **0** | **`Buyer`** | Khách mua hàng & tham gia đặt giá trong các phiên đấu giá. |
 | **1** | **`Seller`** | Người bán hàng, quản lý gian hàng & mở phiên đấu giá sản phẩm. |
-| **2** | **`SupportStaff`** | Nhân viên hỗ trợ (thẩm định hồ sơ mở Shop, xử lý khiếu nại, ẩn đánh giá xấu). |
+| **2** | **`SupportStaff`** | Nhân viên hỗ trợ (thẩm định hồ sơ mở Shop, xử lý khiếu nại/tố cáo). |
 | **3** | **`Admin`** | Quản trị viên tối cao (phân quyền nhân sự, cấu hình tham số toàn sàn). |
 
 ---
 
 ### 3. Gender - Giới Tính Người Dùng
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `users.gender` | `VARCHAR(20) / INT` | Lưu trữ giới tính của người dùng. |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `users.gender`
+* **Kiểu dữ liệu:** `Enum Gender`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
@@ -74,12 +67,8 @@
 ---
 
 ### 4. SellerProfileStatus - Trạng Thái Hồ Sơ Mở Shop
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `seller_profiles.status` | `VARCHAR(30)` | Quản lý tiến trình thẩm định và duyệt hồ sơ đăng ký bán hàng. |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `seller_profiles.status`
+* **Kiểu dữ liệu:** `Enum SellerProfileStatus`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
@@ -90,12 +79,8 @@
 ---
 
 ### 5. TrustLevel - Cấp Độ Tin Cậy Điểm Uy Tín
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `reputation_scores.trust_level` | `VARCHAR(30)` | Rào chắn kỹ thuật tự động kiểm tra điều kiện tham gia và mở bán đấu giá theo chuẩn **SRS v1.0**. |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `reputation_scores.trust_level`
+* **Kiểu dữ liệu:** `Enum TrustLevel`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
@@ -108,12 +93,8 @@
 ---
 
 ### 6. ReferenceType - Loại Giao Dịch Tham Chiếu
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `reputation_logs.reference_type`<br>`user_reviews.reference_type` | `VARCHAR(50)` | Xác định nguồn gốc tham chiếu giao dịch hoặc đối tượng liên quan. |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `reputation_logs.reference_type`, `user_reviews.reference_type`
+* **Kiểu dữ liệu:** `Enum ReferenceType`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
@@ -125,12 +106,8 @@
 ---
 
 ### 7. ReputationChangeReason - Lý Do Biến Động Điểm Uy Tín
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `reputation_logs.reason` | `VARCHAR(255)` | Ghi nhận chi tiết nguyên nhân gây biến động điểm uy tín của tài khoản. |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `reputation_logs.reason`
+* **Kiểu dữ liệu:** `Enum ReputationChangeReason`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
@@ -145,12 +122,8 @@
 ---
 
 ### 8. AuditAction - Hành Động Kiểm Toán Quản Trị
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `audit_logs.action` | `VARCHAR(100)` | Ghi vết bất biến (Append-Only) mọi thao tác can thiệp dữ liệu của nhân sự nội bộ. |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `audit_logs.action`
+* **Kiểu dữ liệu:** `Enum AuditAction`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
@@ -168,12 +141,8 @@
 ---
 
 ### 9. ConfigDataType - Kiểu Dữ Liệu Tham Số Sàn
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `system_configs.data_type` | `VARCHAR(30)` | Định nghĩa kiểu dữ liệu của các cấu hình tham số hệ thống. |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `system_configs.data_type`
+* **Kiểu dữ liệu:** `Enum ConfigDataType`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
@@ -186,12 +155,7 @@
 ---
 
 ### 10. OtpType - Mục Đích Mã Xác Thực OTP
-
-| Nơi lưu trữ | Cấu trúc Key (Redis) | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| Bộ nhớ tạm **Redis** | `otp:{type}:{email}` | Thời hạn tồn tại (TTL): 5 phút. |
-
-**Danh sách giá trị:**
+* **Nơi lưu trữ:** Bộ nhớ tạm Redis (`otp:{type}:{email}`)
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
@@ -201,14 +165,77 @@
 ---
 
 ### 11. ReviewerRole - Vai Trò Đối Tác Gửi Đánh Giá
-
-| Bảng CSDL | Kiểu lưu trữ | Mục đích / Ghi chú |
-| :--- | :--- | :--- |
-| `user_reviews.reviewer_role` | `VARCHAR(20)` | Xác định người viết đánh giá là Người mua hay Người bán trong giao dịch (Bảng `user_reviews`). |
-
-**Danh sách giá trị:**
+* **Bảng CSDL:** `user_reviews.reviewer_role`
+* **Kiểu dữ liệu:** `Enum ReviewerRole`
 
 | Mã | Giá trị Enum | Mô tả chi tiết |
 | :-: | :--- | :--- |
 | **0** | **`Buyer`** | Người mua gửi đánh giá nhận xét cho Người bán / Shop sau khi nhận hàng. |
 | **1** | **`Seller`** | Người bán gửi đánh giá nhận xét cho Người mua sau khi hoàn tất đơn. |
+
+---
+
+### 12. ReportViolationType - Loại Vi Phạm Tố Cáo
+* **Bảng CSDL:** `user_reports.violation_type`
+* **Kiểu dữ liệu:** `Enum ReportViolationType`
+
+| Mã | Giá trị Enum | Mô tả chi tiết |
+| :-: | :--- | :--- |
+| **0** | **`Fraud`** | Hành vi lừa đảo chiếm đoạt tài sản, gian lận thanh toán. |
+| **1** | **`Harassment`** | Quấy rối, đe dọa, xúc phạm nhân phẩm đối tác. |
+| **2** | **`Counterfeit`** | Bán hàng giả, hàng nhái, vi phạm quyền sở hữu trí tuệ. |
+| **3** | **`Spam`** | Spam tin nhắn, đặt đơn ảo, phá hoại phiên đấu giá. |
+| **4** | **`Other`** | Hành vi vi phạm quy chế sàn khác (kèm mô tả chi tiết). |
+
+---
+
+### 13. ReportStatus - Trạng Thái Hồ Sơ Tố Cáo
+* **Bảng CSDL:** `user_reports.status`
+* **Kiểu dữ liệu:** `Enum ReportStatus`
+
+| Mã | Giá trị Enum | Mô tả chi tiết |
+| :-: | :--- | :--- |
+| **0** | **`Pending`** | Tiếp nhận đơn tố cáo mới, chờ phân công nhân viên xem xét. |
+| **1** | **`UnderReview`** | Nhân viên hỗ trợ đang điều tra, liên hệ các bên và đối soát chứng cứ. |
+| **2** | **`Resolved`** | Đã có kết luận giải quyết (có thể kèm án phạt áp dụng cho tài khoản vi phạm). |
+| **3** | **`Rejected`** | Từ chối tố cáo do chứng cứ không xác thực hoặc tố cáo sai sự thật. |
+
+---
+
+### 14. PenaltyViolationType - Loại Hành Vi Vi Phạm Dẫn Đến Phạt
+* **Bảng CSDL:** `user_penalties.violation_type`
+* **Kiểu dữ liệu:** `Enum PenaltyViolationType`
+
+| Mã | Giá trị Enum | Mô tả chi tiết |
+| :-: | :--- | :--- |
+| **0** | **`PaymentTimeout`** | Quá hạn thanh toán đơn hàng quy định. |
+| **1** | **`AuctionNonPayment`** | Bùng kèo không thanh toán sau 24h thắng phiên đấu giá. |
+| **2** | **`CancellationWithoutReason`** | Người bán tự ý hủy đơn hàng đã xác nhận mà không có lý do chính đáng. |
+| **3** | **`Fraud`** | Gian lận giá thầu, tạo nick ảo đẩy giá hoặc bán hàng cấm. |
+| **4** | **`Other`** | Vi phạm các quy định vận hành khác của sàn. |
+
+---
+
+### 15. PenaltyType - Hình Thức Chế Tài Áp Dụng
+* **Bảng CSDL:** `user_penalties.penalty_applied`
+* **Kiểu dữ liệu:** `Enum PenaltyType`
+
+| Mã | Giá trị Enum | Mô tả chi tiết |
+| :-: | :--- | :--- |
+| **0** | **`Warning`** | Gửi thông báo cảnh cáo chính thức đến tài khoản. |
+| **1** | **`DeductPoints`** | Trừ điểm uy tín sàn (ghi kèm số điểm trừ vào `points_deducted`). |
+| **2** | **`SuspendBidding3Days`** | Tạm đình chỉ quyền tham gia đấu giá trong 3 ngày. |
+| **3** | **`BanAccount`** | Khóa tài khoản vĩnh viễn và cấm tham gia sàn. |
+| **4** | **`Other`** | Chế tài xử phạt đặc thù khác. |
+
+---
+
+### 16. PenaltyStatus - Trạng Thái Hiệu Lực Án Phạt
+* **Bảng CSDL:** `user_penalties.status`
+* **Kiểu dữ liệu:** `Enum PenaltyStatus`
+
+| Mã | Giá trị Enum | Mô tả chi tiết |
+| :-: | :--- | :--- |
+| **0** | **`Active`** | Án phạt đang có hiệu lực thi hành. |
+| **1** | **`Expired`** | Án phạt có thời hạn đã hết hiệu lực. |
+| **2** | **`Revoked`** | Án phạt đã được Admin hủy bỏ / ân xá sau khi khiếu nại thành công. |

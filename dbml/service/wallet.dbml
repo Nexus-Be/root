@@ -210,6 +210,24 @@ Table VnpayIpnLogs {
   Note: 'Nhật ký webhook IPN nhận từ cổng VNPay'
 }
 
+Table BankAccounts {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  UserId varchar(100) [not null, note: 'Cross-service Ref -> UserService.Users.Id']
+  BankName varchar(150) [not null]
+  AccountNumber varchar(100) [not null]
+  AccountHolderName varchar(255) [not null]
+  IsDefault boolean [not null, default: true]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    UserId [name: 'idx_BankAccounts_UserId']
+  }
+  Note: 'Tài khoản ngân hàng liên kết của người dùng'
+}
+
 // ====================================================================================
 // 3. NHÓM NHẬT KÝ HỆ THỐNG (AUDIT LOGS)
 // ====================================================================================

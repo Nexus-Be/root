@@ -79,6 +79,9 @@ dotnet run --project Catalog.Api
 
 ## 4. Tài Liệu Kỹ Thuật Chi Tiết
 - **[Hướng Dẫn Các Bước Tiếp Theo & Checklist Triển Khai (docs/NEXT_STEPS_AND_CHECKLIST.md)](docs/NEXT_STEPS_AND_CHECKLIST.md)**
+- **[Kiến Trúc Health Prober & Chiến Lược Log Tập Trung (docs/HEALTH_AND_LOGGING_ARCHITECTURE.md)](docs/HEALTH_AND_LOGGING_ARCHITECTURE.md)**
+- **[Đặc Tả Danh Mục Entity & Enum Chuẩn Form Cho Frontend (docs/FRONTEND_ENTITY_AND_ENUM_CATALOG.md)](docs/FRONTEND_ENTITY_AND_ENUM_CATALOG.md)**
+- **[Hướng Dẫn Tạo Mock Data Tại Gateway Cho Dev Team (docs/GUIDE_MOCK_DATA_GATEWAY.md)](docs/GUIDE_MOCK_DATA_GATEWAY.md)**
 - [Tài liệu Hệ Thống & Quy Chuẩn (specs/README.md)](specs/README.md)
 - [Hệ Thống 15 Quyết Định Kiến Trúc (docs/adr/ADR.md)](docs/adr/ADR.md)
 - [Hướng Dẫn Phát Triển API Gateway (src/Services/ApiGateway/DEV_GUIDE.md)](src/Services/ApiGateway/DEV_GUIDE.md)

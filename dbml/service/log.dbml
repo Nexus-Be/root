@@ -180,6 +180,52 @@ Table SecurityAuditAlerts {
 }
 
 // ====================================================================================
+// 5. NHẬT KÝ SỰ KIỆN HỆ THỐNG & ĐỊNH NGHĨA LOẠI EVENT (LOG ENTRIES & EVENT TYPES)
+// ====================================================================================
+
+Table Logs {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  OccurredAt timestamptz [not null, default: `now()`]
+  RecordedAt timestamptz [not null, default: `now()`]
+  ServiceName varchar(100) [not null]
+  EventType varchar(100) [not null]
+  Action varchar(100)
+  EntityName varchar(100)
+  EntityId varchar(100)
+  ActorUserId varchar(100)
+  ActorUsername varchar(100)
+  ActorRole varchar(50)
+  CorrelationId varchar(100)
+  CausationId varchar(100)
+  MessageId varchar(100)
+  SchemaVersion int [not null, default: 1]
+  TraceId varchar(100)
+  Payload jsonb
+  LogLevel varchar(20) [default: 'INFO']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ServiceName [name: 'idx_Logs_ServiceName']
+    EventType [name: 'idx_Logs_EventType']
+    TraceId [name: 'idx_Logs_TraceId']
+    OccurredAt [name: 'idx_Logs_OccurredAt']
+  }
+}
+
+Table LogEventTypes {
+  Code varchar(100) [pk]
+  ServiceName varchar(100) [not null]
+  Category varchar(100)
+  Description varchar(500)
+  IsEnabled boolean [not null, default: true]
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+}
+
+// ====================================================================================
 // QUAN HỆ KHÓA NGOẠI NỘI BỘ (INTERNAL RELATIONSHIPS)
 // ====================================================================================
 

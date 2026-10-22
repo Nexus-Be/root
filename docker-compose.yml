@@ -237,6 +237,8 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 
   user-service:

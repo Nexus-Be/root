@@ -1,6 +1,6 @@
 Project ProjectNexusUserService {
   database_type: 'PostgreSQL'
-  Note: 'PROJECT NEXUS - USER SERVICE DATABASE SCHEMA'
+  Note: 'PROJECT NEXUS - USER SERVICE DATABASE SCHEMA (13 BẢNG CSDL CHUẨN HÓA)'
 }
 
 // ====================================================================================
@@ -72,6 +72,43 @@ Enum ConfigDataType {
   Json    [note: 'Chuỗi JSON']
 }
 
+Enum ReportViolationType {
+  Fraud       [note: 'Hành vi lừa đảo']
+  Harassment  [note: 'Quấy rối, chửi bới xúc phạm']
+  Counterfeit [note: 'Hàng giả, hàng nhái kém chất lượng']
+  Spam        [note: 'Spam tin nhắn, đơn ảo']
+  Other       [note: 'Lý do vi phạm khác']
+}
+
+Enum ReportStatus {
+  Pending     [note: 'Chờ nhân viên hỗ trợ tiếp nhận']
+  UnderReview [note: 'Đang điều tra, xác minh chứng cứ']
+  Resolved    [note: 'Đã xử lý và ra kết luận']
+  Rejected    [note: 'Từ chối tố cáo do bằng chứng không hợp lệ']
+}
+
+Enum PenaltyViolationType {
+  PaymentTimeout            [note: 'Quá hạn thanh toán đơn hàng']
+  AuctionNonPayment         [note: 'Bùng kèo đấu giá sau 24h thắng bid']
+  CancellationWithoutReason [note: 'Tự ý hủy đơn hàng không có lý do chính đáng']
+  Fraud                     [note: 'Gian lận thương mại hoặc tài khoản']
+  Other                     [note: 'Hành vi vi phạm quy chế sàn khác']
+}
+
+Enum PenaltyType {
+  Warning            [note: 'Cảnh cáo tài khoản']
+  DeductPoints       [note: 'Trừ điểm uy tín sàn']
+  SuspendBidding3Days [note: 'Đình chỉ quyền đấu giá 3 ngày']
+  BanAccount         [note: 'Khóa tài khoản vĩnh viễn']
+  Other              [note: 'Hình thức chế tài khác']
+}
+
+Enum PenaltyStatus {
+  Active  [note: 'Án phạt đang có hiệu lực']
+  Expired [note: 'Án phạt đã hết thời hạn hiệu lực']
+  Revoked [note: 'Án phạt đã bị hủy bỏ/ân xá']
+}
+
 Enum AuditAction {
   UserUpdate         [note: 'Cập nhật thông tin tài khoản']
   UserBan            [note: 'Khóa tài khoản']
@@ -90,13 +127,14 @@ Enum AuditAction {
 // ====================================================================================
 
 Table Users {
-  Id uuid [pk, default: `uuid_generate_v4()`]
+  Id uuid [pk, default: `gen_random_uuid()`]
   Email varchar(255) [unique, not null]
   PasswordHash varchar(255) [not null]
   FirstName varchar(100) [not null]
   LastName varchar(100) [not null]
   PhoneNumber varchar(20)
   IdentifyNumber varchar(50)
+  AvatarUrl varchar(500) [note: 'Link ảnh đại diện cá nhân người dùng']
   Gender Gender [default: 'Unspecified']
   DateOfBirth date
   Address text
@@ -119,12 +157,12 @@ Table Users {
 }
 
 Table RefreshTokens {
-  Id uuid [pk, default: `uuid_generate_v4()`]
+  Id uuid [pk, default: `gen_random_uuid()`]
   UserId uuid [not null]
   TokenHash varchar(255) [unique, not null]
   DeviceInfo varchar(255)
   IpAddress varchar(45)
-  IsDisabled boolean [not null, default: false, note: 'Thu hồi token / vô hiệu hóa phiên']
+  IsRevoked boolean [not null, default: false, note: 'Thu hồi token / vô hiệu hóa phiên']
   ExpiresAt timestamptz [not null]
   RevokedAt timestamptz
   CreatedAt timestamptz [not null, default: `now()`]
@@ -135,7 +173,7 @@ Table RefreshTokens {
   indexes {
     UserId [name: 'idx_RefreshTokens_UserId']
     TokenHash [name: 'idx_RefreshTokens_TokenHash']
-    (UserId, IsDisabled, ExpiresAt) [name: 'idx_RefreshTokens_Active']
+    (UserId, IsRevoked, ExpiresAt) [name: 'idx_RefreshTokens_Active']
   }
   Note: 'Quản lý phiên đa thiết bị'
 }
@@ -150,6 +188,7 @@ Table Roles {
   RoleName varchar(100) [not null]
   Description text
   IsActive boolean [not null, default: false, note: 'Chỉ 1 role mặc định được active cho người dùng mới']
+  IsSystemRole boolean [not null, default: false, note: 'Bảo vệ vai trò cốt lõi không thể xóa']
   CreatedAt timestamptz [not null, default: `now()`]
   UpdatedAt timestamptz [not null, default: `now()`]
   DeletedAt timestamptz
@@ -159,7 +198,7 @@ Table Roles {
 }
 
 Table UserRoles {
-  Id uuid [pk, default: `uuid_generate_v4()`]
+  Id uuid [pk, default: `gen_random_uuid()`]
   UserId uuid [not null]
   RoleId int [not null]
   AssignedAt timestamptz [not null, default: `now()`]
@@ -192,11 +231,11 @@ Table Permissions {
     PermissionCode [name: 'idx_Permissions_Code']
     Category [name: 'idx_Permissions_Category']
   }
-  Note: 'Danh mục 60+ đặc quyền toàn hệ thống'
+  Note: 'Danh mục đặc quyền toàn hệ thống'
 }
 
 Table RolePermissions {
-  Id uuid [pk, default: `uuid_generate_v4()`]
+  Id uuid [pk, default: `gen_random_uuid()`]
   RoleId int [not null]
   PermissionId int [not null]
   AssignedAt timestamptz [not null, default: `now()`]
@@ -215,13 +254,18 @@ Table RolePermissions {
 }
 
 // ====================================================================================
-// PHÂN HỆ 3: HỒ SƠ GIAN HÀNG & KHO HÀNG GHN (SELLER PROFILES)
+// PHÂN HỆ 3: HỒ SƠ GIAN HÀNG & KHO HÀNG (SELLER PROFILES)
 // ====================================================================================
 
 Table SellerProfiles {
-  Id uuid [pk, default: `uuid_generate_v4()`]
+  Id uuid [pk, default: `gen_random_uuid()`]
   UserId uuid [unique, not null]
   ShopName varchar(100) [unique, not null]
+  AvatarUrl varchar(500) [note: 'Logo / Avatar riêng của Shop']
+  BusinessEmail varchar(255) [note: 'Email liên hệ công việc riêng của gian hàng']
+  IdCardFrontUrl varchar(500) [note: 'Link ảnh mặt trước CCCD']
+  IdCardBackUrl varchar(500) [note: 'Link ảnh mặt sau CCCD']
+  BusinessLicenseUrl varchar(500) [note: 'Link ảnh Giấy phép kinh doanh (nếu có)']
   PickupAddress varchar(255) [not null]
   ProvinceId int [not null]
   DistrictId int [not null]
@@ -243,11 +287,11 @@ Table SellerProfiles {
 }
 
 // ====================================================================================
-// PHÂN HỆ 4: HỆ THỐNG ĐIỂM UY TÍN & ĐÁNH GIÁ (REPUTATION & REVIEWS)
+// PHÂN HỆ 4: HỆ THỐNG ĐIỂM UY TÍN, ĐÁNH GIÁ, TỐ CÁO & XỬ PHẠT (REPUTATION & INTEGRITY)
 // ====================================================================================
 
 Table ReputationScores {
-  Id uuid [pk, default: `uuid_generate_v4()`]
+  Id uuid [pk, default: `gen_random_uuid()`]
   UserId uuid [unique, not null]
   CurrentScore int [not null, default: 50]
   TrustLevel TrustLevel [not null, default: 'Standard']
@@ -269,6 +313,7 @@ Table ReputationLogs {
   Reason ReputationChangeReason [not null]
   ReferenceType ReferenceType
   ReferenceId varchar(100)
+  CreatedBy uuid [note: 'Admin/Support can thiệp chỉnh điểm thủ công']
   CreatedAt timestamptz [not null, default: `now()`]
   UpdatedAt timestamptz [not null, default: `now()`]
   DeletedAt timestamptz
@@ -283,7 +328,7 @@ Table ReputationLogs {
 }
 
 Table UserReviews {
-  Id uuid [pk, default: `uuid_generate_v4()`]
+  Id uuid [pk, default: `gen_random_uuid()`]
   ReviewerId uuid [not null]
   RevieweeId uuid [not null]
   ReviewerRole ReviewerRole [not null, default: 'Buyer']
@@ -291,6 +336,7 @@ Table UserReviews {
   ReferenceId varchar(100) [not null]
   Rating int [not null, note: 'CHECK (Rating BETWEEN 1 AND 5)']
   Comment text
+  MediaUrls text[] [note: 'Mảng link ảnh/video mở hộp sản phẩm']
   IsDisputed boolean [not null, default: false]
   IsDisabled boolean [not null, default: false, note: 'Tạm ẩn đánh giá']
   CreatedAt timestamptz [not null, default: `now()`]
@@ -307,12 +353,58 @@ Table UserReviews {
   Note: 'Đánh giá con người 2 chiều Buyer <-> Seller theo đơn hàng'
 }
 
+Table UserReports {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  ReporterId uuid [not null, note: 'Người gửi đơn tố cáo']
+  ReportedUserId uuid [not null, note: 'Người bị tố cáo vi phạm']
+  ViolationType ReportViolationType [not null]
+  Description text [not null]
+  EvidenceUrls text[] [note: 'Mảng link ảnh/video bằng chứng vi phạm']
+  Status ReportStatus [not null, default: 'Pending']
+  ResolvedBy uuid [note: 'Support Staff / Admin xử lý']
+  ResolutionNote text
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    ReporterId [name: 'idx_UserReports_ReporterId']
+    ReportedUserId [name: 'idx_UserReports_ReportedUserId']
+    Status [name: 'idx_UserReports_Status']
+  }
+  Note: 'Tiếp nhận tố cáo người dùng vi phạm'
+}
+
+Table UserPenalties {
+  Id uuid [pk, default: `gen_random_uuid()`]
+  UserId uuid [not null, note: 'Tài khoản nhận án phạt']
+  ViolationType PenaltyViolationType [not null]
+  Reason varchar(500) [not null]
+  PenaltyApplied PenaltyType [not null]
+  PointsDeducted int [not null, default: 0]
+  Status PenaltyStatus [not null, default: 'Active']
+  IssuedAt timestamptz [not null, default: `now()`]
+  ExpiresAt timestamptz
+  CreatedBy uuid [note: 'Admin/Support ban hành án phạt (NULL nếu cron tự động)']
+  CreatedAt timestamptz [not null, default: `now()`]
+  UpdatedAt timestamptz [not null, default: `now()`]
+  DeletedAt timestamptz
+  IsDeleted boolean [not null, default: false]
+
+  indexes {
+    UserId [name: 'idx_UserPenalties_UserId']
+    Status [name: 'idx_UserPenalties_Status']
+  }
+  Note: 'Biên bản xử phạt & trừ điểm uy tín'
+}
+
 // ====================================================================================
 // PHÂN HỆ 5: CẤU HÌNH HỆ THỐNG TOÀN SÀN (SYSTEM CONFIGS)
 // ====================================================================================
 
 Table SystemConfigs {
-  Id uuid [pk, default: `uuid_generate_v4()`]
+  Id uuid [pk, default: `gen_random_uuid()`]
   ConfigKey varchar(100) [unique, not null]
   ConfigValue varchar(255) [not null]
   DataType ConfigDataType [not null, default: 'String']
@@ -362,8 +454,15 @@ Ref: UserRoles.RoleId > Roles.Id [delete: cascade]
 Ref: RolePermissions.RoleId > Roles.Id [delete: cascade]
 Ref: RolePermissions.PermissionId > Permissions.Id [delete: cascade]
 Ref: SellerProfiles.UserId - Users.Id [delete: cascade]
+Ref: SellerProfiles.ReviewedBy > Users.Id
 Ref: ReputationScores.UserId - Users.Id [delete: cascade]
 Ref: ReputationLogs.UserId > Users.Id [delete: cascade]
-Ref: UserReviews.ReviewerId > Users.Id [delete: cascade]
-Ref: UserReviews.RevieweeId > Users.Id [delete: cascade]
+Ref: ReputationLogs.CreatedBy > Users.Id
+Ref: UserReviews.ReviewerId > Users.Id
+Ref: UserReviews.RevieweeId > Users.Id
+Ref: UserReports.ReporterId > Users.Id
+Ref: UserReports.ReportedUserId > Users.Id
+Ref: UserReports.ResolvedBy > Users.Id
+Ref: UserPenalties.UserId > Users.Id [delete: cascade]
+Ref: UserPenalties.CreatedBy > Users.Id
 Ref: SystemConfigs.UpdatedBy > Users.Id
