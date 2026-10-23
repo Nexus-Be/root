@@ -542,3 +542,237 @@
 
 ### 8.5 `AuditSyncStatus` — Đồng Bộ Log (`Pending = 0`, `InProgress = 1`, `Completed = 2`, `Failed = 3`)
 ### 8.6 `AppEnvironment` — Môi Trường Hệ Thống (`Development = 0`, `Staging = 1`, `Production = 2`)
+
+---
+
+# PHẦN II: BẢN ĐẶC TẢ CHI TIẾT ENTITIES CỦA 8 SERVICES CHO FRONTEND
+## (CORE BUSINESS ENTITY SCHEMAS & FIELD SPECIFICATIONS)
+
+> ⚡ **QUY TẮC MAPPING KIỂU DỮ LIỆU TỪ C# / DB SANG JSON CHO FRONTEND:**
+> 1. `Guid / UUID` ➔ `string` (định dạng `36-ký tự` chuẩn UUID v4, ví dụ: `"3fa85f64-5717-4562-b3fc-2c963f66afa6"`).
+> 2. `DateTimeOffset / Date` ➔ `string` (chuẩn RFC 3339 / ISO 8601 UTC, ví dụ: `"2026-10-23T08:30:00Z"`).
+> 3. `decimal` ➔ `number` (hoặc chuỗi số khi tính toán tiền tệ chính xác).
+> 4. `Enum` ➔ `string` (Chuỗi PascalCase trực quan theo danh mục ở Phần I).
+> 5. Tất cả tên trường (JSON properties) trả về cho FE đều chuẩn hóa theo **camelCase** (ví dụ: `firstName`, `sellerProfile`, `totalAmount`).
+> 6. Không sử dụng Value Object, toàn bộ dữ liệu phản ánh trực tiếp Entity nghiệp vụ đơn giản.
+
+---
+
+## 1. USER SERVICE (Port 8001 | `usermanagement_db`)
+
+### 1.1 Danh Sách 14 Thực Thể Core:
+| Tên Entity C# | Bảng CSDL | Mục Đích Nghiệp Vụ |
+| :--- | :--- | :--- |
+| `User` | `Users` | Định danh tài khoản toàn sàn, thông tin cá nhân cơ bản và trạng thái xác thực. |
+| `SellerProfile` | `SellerProfiles` | Hồ sơ gian hàng người bán: Tên shop, slug, logo, địa chỉ kinh doanh, trạng thái duyệt. |
+| `Role` | `Roles` | Danh mục 4 vai trò cốt lõi (`Buyer`, `Seller`, `SupportStaff`, `Admin`). |
+| `UserRole` | `UserRoles` | Phân quyền vai trò người dùng (Một user có thể vừa là Buyer, vừa là Seller). |
+| `Permission` | `Permissions` | Danh mục đặc quyền phân tán theo tính năng. |
+| `RolePermission` | `RolePermissions` | Gán đặc quyền theo vai trò. |
+| `RefreshToken` | `RefreshTokens` | Quản lý phiên đăng nhập đa thiết bị và thu hồi phiên. |
+| `ReputationScore` | `ReputationScores` | Điểm uy tín (0 - 100) và cấp bậc tin cậy (`TrustLevel`). |
+| `ReputationLog` | `ReputationLogs` | Lịch sử cộng/trừ điểm uy tín kèm lý do và chứng từ tham chiếu. |
+| `UserReview` | `UserReviews` | Đánh giá giữa người mua và người bán sau giao dịch. |
+| `UserReport` | `UserReports` | Hồ sơ khiếu nại, tố cáo hành vi vi phạm gửi lên Staff xử lý. |
+| `UserPenalty` | `UserPenalties` | Quyết định xử phạt, cấm quyền tạm thời hoặc vĩnh viễn. |
+| `SystemConfig` | `SystemConfigs` | Cấu hình tham số động hệ thống. |
+| `AuditLog` | `AuditLogs` | Vết kiểm toán thao tác quản trị trên dữ liệu User. |
+
+### 1.2 Chi Tiết Các Trường Dữ Liệu Entity `User`:
+| Thuộc Tính JSON | Kiểu Dữ Liệu | Nullable | Mô Tả & Ràng Buộc Nghiệp Vụ |
+| :--- | :--- | :---: | :--- |
+| `id` | `string` (UUID) | Không | Khóa chính duy nhất của người dùng. |
+| `email` | `string` | Không | Địa chỉ email duy nhất, chữ thường, dùng đăng nhập. |
+| `firstName` | `string` | Không | Họ và tên đệm (tối đa 100 ký tự). |
+| `lastName` | `string` | Không | Tên chính (tối đa 100 ký tự). |
+| `phoneNumber` | `string?` | Có | Số điện thoại liên lạc (tối đa 50 ký tự). |
+| `identifyNumber` | `string?` | Có | Số CMND/CCCD/Hộ chiếu (yêu cầu khi nâng cấp Seller). |
+| `avatarUrl` | `string?` | Có | URL ảnh đại diện người dùng. |
+| `gender` | `string` (Enum) | Không | `Unspecified`, `Male`, `Female`, `Other`. Mặc định: `Unspecified`. |
+| `dateOfBirth` | `string?` (Date) | Có | Ngày sinh (định dạng `YYYY-MM-DD`). |
+| `address` | `string?` | Có | Địa chỉ liên lạc mặc định. |
+| `status` | `string` (Enum) | Không | `PendingVerification`, `Active`, `Banned`, `Deleted`. Mặc định: `PendingVerification`. |
+| `emailVerifiedAt`| `string?` (ISO) | Có | Thời điểm người dùng kích hoạt OTP thành công. |
+| `bannedAt` | `string?` (ISO) | Có | Thời điểm bị khóa tài khoản (nếu có). |
+| `banReason` | `string?` | Có | Lý do bị khóa tài khoản từ ban quản trị. |
+| `createdAt` | `string` (ISO) | Không | Thời điểm tạo tài khoản (UTC). |
+| `updatedAt` | `string` (ISO) | Không | Thời điểm cập nhật hồ sơ gần nhất (UTC). |
+
+### 1.3 Chi Tiết Entity `SellerProfile`:
+| Thuộc Tính JSON | Kiểu Dữ Liệu | Nullable | Mô Tả |
+| :--- | :--- | :---: | :--- |
+| `id` | `string` (UUID) | Không | Mã hồ sơ gian hàng. |
+| `userId` | `string` (UUID) | Không | Mã định danh chủ shop. |
+| `shopName` | `string` | Không | Tên hiển thị của gian hàng (tối đa 150 ký tự). |
+| `shopSlug` | `string` | Không | Đường dẫn tĩnh thân thiện (URL Slug, duy nhất). |
+| `shopDescription` | `string?` | Có | Giới thiệu gian hàng. |
+| `shopLogoUrl` | `string?` | Có | URL logo gian hàng. |
+| `businessEmail` | `string?` | Có | Email liên hệ kinh doanh. |
+| `businessPhone` | `string?` | Có | Số điện thoại hỗ trợ của shop. |
+| `businessAddress` | `string?` | Có | Địa chỉ kho hàng / văn phòng shop. |
+| `status` | `string` (Enum) | Không | `Pending`, `Approved`, `Rejected`. |
+| `rejectionReason`| `string?` | Có | Lý do từ chối hồ sơ mở shop (nếu bị reject). |
+| `approvedAt` | `string?` (ISO) | Có | Thời điểm Staff phê duyệt mở shop thành công. |
+
+---
+
+## 2. CATALOG SERVICE (Port 8002 | `category_db`)
+
+### 2.1 Danh Sách 9 Thực Thể Core:
+| Tên Entity C# | Bảng CSDL | Mục Đích Nghiệp Vụ |
+| :--- | :--- | :--- |
+| `Category` | `Categories` | Cây danh mục sản phẩm đa cấp (hỗ trợ phân cấp cha - con). |
+| `Product` | `Products` | Thông tin gốc sản phẩm: Tên, mô tả, người bán, hình thức bán. |
+| `ProductVariant` | `ProductVariants` | Biến thể hàng hóa cụ thể (SKU): Màu sắc, size, giá bán lẻ, tồn kho. |
+| `ProductVariantAttribute` | `ProductVariantAttributes` | Giá trị thuộc tính động của từng biến thể (Color = Red, Size = XL). |
+| `ProductImage` | `ProductImages` | Thư viện hình ảnh sản phẩm & biến thể. |
+| `ProductRatingStats` | `ProductRatingStats` | Bảng tổng hợp thống kê số sao đánh giá (1-5 sao) và điểm trung bình. |
+| `ProductReview` | `ProductReviews` | Đánh giá và nhận xét của khách hàng đối với sản phẩm. |
+| `PurchaseRecord` | `PurchaseRecords` | Xác nhận đơn mua hợp lệ để cho phép người dùng viết đánh giá có huy hiệu "Đã mua hàng". |
+| `AuditLog` | `AuditLogs` | Ghi vết thay đổi dữ liệu sản phẩm và danh mục. |
+
+### 2.2 Chi Tiết Các Trường Dữ Liệu Entity `Product`:
+| Thuộc Tính JSON | Kiểu Dữ Liệu | Nullable | Mô Tả |
+| :--- | :--- | :---: | :--- |
+| `id` | `string` (UUID) | Không | Mã định danh duy nhất của sản phẩm. |
+| `sellerId` | `string` (UUID) | Không | Mã người bán sở hữu sản phẩm. |
+| `categoryId` | `string` (UUID) | Không | Mã danh mục sản phẩm thuộc về. |
+| `name` | `string` | Không | Tên hiển thị sản phẩm (tối đa 250 ký tự). |
+| `slug` | `string` | Không | URL slug thân thiện duy nhất toàn sàn. |
+| `description` | `string?` | Có | Nội dung mô tả chi tiết sản phẩm (hỗ trợ HTML/Markdown). |
+| `thumbnailUrl` | `string?` | Có | Ảnh đại diện thu nhỏ chính của sản phẩm. |
+| `saleType` | `string` (Enum) | Không | `FixedPrice` (Giá cố định), `Auction` (Đấu giá), `Both` (Cả hai). |
+| `status` | `string` (Enum) | Không | `Draft` (Nháp), `Active` (Đang bán), `Inactive` (Ngừng bán). |
+| `inactiveReason` | `string` (Enum) | Có | `OutOfStock`, `SuspendedByAdmin`, `SellerVoluntary`, `CounterfeitViolation`. |
+| `basePrice` | `number` | Không | Giá niêm yết cơ bản (VNĐ). |
+| `currency` | `string` | Không | Mặc định: `"VND"`. |
+| `createdAt` | `string` (ISO) | Không | Thời điểm tạo sản phẩm (UTC). |
+
+---
+
+## 3. COMMERCE SERVICE (Port 8003 | `commerce_db`)
+
+### 3.1 Danh Sách 16 Thực Thể Core:
+| Tên Entity C# | Bảng CSDL | Mục Đích Nghiệp Vụ |
+| :--- | :--- | :--- |
+| `Cart` | `Carts` | Giỏ hàng mua sắm theo từng người dùng. |
+| `CartItem` | `CartItems` | Từng mặt hàng trong giỏ, lưu snapshot giá và tên tại thời điểm chọn. |
+| `Order` | `Orders` | Đơn hàng tổng (Master Order) gom nhóm thanh toán từ nhiều shop. |
+| `SubOrder` | `SubOrders` | Đơn hàng con theo từng Shop riêng biệt (đơn vị xử lý giao nhận thực tế). |
+| `SubOrderItem` | `SubOrderItems` | Danh sách sản phẩm, số lượng, đơn giá trong từng đơn con. |
+| `AuctionOrder` | `AuctionOrders` | Đơn hàng phát sinh đặc thù từ người thắng cuộc phiên đấu giá. |
+| `DiscountCode` | `DiscountCodes` | Định nghĩa mã giảm giá (Voucher/Coupon): Giá trị, hạn mức, thời gian. |
+| `DiscountCodeScope` | `DiscountCodeScopes` | Giới hạn áp dụng mã theo Shop, theo Danh mục hoặc Sản phẩm cụ thể. |
+| `DiscountCodeUsage` | `DiscountCodeUsages` | Vết lịch sử từng lượt người dùng sử dụng mã voucher. |
+| `OrderStatusHistory` | `OrderStatusHistories` | Nhật ký hành trình chuyển đổi trạng thái đơn hàng kèm tác nhân. |
+| `OrderInvoice` | `OrderInvoices` | Hồ sơ hóa đơn điện tử phục vụ xuất chứng từ thanh toán. |
+| `OrderCancellation` | `OrderCancellations` | Hồ sơ yêu cầu hủy đơn kèm mã lý do hủy. |
+| `OrderRefund` | `OrderRefunds` | Hồ sơ yêu cầu hoàn tiền và tiến độ giải ngân hoàn tiền. |
+| `SystemSetting` | `SystemSettings` | Tham số cấu hình chính sách thương mại và giới hạn đơn. |
+| `DailyOrderSequence` | `DailyOrderSequences` | Bộ sinh mã số đơn hàng tự tăng theo ngày (chống trùng lặp mã đơn). |
+| `AuditLog` | `AuditLogs` | Vết kiểm toán nghiệp vụ giỏ hàng và đặt đơn. |
+
+### 3.2 Chi Tiết Các Trường Dữ Liệu Entity `Order` (Master Order):
+| Thuộc Tính JSON | Kiểu Dữ Liệu | Nullable | Mô Tả |
+| :--- | :--- | :---: | :--- |
+| `id` | `string` (UUID) | Không | Mã định danh hệ thống của đơn hàng tổng. |
+| `orderNo` | `string` | Không | Mã số đơn hiển thị (ví dụ: `"ORD-20261023-00012"`). |
+| `buyerId` | `string` (UUID) | Không | Mã người mua hàng. |
+| `status` | `string` (Enum) | Không | `PendingPayment`, `Processing`, `Completed`, `Cancelled`, `Disputed`. |
+| `totalAmount` | `number` | Không | Tổng tiền nguyên giá trước khi giảm trừ. |
+| `discountAmount` | `number` | Không | Tổng số tiền được giảm giá qua voucher sàn/shop. |
+| `shippingAmount` | `number` | Không | Tổng cước phí vận chuyển toàn đơn. |
+| `finalAmount` | `number` | Không | Số tiền thực trả cuối cùng của khách hàng. |
+| `paymentMethod` | `string` (Enum) | Không | `Wallet`, `Vnpay`, `Cod`. |
+| `shippingAddress` | `string` | Không | Địa chỉ nhận hàng đầy đủ của người mua. |
+| `placedAt` | `string` (ISO) | Không | Thời điểm khách chốt đặt đơn hàng. |
+| `paidAt` | `string?` (ISO) | Có | Thời điểm thanh toán thành công (nếu thanh toán trước). |
+
+---
+
+## 4. AUCTION SERVICE (Port 8005 | `auction_db`)
+
+### 4.1 Danh Sách 13 Thực Thể Core:
+| Tên Entity C# | Bảng CSDL | Mục Đích Nghiệp Vụ |
+| :--- | :--- | :--- |
+| `Auction` | `Auctions` | Phòng đấu giá sản phẩm: Giá khởi điểm, bước giá, giá mua ngay, tiền cọc. |
+| `AuctionState` | `AuctionStates` | Quản lý trạng thái vòng đời phiên và cơ chế gia hạn tự động (Anti-sniping). |
+| `ProductOpenAuction` | `ProductOpenAuctions` | Khóa chống việc mở 2 phiên đấu giá đồng thời cho cùng 1 SKU sản phẩm. |
+| `Bid` | `Bids` | Từng lượt đặt giá (Bid) của người tham gia. |
+| `BidInvalidation` | `BidInvalidations` | Hồ sơ hủy lượt đặt giá vi phạm quy chế hoặc bị nghi ngờ gian lận. |
+| `BidHistory` | `BidHistories` | Nhật ký thứ tự xếp hạng các mức giá cao nhất. |
+| `AuctionExtension` | `AuctionExtensions` | Lịch sử các lần gia hạn thời gian (cộng thêm 2-5 phút khi có bid ở phút cuối). |
+| `AuctionResult` | `AuctionResults` | Kết quả chốt hạ phiên đấu giá: Người thắng, mức giá trúng, hạn chót thanh toán. |
+| `AuctionSettlement` | `AuctionSettlements` | Quyết toán tài chính phiên đấu: Tiền cọc, phí hoa hồng sàn, tiền trả về cho Seller. |
+| `AuctionStatusHistory` | `AuctionStatusHistories` | Lịch sử chuyển trạng thái phiên đấu giá. |
+| `AuctionConfig` | `AuctionConfigs` | Tham số giới hạn mức giá, bước giá tối thiểu và thời lượng tối đa. |
+| `IdempotencyKey` | `IdempotencyKeys` | Khóa Idempotency chống đặt giá lặp do mạng giật. |
+| `AuditLog` | `AuditLogs` | Vết kiểm toán phòng đấu giá. |
+
+---
+
+## 5. FULFILLMENT SERVICE (Port 8006 | `fulfillment_db`)
+
+### 5.1 Danh Sách 10 Thực Thể Core:
+| Tên Entity C# | Bảng CSDL | Mục Đích Nghiệp Vụ |
+| :--- | :--- | :--- |
+| `Shipment` | `Shipments` | Kiện hàng vận chuyển: Mã vận đơn (`trackingNumber`), hãng vận chuyển, tiền cước. |
+| `ShipmentItem` | `ShipmentItems` | Danh mục sản phẩm được đóng gói trong kiện hàng. |
+| `ShipmentEvent` | `ShipmentEvents` | Mốc thời gian lộ trình kiện hàng (Lấy hàng ➔ Nhập kho ➔ Đang giao ➔ Giao thành công). |
+| `Warehouse` | `Warehouses` | Danh mục kho hàng của Shop hoặc kho liên kết sàn. |
+| `InventoryItem` | `InventoryItems` | Tồn kho thực tế của sản phẩm tại từng kho hàng vật lý. |
+| `InventoryReservation` | `InventoryReservations` | Phiếu giữ tạm tồn kho trong quá trình khách đặt đơn và chờ thanh toán. |
+| `InventoryReservationItem` | `InventoryReservationItems`| Chi tiết số lượng SKU giữ tạm theo đơn. |
+| `InventoryLedger` | `InventoryLedgers` | Sổ cái biến động kho: Nhập, xuất, kiểm kê hao hụt, hoàn hàng. |
+| `Carrier` | `Carriers` | Đối tác vận chuyển (Giao Hàng Nhanh, Viettel Post, Giao Hàng Tiết Kiệm...). |
+| `AuditLog` | `AuditLogs` | Vết kiểm toán thao tác kho vận. |
+
+---
+
+## 6. NOTIFICATION SERVICE (Port 8007 | `notification_db`)
+
+### 6.1 Danh Sách 10 Thực Thể Core:
+| Tên Entity C# | Bảng CSDL | Mục Đích Nghiệp Vụ |
+| :--- | :--- | :--- |
+| `NotificationRecord` | `Notifications` | Bản ghi thông báo trong ứng dụng (In-app Notification) cho người dùng. |
+| `NotificationDelivery` | `NotificationDeliveries` | Lịch sử gửi thông báo đến các kênh (Email, Push Notification, SMS). |
+| `NotificationChannel` | `NotificationChannels` | Cấu hình kênh gửi (FCM, MailKit SMTP, Twilio SMS). |
+| `NotificationTemplate` | `NotificationTemplates` | Mẫu nội dung email / tin nhắn động theo mã template. |
+| `NotificationPreference`| `NotificationPreferences`| Thiết lập nhận thông báo của người dùng (Bật/tắt email đơn hàng, push khuyến mãi). |
+| `DeviceToken` | `DeviceTokens` | Quản lý FCM Push Token của thiết bị di động / trình duyệt Web. |
+| `NotificationLog` | `NotificationLogs` | Nhật ký log chi tiết từng lượt gửi thông báo. |
+| `EventLog` | `EventLogs` | Nhật ký tiếp nhận sự kiện từ RabbitMQ Message Bus. |
+| `BrokerHealthCheck` | `BrokerHealthChecks` | Nhật ký kiểm tra độ sẵn sàng và kết nối tới Message Broker. |
+| `AuditLog` | `AuditLogs` | Vết kiểm toán cấu hình thông báo. |
+
+---
+
+## 7. WALLET SERVICE (Port 8008 | `wallet_db`)
+
+### 7.1 Danh Sách 9 Thực Thể Core:
+| Tên Entity C# | Bảng CSDL | Mục Đích Nghiệp Vụ |
+| :--- | :--- | :--- |
+| `Wallet` | `Wallets` | Ví tiền người dùng: Số dư khả dụng (`balance`), số dư đóng băng ký quỹ (`lockedBalance`). |
+| `WalletAccount` | `WalletAccounts` | Tài khoản hạch toán chi tiết gắn liền với số dư ví. |
+| `WalletTransaction` | `WalletTransactions` | Sổ cái giao dịch tiền tệ (Double-entry Ledger): Nạp tiền, trừ tiền mua hàng, hoàn tiền, nhận thanh toán. |
+| `WalletTopup` | `WalletTopups` | Giao dịch nạp tiền vào ví qua cổng thanh toán VNPay. |
+| `DirectPaymentOrder`| `DirectPaymentOrders`| Đơn thanh toán VNPay trực tiếp không cần qua nạp ví. |
+| `WithdrawalRequest` | `WithdrawalRequests` | Yêu cầu rút tiền từ ví về tài khoản ngân hàng của người dùng / Shop. |
+| `BankAccount` | `BankAccounts` | Danh sách tài khoản ngân hàng thụ hưởng đã liên kết của người dùng. |
+| `VnpayIpnLog` | `VnpayIpnLogs` | Nhật ký nhận Webhook xác nhận thanh toán (IPN) từ VNPay để đối soát. |
+| `AuditLog` | `AuditLogs` | Vết kiểm toán giao dịch tài chính nhạy cảm. |
+
+---
+
+## 8. LOG SERVICE (Port 8004 | `log_db`)
+
+### 8.1 Danh Sách 6 Thực Thể Core:
+| Tên Entity C# | Bảng CSDL | Mục Đích Nghiệp Vụ |
+| :--- | :--- | :--- |
+| `LogEntry` | `Logs` | Dữ liệu nhật ký tập trung từ toàn bộ 8 services gửi về. |
+| `LogEventType` | `LogEventTypes` | Danh mục các mã loại sự kiện hệ thống kèm cờ bật/tắt ghi vết. |
+| `CentralAuditLog` | `CentralAuditLogs` | Sổ cái kiểm toán tập trung cho các tác vụ nhạy cảm toàn sàn. |
+| `AuditSyncBatch` | `AuditSyncBatches` | Lịch trình và trạng thái đồng bộ log từ các service con về trung tâm. |
+| `AppLogFileCatalog` | `AppLogFileCatalogs` | Danh mục quản lý file lưu trữ log định kỳ trên hệ thống file/S3. |
+| `SecurityAuditAlert`| `SecurityAuditAlerts` | Cảnh báo an ninh tự động khi phát hiện tấn công Brute-force hoặc bất thường. |
+
