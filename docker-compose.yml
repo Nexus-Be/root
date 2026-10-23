@@ -1,19 +1,58 @@
-version: "3.8"
+# =============================================================================
+# NEXUS MICROSERVICES - MASTER DOCKER COMPOSE
+# =============================================================================
+# Quy hoạch phân đoạn hệ thống:
+#   1. PHẦN 1: HẠ TẦNG DÙNG CHUNG (RabbitMQ, Redis Local, Tempo, Grafana)
+#   2. PHẦN 2: CƠ SỞ DỮ LIỆU POSTGRESQL (8 Databases độc lập cho 8 Services)
+#   3. PHẦN 3: CÁC DỊCH VỤ MICROSERVICES (.NET 8 - Gateway & 8 Services)
+#
+# BẢNG TỔNG HỢP CỔNG LOCALHOST (HOST PORT -> CONTAINER PORT):
+# -----------------------------------------------------------------------------
+# [Hạ Tầng]
+#   - RabbitMQ AMQP:        5672  -> 5672
+#   - RabbitMQ Web UI:     15672  -> 15672
+#   - Redis Local:          6379  -> 6379
+#   - Grafana Web UI:       3000  -> 3000
+#   - Tempo Tracing:        3200 (UI/API) | 4317 (gRPC) | 4318 (HTTP)
+#
+# [Cơ Sở Dữ Liệu PostgreSQL 16]
+#   - user-db:              5433  -> 5432 (usermanagement_db)
+#   - catalog-db:           5434  -> 5432 (category_db)
+#   - commerce-db:          5435  -> 5432 (commerce_db)
+#   - log-db:               5436  -> 5432 (log_db)
+#   - auction-db:           5437  -> 5432 (auction_db)
+#   - fulfillment-db:       5438  -> 5432 (fulfillment_db)
+#   - notification-db:      5439  -> 5432 (notification_db)
+#   - wallet-db:            5440  -> 5432 (wallet_db)
+#
+# [Các Dịch Vụ Microservices]
+#   - Gateway API:          8000  -> 8000
+#   - User Service:         8001  -> 8001
+#   - Catalog Service:      8002  -> 8002
+#   - Commerce Service:     8003  -> 8003
+#   - Log Service:          8004  -> 8004
+#   - Auction Service:      8005  -> 8005
+#   - Fulfillment Service:  8006  -> 8006
+#   - Notification Service: 8007  -> 8007
+#   - Wallet Service:       8008  -> 8008
+# =============================================================================
 
 services:
+
   # =========================================================================
-  # 1. SHARED PLATFORM INFRASTRUCTURE
+  # PHẦN 1: HẠ TẦNG DÙNG CHUNG (SHARED INFRASTRUCTURE)
   # =========================================================================
 
+  # 1.1 RabbitMQ (Message Bus cho MassTransit Event-Driven)
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: nexus-shared-rabbitmq
     ports:
-      - "5672:5672"    # AMQP protocol
-      - "15672:15672"  # Management Web UI (guest / MatkhaucuaTui123@)
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: MatkhaucuaTui123@
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
@@ -21,18 +60,22 @@ services:
       timeout: 3s
       retries: 5
 
+  # 1.2 Redis (Bộ nhớ đệm phân tán & Rate Limiting cục bộ)
   redis:
     image: redis:7-alpine
     container_name: nexus-shared-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 3
+    volumes:
+      - redis_data:/data
 
+  # 1.3 Tempo (Distributed Tracing Backend)
   tempo:
     image: grafana/tempo:2.4.1
     container_name: nexus-shared-tempo
@@ -41,16 +84,17 @@ services:
       - ./infra/tempo/tempo.yaml:/etc/tempo.yaml:ro
       - tempo_data:/var/tempo
     ports:
-      - "4317:4317"  # OTLP gRPC
-      - "4318:4318"  # OTLP HTTP
-      - "3200:3200"  # Tempo HTTP API
+      - "${TEMPO_PORT_GRPC:-4317}:4317"
+      - "${TEMPO_PORT_HTTP:-4318}:4318"
+      - "${TEMPO_PORT_UI:-3200}:3200"
     restart: unless-stopped
 
+  # 1.4 Grafana (Dashboard trực quan hóa Metrics & Traces)
   grafana:
     image: grafana/grafana:10.4.2
     container_name: nexus-shared-grafana
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3000}:3000"
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
@@ -61,168 +105,179 @@ services:
       - tempo
     restart: unless-stopped
 
+
   # =========================================================================
-  # 2. MICROSERVICES DATABASES (PostgreSQL 16)
+  # PHẦN 2: CƠ SỞ DỮ LIỆU POSTGRESQL (DATABASES)
   # =========================================================================
 
+  # 2.1 Database cho User Service (Port 5433)
   user-db:
     image: postgres:16-alpine
     container_name: nexus-user-db
     environment:
       POSTGRES_DB: usermanagement_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5433:5432"
+      - "${USER_DB_PORT:-5433}:5432"
     volumes:
       - user_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d usermanagement_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d usermanagement_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.2 Database cho Catalog Service (Port 5434)
   catalog-db:
     image: postgres:16-alpine
     container_name: nexus-catalog-db
     environment:
       POSTGRES_DB: category_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5434:5432"
+      - "${CATALOG_DB_PORT:-5434}:5432"
     volumes:
       - catalog_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d category_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d category_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.3 Database cho Commerce Service (Port 5435)
   commerce-db:
     image: postgres:16-alpine
     container_name: nexus-commerce-db
     environment:
       POSTGRES_DB: commerce_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5435:5432"
+      - "${COMMERCE_DB_PORT:-5435}:5432"
     volumes:
       - commerce_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d commerce_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d commerce_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.4 Database cho Log Service (Port 5436)
   log-db:
     image: postgres:16-alpine
     container_name: nexus-log-db
     environment:
       POSTGRES_DB: log_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5436:5432"
+      - "${LOG_DB_PORT:-5436}:5432"
     volumes:
       - log_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d log_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d log_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.5 Database cho Auction Service (Port 5437)
   auction-db:
     image: postgres:16-alpine
     container_name: nexus-auction-db
     environment:
       POSTGRES_DB: auction_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5437:5432"
+      - "${AUCTION_DB_PORT:-5437}:5432"
     volumes:
       - auction_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d auction_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d auction_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.6 Database cho Fulfillment Service (Port 5438)
   fulfillment-db:
     image: postgres:16-alpine
     container_name: nexus-fulfillment-db
     environment:
       POSTGRES_DB: fulfillment_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5438:5432"
+      - "${FULFILLMENT_DB_PORT:-5438}:5432"
     volumes:
       - fulfillment_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d fulfillment_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d fulfillment_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.7 Database cho Notification Service (Port 5439)
   notification-db:
     image: postgres:16-alpine
     container_name: nexus-notification-db
     environment:
       POSTGRES_DB: notification_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5439:5432"
+      - "${NOTIFICATION_DB_PORT:-5439}:5432"
     volumes:
       - notification_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d notification_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d notification_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.8 Database cho Wallet Service (Port 5440)
   wallet-db:
     image: postgres:16-alpine
     container_name: nexus-wallet-db
     environment:
       POSTGRES_DB: wallet_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5440:5432"
+      - "${WALLET_DB_PORT:-5440}:5432"
     volumes:
       - wallet_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d wallet_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d wallet_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+
   # =========================================================================
-  # 3. API GATEWAY & MICROSERVICES APPLICATIONS
+  # PHẦN 3: CÁC DỊCH VỤ ỨNG DỤNG (MICROSERVICES APPLICATIONS)
   # =========================================================================
 
+  # 3.1 API Gateway (Điểm vào duy nhất - Port 8000)
   gateway:
     build:
       context: ./src/Services/ApiGateway/Nexus.Gateway
       dockerfile: Dockerfile
     container_name: nexus-apigateway
     ports:
-      - "8000:8000"
+      - "${GATEWAY_PORT:-8000}:8000"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - Gateway__RedisConnectionString=redis:6379
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - Gateway__RedisConnectionString=${REDIS_CONNECTION_STRING:-redis:6379}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - Gateway__Services__users__Address=http://user-service:8001
       - Gateway__Services__catalog__Address=http://catalog-service:8002
@@ -241,44 +296,49 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 
+  # 3.2 User Service (Auth, OTP, Profile, Roles - Port 8001)
   user-service:
     build:
       context: ./src/Services/User
       dockerfile: Dockerfile
     container_name: nexus-user-service
     ports:
-      - "8001:8001"
+      - "${USER_SERVICE_PORT:-8001}:8001"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=user-db;Port=5432;Database=usermanagement_db;Username=postgres;Password=MatkhaucuaTui123@
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ConnectionStrings__DefaultConnection=Host=user-db;Port=5432;Database=usermanagement_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
       - RabbitMq__Host=rabbitmq
-      - RabbitMq__Port=5672
-      - RabbitMq__User=guest
-      - RabbitMq__Password=MatkhaucuaTui123@
+      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - RabbitMq__User=${RABBITMQ_USER:-guest}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      - Redis__ConnectionString=${REDIS_CONNECTION_STRING:-redis:6379}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
     depends_on:
       user-db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
 
+  # 3.3 Catalog Service (Sản phẩm, danh mục, kho ảo seller - Port 8002)
   catalog-service:
     build:
       context: ./src/Services/Catalog
       dockerfile: Dockerfile
     container_name: nexus-catalog-service
     ports:
-      - "8002:8002"
+      - "${CATALOG_SERVICE_PORT:-8002}:8002"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=catalog-db;Port=5432;Database=category_db;Username=postgres;Password=MatkhaucuaTui123@
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ConnectionStrings__DefaultConnection=Host=catalog-db;Port=5432;Database=category_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
       - RabbitMq__Host=rabbitmq
-      - RabbitMq__Port=5672
-      - RabbitMq__User=guest
-      - RabbitMq__Password=MatkhaucuaTui123@
+      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - RabbitMq__User=${RABBITMQ_USER:-guest}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
     depends_on:
       catalog-db:
@@ -289,20 +349,21 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # 3.4 Commerce Service (Giỏ hàng, Đơn hàng, Checkout Saga - Port 8003)
   commerce-service:
     build:
       context: ./src/Services/Commerce
       dockerfile: Dockerfile
     container_name: nexus-commerce-service
     ports:
-      - "8003:8003"
+      - "${COMMERCE_SERVICE_PORT:-8003}:8003"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=commerce-db;Port=5432;Database=commerce_db;Username=postgres;Password=MatkhaucuaTui123@
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ConnectionStrings__DefaultConnection=Host=commerce-db;Port=5432;Database=commerce_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
       - RabbitMq__Host=rabbitmq
-      - RabbitMq__Port=5672
-      - RabbitMq__User=guest
-      - RabbitMq__Password=MatkhaucuaTui123@
+      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - RabbitMq__User=${RABBITMQ_USER:-guest}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
     depends_on:
       commerce-db:
@@ -313,20 +374,21 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # 3.5 Log Service (Audit Log tập trung - Port 8004)
   log-service:
     build:
       context: ./src/Services/Log
       dockerfile: Dockerfile
     container_name: nexus-log-service
     ports:
-      - "8004:8004"
+      - "${LOG_SERVICE_PORT:-8004}:8004"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=log-db;Port=5432;Database=log_db;Username=postgres;Password=MatkhaucuaTui123@
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ConnectionStrings__DefaultConnection=Host=log-db;Port=5432;Database=log_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
       - RabbitMq__Host=rabbitmq
-      - RabbitMq__Port=5672
-      - RabbitMq__User=guest
-      - RabbitMq__Password=MatkhaucuaTui123@
+      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - RabbitMq__User=${RABBITMQ_USER:-guest}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
     depends_on:
       log-db:
@@ -337,20 +399,21 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # 3.6 Auction Service (Đấu giá, đặt giá bid - Port 8005)
   auction-service:
     build:
       context: ./src/Services/Auction
       dockerfile: Dockerfile
     container_name: nexus-auction-service
     ports:
-      - "8005:8005"
+      - "${AUCTION_SERVICE_PORT:-8005}:8005"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=auction-db;Port=5432;Database=auction_db;Username=postgres;Password=MatkhaucuaTui123@
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ConnectionStrings__DefaultConnection=Host=auction-db;Port=5432;Database=auction_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
       - RabbitMq__Host=rabbitmq
-      - RabbitMq__Port=5672
-      - RabbitMq__User=guest
-      - RabbitMq__Password=MatkhaucuaTui123@
+      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - RabbitMq__User=${RABBITMQ_USER:-guest}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
     depends_on:
       auction-db:
@@ -361,20 +424,21 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # 3.7 Fulfillment Service (Kho vật lý, Tính phí ship, Vận đơn - Port 8006)
   fulfillment-service:
     build:
       context: ./src/Services/Fulfillment
       dockerfile: Dockerfile
     container_name: nexus-fulfillment-service
     ports:
-      - "8006:8006"
+      - "${FULFILLMENT_SERVICE_PORT:-8006}:8006"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=fulfillment-db;Port=5432;Database=fulfillment_db;Username=postgres;Password=MatkhaucuaTui123@
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ConnectionStrings__DefaultConnection=Host=fulfillment-db;Port=5432;Database=fulfillment_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
       - RabbitMq__Host=rabbitmq
-      - RabbitMq__Port=5672
-      - RabbitMq__User=guest
-      - RabbitMq__Password=MatkhaucuaTui123@
+      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - RabbitMq__User=${RABBITMQ_USER:-guest}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
     depends_on:
       fulfillment-db:
@@ -385,20 +449,21 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # 3.8 Notification Service (Thông báo, Cài đặt tùy chọn nhận tin - Port 8007)
   notification-service:
     build:
       context: ./src/Services/Notification
       dockerfile: Dockerfile
     container_name: nexus-notification-service
     ports:
-      - "8007:8007"
+      - "${NOTIFICATION_SERVICE_PORT:-8007}:8007"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=notification-db;Port=5432;Database=notification_db;Username=postgres;Password=MatkhaucuaTui123@
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ConnectionStrings__DefaultConnection=Host=notification-db;Port=5432;Database=notification_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
       - RabbitMq__Host=rabbitmq
-      - RabbitMq__Port=5672
-      - RabbitMq__User=guest
-      - RabbitMq__Password=MatkhaucuaTui123@
+      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - RabbitMq__User=${RABBITMQ_USER:-guest}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
     depends_on:
       notification-db:
@@ -409,20 +474,21 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # 3.9 Wallet Service (Ví điện tử, nạp, rút, chuyển tiền - Port 8008)
   wallet-service:
     build:
       context: ./src/Services/Wallet
       dockerfile: Dockerfile
     container_name: nexus-wallet-service
     ports:
-      - "8008:8008"
+      - "${WALLET_SERVICE_PORT:-8008}:8008"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=wallet-db;Port=5432;Database=wallet_db;Username=postgres;Password=MatkhaucuaTui123@
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ConnectionStrings__DefaultConnection=Host=wallet-db;Port=5432;Database=wallet_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
       - RabbitMq__Host=rabbitmq
-      - RabbitMq__Port=5672
-      - RabbitMq__User=guest
-      - RabbitMq__Password=MatkhaucuaTui123@
+      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - RabbitMq__User=${RABBITMQ_USER:-guest}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
     depends_on:
       wallet-db:
@@ -433,13 +499,32 @@ services:
         condition: service_started
     restart: unless-stopped
 
+
+# =============================================================================
+# MẠNG DÙNG CHUNG & VOLUMES LƯU TRỮ DỮ LIỆU BỀN VỮNG
+# =============================================================================
+networks:
+  default:
+    name: nexus-network
+
 volumes:
+  redis_data:
+    name: nexus-be_redis_data
   tempo_data:
+    name: nexus-be_tempo_data
   user_db_data:
+    name: nexus-be_user_db_data
   catalog_db_data:
+    name: nexus-be_catalog_db_data
   commerce_db_data:
+    name: nexus-be_commerce_db_data
   log_db_data:
+    name: nexus-be_log_db_data
   auction_db_data:
+    name: nexus-be_auction_db_data
   fulfillment_db_data:
+    name: nexus-be_fulfillment_db_data
   notification_db_data:
+    name: nexus-be_notification_db_data
   wallet_db_data:
+    name: nexus-be_wallet_db_data

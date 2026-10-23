@@ -1,19 +1,29 @@
-version: "3.8"
+# =============================================================================
+# NEXUS MICROSERVICES - INFRASTRUCTURE & DATABASES ONLY
+# =============================================================================
+# Dành riêng cho việc chỉ khởi chạy hạ tầng (DBs, RabbitMQ, Redis, Grafana/Tempo)
+# phục vụ trường hợp bạn muốn chạy các service .NET trực tiếp từ IDE / Visual Studio / CLI.
+#
+# Lệnh sử dụng:
+#   docker compose -f docker-compose.infra.yml up -d
+# =============================================================================
 
 services:
+
   # =========================================================================
-  # 1. SHARED PLATFORM INFRASTRUCTURE
+  # PHẦN 1: HẠ TẦNG DÙNG CHUNG (SHARED INFRASTRUCTURE)
   # =========================================================================
 
+  # 1.1 RabbitMQ (Message Bus cho MassTransit Event-Driven)
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: nexus-shared-rabbitmq
     ports:
-      - "5672:5672"    # AMQP protocol
-      - "15672:15672"  # Management Web UI (guest / MatkhaucuaTui123@)
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: MatkhaucuaTui123@
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
@@ -21,18 +31,22 @@ services:
       timeout: 3s
       retries: 5
 
+  # 1.2 Redis (Bộ nhớ đệm phân tán & Rate Limiting cục bộ)
   redis:
     image: redis:7-alpine
     container_name: nexus-shared-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 3
+    volumes:
+      - redis_data:/data
 
+  # 1.3 Tempo (Distributed Tracing Backend)
   tempo:
     image: grafana/tempo:2.4.1
     container_name: nexus-shared-tempo
@@ -41,16 +55,17 @@ services:
       - ./infra/tempo/tempo.yaml:/etc/tempo.yaml:ro
       - tempo_data:/var/tempo
     ports:
-      - "4317:4317"  # OTLP gRPC
-      - "4318:4318"  # OTLP HTTP
-      - "3200:3200"  # Tempo HTTP API
+      - "${TEMPO_PORT_GRPC:-4317}:4317"
+      - "${TEMPO_PORT_HTTP:-4318}:4318"
+      - "${TEMPO_PORT_UI:-3200}:3200"
     restart: unless-stopped
 
+  # 1.4 Grafana (Dashboard trực quan hóa Metrics & Traces)
   grafana:
     image: grafana/grafana:10.4.2
     container_name: nexus-shared-grafana
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3000}:3000"
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
@@ -61,161 +76,189 @@ services:
       - tempo
     restart: unless-stopped
 
+
   # =========================================================================
-  # 2. MICROSERVICES DATABASES (PostgreSQL 16) - Ports 5433 -> 5440
+  # PHẦN 2: CƠ SỞ DỮ LIỆU POSTGRESQL (DATABASES)
   # =========================================================================
 
+  # 2.1 Database cho User Service (Port 5433)
   user-db:
     image: postgres:16-alpine
     container_name: nexus-user-db
     environment:
       POSTGRES_DB: usermanagement_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5433:5432"
+      - "${USER_DB_PORT:-5433}:5432"
     volumes:
       - user_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d usermanagement_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d usermanagement_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.2 Database cho Catalog Service (Port 5434)
   catalog-db:
     image: postgres:16-alpine
     container_name: nexus-catalog-db
     environment:
       POSTGRES_DB: category_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5434:5432"
+      - "${CATALOG_DB_PORT:-5434}:5432"
     volumes:
       - catalog_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d category_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d category_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.3 Database cho Commerce Service (Port 5435)
   commerce-db:
     image: postgres:16-alpine
     container_name: nexus-commerce-db
     environment:
       POSTGRES_DB: commerce_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5435:5432"
+      - "${COMMERCE_DB_PORT:-5435}:5432"
     volumes:
       - commerce_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d commerce_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d commerce_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.4 Database cho Log Service (Port 5436)
   log-db:
     image: postgres:16-alpine
     container_name: nexus-log-db
     environment:
       POSTGRES_DB: log_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5436:5432"
+      - "${LOG_DB_PORT:-5436}:5432"
     volumes:
       - log_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d log_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d log_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.5 Database cho Auction Service (Port 5437)
   auction-db:
     image: postgres:16-alpine
     container_name: nexus-auction-db
     environment:
       POSTGRES_DB: auction_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5437:5432"
+      - "${AUCTION_DB_PORT:-5437}:5432"
     volumes:
       - auction_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d auction_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d auction_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.6 Database cho Fulfillment Service (Port 5438)
   fulfillment-db:
     image: postgres:16-alpine
     container_name: nexus-fulfillment-db
     environment:
       POSTGRES_DB: fulfillment_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5438:5432"
+      - "${FULFILLMENT_DB_PORT:-5438}:5432"
     volumes:
       - fulfillment_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d fulfillment_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d fulfillment_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.7 Database cho Notification Service (Port 5439)
   notification-db:
     image: postgres:16-alpine
     container_name: nexus-notification-db
     environment:
       POSTGRES_DB: notification_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5439:5432"
+      - "${NOTIFICATION_DB_PORT:-5439}:5432"
     volumes:
       - notification_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d notification_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d notification_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 2.8 Database cho Wallet Service (Port 5440)
   wallet-db:
     image: postgres:16-alpine
     container_name: nexus-wallet-db
     environment:
       POSTGRES_DB: wallet_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: MatkhaucuaTui123@
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
     ports:
-      - "5440:5432"
+      - "${WALLET_DB_PORT:-5440}:5432"
     volumes:
       - wallet_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d wallet_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d wallet_db"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+
+# =============================================================================
+# MẠNG DÙNG CHUNG & VOLUMES LƯU TRỮ DỮ LIỆU BỀN VỮNG
+# =============================================================================
+networks:
+  default:
+    name: nexus-network
+
 volumes:
+  redis_data:
+    name: nexus-be_redis_data
   tempo_data:
+    name: nexus-be_tempo_data
   user_db_data:
+    name: nexus-be_user_db_data
   catalog_db_data:
+    name: nexus-be_catalog_db_data
   commerce_db_data:
+    name: nexus-be_commerce_db_data
   log_db_data:
+    name: nexus-be_log_db_data
   auction_db_data:
+    name: nexus-be_auction_db_data
   fulfillment_db_data:
+    name: nexus-be_fulfillment_db_data
   notification_db_data:
+    name: nexus-be_notification_db_data
   wallet_db_data:
+    name: nexus-be_wallet_db_data
