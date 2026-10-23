@@ -52,23 +52,23 @@ Tuyệt đối **không nên làm song song cả 7 service cùng lúc**. Hãy tr
 
 ```
 [GIAI ĐOẠN 1: NỀN TẢNG ĐỊNH DANH & DỮ LIỆU SẢN PHẨM]
-  ├── 1. UserService       (Port 8001 | usermanagement_db:5432)  <── BẮT BUỘC ĐẦU TIÊN
-  └── 2. CatalogService    (Port 8002 | category_db:5433)        <── BẮT BUỘC THỨ HAI
+  ├── 1. UserService       (Port 8001 | usermanagement_db:5433)  <── BẮT BUỘC ĐẦU TIÊN
+  └── 2. CatalogService    (Port 8002 | category_db:5434)        <── BẮT BUỘC THỨ HAI
            │
            ▼
 [GIAI ĐOẠN 2: NGHIỆP VỤ MUA BÁN & GIAO DỊCH CỐT LÕI]
-  ├── 3. CommerceService   (Port 8003 | commerce_db:5434)        <── Giỏ hàng, Đơn hàng, Saga
-  └── 4. WalletService     (Port 8008 | wallet_db:5439)          <── Ví tiền, Trừ tiền checkout
+  ├── 3. CommerceService   (Port 8003 | commerce_db:5435)        <── Giỏ hàng, Đơn hàng, Saga
+  └── 4. WalletService     (Port 8008 | wallet_db:5440)          <── Ví tiền, Trừ tiền checkout
            │
            ▼
 [GIAI ĐOẠN 3: GIAO VẬN VÀ ĐẤU GIÁ]
-  ├── 5. FulfillmentService(Port 8006 | fulfillment_db:5437)     <── Kho vật lý, Vận đơn
-  └── 6. AuctionService    (Port 8005 | auction_db:5436)         <── Phòng đấu giá, Bidding
+  ├── 5. FulfillmentService(Port 8006 | fulfillment_db:5438)     <── Kho vật lý, Vận đơn
+  └── 6. AuctionService    (Port 8005 | auction_db:5437)         <── Phòng đấu giá, Bidding
            │
            ▼
 [GIAI ĐOẠN 4: HỆ THỐNG PHỤ TRỢ & SỰ KIỆN TOÀN SÀN]
-  ├── 7. NotificationService(Port 8007 | notification_db:5438)   <── Lắng nghe Event, gửi thông báo
-  └── 8. LogService         (Port 8004 | log_db:5435)            <── Lắng nghe Event, lưu System Log Trail
+  ├── 7. NotificationService(Port 8007 | notification_db:5439)   <── Lắng nghe Event, gửi thông báo
+  └── 8. LogService         (Port 8004 | log_db:5436)            <── Lắng nghe Event, lưu System Log Trail
 ```
 
 ### Chi Tiết Lý Do Phải Theo Thứ Tự Này:
@@ -186,12 +186,12 @@ Mở file `src/Services/ApiGateway/Nexus.Gateway/gateway.runtime.json`, sửa:
 
 | Service | Database Port | gRPC Port | Domain Entities | EF Core DbContext | gRPC Server Impl | RabbitMQ Events | Tracing | Gateway Test |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **ApiGateway** | 6379 | 8000 | N/A | N/A | ✅ Client Done | N/A | ✅ Done | ✅ 105/105 Passed |
-| **UserService** | 5432 | 8001 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| **CatalogService** | 5433 | 8002 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| **CommerceService** | 5434 | 8003 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| **WalletService** | 5439 | 8008 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| **FulfillmentService** | 5437 | 8006 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| **AuctionService** | 5436 | 8005 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| **NotificationService** | 5438 | 8007 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| **LogService** | 5435 | 8004 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| **ApiGateway** | 6379 | 8000 | N/A | N/A | ✅ Client Done | N/A | ✅ Done | ✅ 120/120 Passed |
+| **UserService** | 5433 | 8001 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| **CatalogService** | 5434 | 8002 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| **CommerceService** | 5435 | 8003 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| **WalletService** | 5440 | 8008 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| **FulfillmentService** | 5438 | 8006 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| **AuctionService** | 5437 | 8005 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| **NotificationService** | 5439 | 8007 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| **LogService** | 5436 | 8004 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |

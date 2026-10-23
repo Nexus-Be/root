@@ -9,7 +9,7 @@ Tài liệu này là **Bộ Chỉ Dẫn & Đặc Tả Kỹ Thuật Trung Tâm (M
 | File Đặc Tả | Phạm Vi Trách Nhiệm | Nội Dung Chính |
 |:---|:---|:---|
 | [00_MASTER_SYSTEM_ARCHITECTURE.md](00_MASTER_SYSTEM_ARCHITECTURE.md) | Kiến trúc tổng thể | Sơ đồ C4 Container, DDD Bounded Contexts, mô hình Edge Gateway, nguyên tắc độc lập giữa các service. |
-| [01_SERVICE_CATALOG_PORT_MAP.md](01_SERVICE_CATALOG_PORT_MAP.md) | Quy hoạch mạng & hạ tầng | Bảng phân bổ cổng HTTP/gRPC (`8000`-`8008`), cổng Database PostgreSQL (`5432`-`5439`), RabbitMQ, Redis. |
+| [01_SERVICE_CATALOG_PORT_MAP.md](01_SERVICE_CATALOG_PORT_MAP.md) | Quy hoạch mạng & hạ tầng | Bảng phân bổ cổng HTTP/gRPC (`8000`-`8008`), cổng Database PostgreSQL (`5433`-`5440`), RabbitMQ, Redis. |
 | [02_INTER_SERVICE_COMMUNICATION_MATRIX.md](02_INTER_SERVICE_COMMUNICATION_MATRIX.md) | Giao tiếp liên service | Ma trận gRPC đồng bộ vs RabbitMQ (MassTransit 8.4.1) bất đồng bộ, Điều phối Saga phân tán (Checkout Saga). |
 | [03_SECURITY_RBAC_DATA_GOVERNANCE.md](03_SECURITY_RBAC_DATA_GOVERNANCE.md) | Bảo mật & Chuẩn dữ liệu | JWT Bearer Lifecycle, ma trận phân quyền 5 roles, Gateway Mode (`Standard` vs `Bypass`), chuẩn lỗi RFC 9110 / RFC 6585. |
 | [04_SHARED_CONTRACTS_REGISTRY.md](04_SHARED_CONTRACTS_REGISTRY.md) | Hợp đồng giao tiếp chung | Single Source of Truth `Contracts/shop.proto`, sự kiện dùng chung (Domain Events), quy trình nâng cấp hợp đồng an toàn. |

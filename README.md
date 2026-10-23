@@ -9,17 +9,17 @@ Hệ sinh thái thương mại điện tử & đấu giá trực tuyến phân t
 | Dịch Vụ | Port App | Database | Port DB | Nhiệm Vụ Chính |
 | :--- | :---: | :--- | :---: | :--- |
 | **ApiGateway** | **8000** | Redis 7 | **6379** | Điểm vào duy nhất, Rate Limiting, JWT/RBAC, Mock Engine |
-| **UserService** | **8001** | `usermanagement_db` (Postgres) | **5432** | Đăng ký, đăng nhập, JWT, User Profile, RBAC, Duyệt Seller |
-| **CatalogService** | **8002** | `category_db` (Postgres) | **5433** | Danh mục, sản phẩm, quản lý tồn kho kho ảo của Seller |
-| **CommerceService** | **8003** | `commerce_db` (Postgres) | **5434** | Giỏ hàng, đơn hàng, điều phối Checkout Saga |
-| **LogService** | **8004** | `log_db` (Postgres) | **5435** | Nhật ký hệ thống tập trung (Centralized log trail) |
-| **AuctionService** | **8005** | `auction_db` (Postgres) | **5436** | Phiên đấu giá, trả giá (bid), đồng hồ đếm ngược |
-| **FulfillmentService** | **8006** | `fulfillment_db` (Postgres) | **5437** | Kho bãi vật lý, tính phí vận chuyển, tra cứu vận đơn |
-| **NotificationService** | **8007** | `notification_db` (Postgres) | **5438** | Quản lý thông báo, cài đặt thông báo người dùng |
-| **WalletService** | **8008** | `wallet_db` (Postgres) | **5439** | Ví điện tử, số dư, nạp/rút tiền, chuyển tiền nội bộ |
+| **UserService** | **8001** | `usermanagement_db` (Postgres) | **5433** | Đăng ký, đăng nhập, JWT, User Profile, RBAC, Duyệt Seller |
+| **CatalogService** | **8002** | `category_db` (Postgres) | **5434** | Danh mục, sản phẩm, quản lý tồn kho kho ảo của Seller |
+| **CommerceService** | **8003** | `commerce_db` (Postgres) | **5435** | Giỏ hàng, đơn hàng, điều phối Checkout Saga |
+| **LogService** | **8004** | `log_db` (Postgres) | **5436** | Nhật ký hệ thống tập trung (Centralized log trail) |
+| **AuctionService** | **8005** | `auction_db` (Postgres) | **5437** | Phiên đấu giá, trả giá (bid), đồng hồ đếm ngược |
+| **FulfillmentService** | **8006** | `fulfillment_db` (Postgres) | **5438** | Kho bãi vật lý, tính phí vận chuyển, tra cứu vận đơn |
+| **NotificationService** | **8007** | `notification_db` (Postgres) | **5439** | Quản lý thông báo, cài đặt thông báo người dùng |
+| **WalletService** | **8008** | `wallet_db` (Postgres) | **5440** | Ví điện tử, số dư, nạp/rút tiền, chuyển tiền nội bộ |
 
 ### Hạ Tầng Dùng Chung (Shared Platform Infrastructure)
-- **RabbitMQ**: Port `5672` (AMQP), Port `15672` (Management UI tại `http://localhost:15672`, tài khoản: `guest` / `guest`).
+- **RabbitMQ**: Port `5672` (AMQP), Port `15672` (Management UI tại `http://localhost:15672`, tài khoản: `guest` / `MatkhaucuaTui123@`).
 - **Redis**: Port `6379` (Distributed Cache & Rate Limiting).
 - **Grafana Tempo**: Port `4317` (OTLP gRPC), Port `4318` (OTLP HTTP), Port `3200` (API).
 - **Grafana Dashboard**: Port `3000` (`http://localhost:3000/explore`).
@@ -38,7 +38,7 @@ docker compose -f docker-compose.infra.yml up -d
 ```
 Lệnh này khởi động toàn bộ:
 - RabbitMQ, Redis, Tempo, Grafana
-- 7 Cơ sở dữ liệu PostgreSQL độc lập (ports 5432 - 5438)
+- 8 Cơ sở dữ liệu PostgreSQL độc lập (ports 5433 - 5440, mật khẩu mặc định `MatkhaucuaTui123@`)
 
 ---
 
@@ -51,7 +51,7 @@ docker compose up -d
 Lệnh này dựng trọn bộ:
 - Toàn bộ Hạ tầng & Databases
 - API Gateway (port 8000)
-- 7 Microservices container (ports 8001 - 8007)
+- 8 Microservices container (ports 8001 - 8008)
 
 ---
 
@@ -61,7 +61,7 @@ Mỗi Microservice là một repository độc lập và sở hữu file `docker
 # Ví dụ khi chỉ làm việc với CatalogService:
 cd src/Services/Catalog
 
-# 1. Chỉ bật Database riêng của Catalog (category_db tại port 5433):
+# 1. Chỉ bật Database riêng của Catalog (category_db tại port 5434):
 docker compose up -d db
 
 # 2. Chạy ứng dụng Catalog cục bộ:

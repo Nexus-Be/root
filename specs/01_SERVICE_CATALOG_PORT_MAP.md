@@ -9,14 +9,14 @@ Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ s
 | Service Name | Cổng HTTP REST | Cổng gRPC | Database Engine | Cổng DB | DB Name | Cổng Redis / RabbitMQ |
 |:---|:---:|:---:|:---:|:---:|:---|:---:|
 | **ApiGateway** | `8000` | N/A *(Client)* | Redis *(Cache/RateLimit)* | `6379` | `db0` | Redis: `6379` |
-| **UserService** | N/A | `8001` | PostgreSQL | `5432` | `usermanagement_db` | RabbitMQ: `5672` |
-| **CatalogService** | N/A | `8002` | PostgreSQL | `5433` | `category_db` | RabbitMQ: `5672` |
-| **CommerceService** | N/A | `8003` | PostgreSQL | `5434` | `commerce_db` | RabbitMQ: `5672` |
-| **LogService** | N/A | `8004` | PostgreSQL | `5435` | `log_db` | RabbitMQ: `5672` |
-| **AuctionService** | N/A | `8005` | PostgreSQL | `5436` | `auction_db` | RabbitMQ: `5672` |
-| **FulfillmentService** | N/A | `8006` | PostgreSQL | `5437` | `fulfillment_db` | RabbitMQ: `5672` |
-| **NotificationService** | N/A | `8007` | PostgreSQL | `5438` | `notification_db` | RabbitMQ: `5672` |
-| **WalletService** | N/A | `8008` | PostgreSQL | `5439` | `wallet_db` | RabbitMQ: `5672` |
+| **UserService** | N/A | `8001` | PostgreSQL | `5433` | `usermanagement_db` | RabbitMQ: `5672` |
+| **CatalogService** | N/A | `8002` | PostgreSQL | `5434` | `category_db` | RabbitMQ: `5672` |
+| **CommerceService** | N/A | `8003` | PostgreSQL | `5435` | `commerce_db` | RabbitMQ: `5672` |
+| **LogService** | N/A | `8004` | PostgreSQL | `5436` | `log_db` | RabbitMQ: `5672` |
+| **AuctionService** | N/A | `8005` | PostgreSQL | `5437` | `auction_db` | RabbitMQ: `5672` |
+| **FulfillmentService** | N/A | `8006` | PostgreSQL | `5438` | `fulfillment_db` | RabbitMQ: `5672` |
+| **NotificationService** | N/A | `8007` | PostgreSQL | `5439` | `notification_db` | RabbitMQ: `5672` |
+| **WalletService** | N/A | `8008` | PostgreSQL | `5440` | `wallet_db` | RabbitMQ: `5672` |
 
 ---
 
@@ -25,10 +25,14 @@ Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ s
 ### A. RabbitMQ Message Broker
 - **AMQP Port**: `5672` (Giao tiếp Event Bus qua MassTransit).
 - **Management UI Port**: `15672` (Giao diện web quản trị queues/exchanges: `http://localhost:15672`).
-- **Mặc định**: `guest` / `guest`.
+- **Mặc định**: `guest` / `MatkhaucuaTui123@`.
 - **Cấu hình Exchange**:
   - Dạng Exchange: `fanout` hoặc `topic`.
   - Tên Exchange: Theo chuẩn kebab-case của MassTransit (`order-submitted`, `stock-reserved`, v.v.).
+
+### B. Cơ Sở Dữ Liệu PostgreSQL (Dải Port 5433 -> 5440)
+- **Tài khoản mặc định**: `postgres` / `MatkhaucuaTui123@`.
+- **Dải port ánh xạ host**: Bắt đầu từ `5433` đến `5440`, tránh hoàn toàn xung đột với port PostgreSQL mặc định `5432` trên máy host.
 
 ### B. Redis In-Memory Store
 - **Cổng**: `6379`.

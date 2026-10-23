@@ -14,3 +14,7 @@ appsettings*.json
 !appsettings*.example.json
 !appsettings.example.json
 !appsettings.*.example.json
+
+# Local tools & config
+.tools/
+nuget.config

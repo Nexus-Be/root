@@ -23,7 +23,7 @@ UserService    CatalogService  CommerceService  LogService     AuctionService ..
   │               │               │               │               │                  │
   ▼               ▼               ▼               ▼               ▼                  ▼
 [User DB]     [Catalog DB]    [Commerce DB]   [Log DB]        [Auction DB]      [Fulfillment DB, Notification DB...]
-(Port 5432)   (Port 5433)     (Port 5434)     (Port 5435)     (Port 5436)       (Ports 5437, 5438, 5439)
+(Port 5433)   (Port 5434)     (Port 5435)     (Port 5436)     (Port 5437)       (Ports 5438, 5439, 5440)
   │               │               │               │               │                  │
   └───────────────┴───────────────┼───────────────┴───────────────┴──────────────────┘
                                   ▼ (Async Event Bus / Saga Coordination)

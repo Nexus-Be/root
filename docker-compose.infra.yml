@@ -10,10 +10,10 @@ services:
     container_name: nexus-shared-rabbitmq
     ports:
       - "5672:5672"    # AMQP protocol
-      - "15672:15672"  # Management Web UI (guest / guest)
+      - "15672:15672"  # Management Web UI (guest / MatkhaucuaTui123@)
     environment:
       RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_PASS: MatkhaucuaTui123@
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
@@ -62,7 +62,7 @@ services:
     restart: unless-stopped
 
   # =========================================================================
-  # 2. MICROSERVICES DATABASES (PostgreSQL 16)
+  # 2. MICROSERVICES DATABASES (PostgreSQL 16) - Ports 5433 -> 5440
   # =========================================================================
 
   user-db:
@@ -71,9 +71,9 @@ services:
     environment:
       POSTGRES_DB: usermanagement_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: MatkhaucuaTui123@
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - user_db_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -89,9 +89,9 @@ services:
     environment:
       POSTGRES_DB: category_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: MatkhaucuaTui123@
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - catalog_db_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -107,9 +107,9 @@ services:
     environment:
       POSTGRES_DB: commerce_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: MatkhaucuaTui123@
     ports:
-      - "5434:5432"
+      - "5435:5432"
     volumes:
       - commerce_db_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -125,9 +125,9 @@ services:
     environment:
       POSTGRES_DB: log_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: MatkhaucuaTui123@
     ports:
-      - "5435:5432"
+      - "5436:5432"
     volumes:
       - log_db_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -143,9 +143,9 @@ services:
     environment:
       POSTGRES_DB: auction_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: MatkhaucuaTui123@
     ports:
-      - "5436:5432"
+      - "5437:5432"
     volumes:
       - auction_db_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -161,9 +161,9 @@ services:
     environment:
       POSTGRES_DB: fulfillment_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: MatkhaucuaTui123@
     ports:
-      - "5437:5432"
+      - "5438:5432"
     volumes:
       - fulfillment_db_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -179,9 +179,9 @@ services:
     environment:
       POSTGRES_DB: notification_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: MatkhaucuaTui123@
     ports:
-      - "5438:5432"
+      - "5439:5432"
     volumes:
       - notification_db_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -197,9 +197,9 @@ services:
     environment:
       POSTGRES_DB: wallet_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: MatkhaucuaTui123@
     ports:
-      - "5439:5432"
+      - "5440:5432"
     volumes:
       - wallet_db_data:/var/lib/postgresql/data
     restart: unless-stopped

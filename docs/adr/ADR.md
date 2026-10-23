@@ -76,21 +76,21 @@ Các hệ thống microservices thường gặp thất bại lớn nếu dùng c
 
 #### 2. Quyết định kiến trúc (Decision)
 - Áp dụng triệt để nguyên tắc **Domain-Driven Design (DDD) Bounded Contexts** và **Database-Per-Service**:
-  - Mỗi microservice sở hữu cơ sở dữ liệu **PostgreSQL vật lý riêng biệt** trên các port mạng riêng biệt (`5432` đến `5439`).
+  - Mỗi microservice sở hữu cơ sở dữ liệu **PostgreSQL vật lý riêng biệt** trên các port mạng riêng biệt (`5433` đến `5440`, mật khẩu mặc định `MatkhaucuaTui123@`).
   - **CẤM TUYỆT ĐỐI:** Truy cập trực tiếp vào DB của service khác (cấm cross-database query, cấm tạo foreign key trỏ sang DB khác).
   - Mọi trao đổi hoặc tra cứu dữ liệu liên service bắt buộc phải qua **gRPC Query** (đồng bộ) hoặc **Domain Event qua RabbitMQ** (bất đồng bộ).
 
 #### 3. Phân bổ Database vật lý:
 | Service | Bounded Context | Tên DB | Port DB |
 |:---|:---|:---|:---:|
-| `UserService` | Identity & Access Management | `usermanagement_db` | `5432` |
-| `CatalogService` | Product & Inventory Catalog | `category_db` | `5433` |
-| `CommerceService` | Shopping Cart & Order Lifecycle | `commerce_db` | `5434` |
-| `LogService` | Centralized Logging & System Auditing | `log_db` | `5435` |
-| `AuctionService` | Real-time Bidding & Auction Room | `auction_db` | `5436` |
-| `FulfillmentService` | Logistics, Warehouses & Delivery | `fulfillment_db` | `5437` |
-| `NotificationService` | Multi-channel Messaging & Alerts | `notification_db` | `5438` |
-| `WalletService` | Digital Wallet, Balance & Transfers | `wallet_db` | `5439` |
+| `UserService` | Identity & Access Management | `usermanagement_db` | `5433` |
+| `CatalogService` | Product & Inventory Catalog | `category_db` | `5434` |
+| `CommerceService` | Shopping Cart & Order Lifecycle | `commerce_db` | `5435` |
+| `LogService` | Centralized Logging & System Auditing | `log_db` | `5436` |
+| `AuctionService` | Real-time Bidding & Auction Room | `auction_db` | `5437` |
+| `FulfillmentService` | Logistics, Warehouses & Delivery | `fulfillment_db` | `5438` |
+| `NotificationService` | Multi-channel Messaging & Alerts | `notification_db` | `5439` |
+| `WalletService` | Digital Wallet, Balance & Transfers | `wallet_db` | `5440` |
 
 ---
 
