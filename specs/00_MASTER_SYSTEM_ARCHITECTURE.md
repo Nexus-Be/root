@@ -1,5 +1,9 @@
 # 00 — KIẾN TRÚC TỔNG THỂ HỆ THỐNG (MASTER SYSTEM ARCHITECTURE)
 
+> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — sơ đồ dưới đây là **kiến trúc mục tiêu**. Hiện thực: 3/8 backend có gRPC server, 1/8 có client ở Gateway, Saga chưa triển khai, không service nào phát JWT. Bằng chứng: `docs/plans/SCORECARD.md` + `docs/plans/audit/`.
+> **Nguồn sự thật:** code.
+> **Cập nhật lần cuối:** 2026-10-24.
+
 Tài liệu này cung cấp sơ đồ kiến trúc mức cao (System Architecture), ranh giới miền (Domain-Driven Design Bounded Contexts) và nguyên lý vận hành cốt lõi của hệ sinh thái Microservices **Nexus**.
 
 ---
@@ -28,7 +32,7 @@ UserService    CatalogService  CommerceService  LogService     AuctionService ..
   └───────────────┴───────────────┼───────────────┴───────────────┴──────────────────┘
                                   ▼ (Async Event Bus / Saga Coordination)
                         [ RabbitMQ Event Bus : 5672 ]
-                        (MassTransit 8.4.1 - Outbox / Inbox)
+                        (MassTransit 8.3.0 - Outbox / Inbox)
 ```
 
 ---
@@ -46,7 +50,7 @@ UserService    CatalogService  CommerceService  LogService     AuctionService ..
 
 3. **Hai Trục Giao Tiếp Song Song**:
    - **Đồng bộ (Synchronous Query/Command)**: Dùng **gRPC Protobuf v3** cho các tác vụ cần kết quả tức thì (xác thực token, kiểm tra số dư, đọc chi tiết sản phẩm).
-   - **Bất đồng bộ (Asynchronous Event-Driven)**: Dùng **RabbitMQ + MassTransit 8.4.1** cho các sự kiện trạng thái thay đổi (`OrderCreated`, `InventoryReserved`, `PaymentCompleted`, `LogRecorded`).
+   - **Bất đồng bộ (Asynchronous Event-Driven)**: Dùng **RabbitMQ + MassTransit 8.3.0** cho các sự kiện trạng thái thay đổi (`OrderCreated`, `InventoryReserved`, `PaymentCompleted`, `LogRecorded`).
 
 4. **Quản Lý Giao Dịch Phân Tán Bằng Saga State Machine**:
    - Không sử dụng Distributed Transaction / 2-Phase Commit (2PC).

@@ -84,7 +84,7 @@ Khi bắt đầu một phiên làm việc tại bất kỳ repository nào, AI A
 - `specs/00_MASTER_SYSTEM_ARCHITECTURE.md`: Kiến trúc C4 tổng quan, Bounded Contexts.
 - `specs/01_SERVICE_CATALOG_PORT_MAP.md`: Quy hoạch dải port HTTP/gRPC (`8000`-`8008`) và DB (`5433`-`5440`).
 - `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md`: Ma trận gRPC đồng bộ vs RabbitMQ Saga.
-- `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md`: JWT Bearer, ma trận phân quyền 5 roles, chuẩn RFC 9110.
+- `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md`: JWT Bearer, ma trận phân quyền 6 roles, chuẩn RFC 9110.
 - `specs/04_SHARED_CONTRACTS_REGISTRY.md`: Nguồn sự thật Protobuf và các sự kiện dùng chung.
 - `specs/05_AI_AGENT_ORCHESTRATION_GUIDELINES.md`: Bộ chỉ dẫn toàn diện cho AI Agents.
 - `AGENTS.md`: Quy tắc vận hành và quy chuẩn thông báo lỗi.
@@ -147,3 +147,25 @@ Một task của AI Agent chỉ được coi là hoàn tất khi:
 - [ ] `dotnet build <Solution>.sln -c Release` thành công 100% (0 error).
 - [ ] `dotnet test <Solution>.sln -c Release` vượt qua 100% các bài kiểm thử.
 - [ ] Trạng thái Git sạch, không commit file rác (`bin/`, `obj/`, `.vs/`, `.idea/`).
+
+---
+
+## 🧪 NGUYÊN TẮC 7: HIỆN TRẠNG HỆ THỐNG (BẮT BUỘC ĐỌC TRƯỚC KHI CODE)
+
+> Số liệu dưới đây được đo bằng `.tools/audit/audit.py` + đọc toàn bộ **511 file `.cs` / 20.612 dòng** của 9 repo (ngày 2026-10-24). Đây là **sự thật đã kiểm chứng**, không phải mô tả kiến trúc.
+
+**Điểm audit: 176 phát hiện — P0 42, P1 23, P2 111.** Chi tiết: `docs/plans/SCORECARD.md`, `docs/plans/FIX_BACKLOG.md`, `docs/plans/audit/*_AUDIT.md`.
+
+1. **Bề mặt dịch vụ**: 5/9 service (Auction, Catalog, Commerce, Fulfillment, Notification) **không có gRPC server** — chỉ `GET /health`. Ngoại lệ duy nhất là **Catalog**: ngoài `/health` còn **13 action REST mock** (`Catalog.Api/Controllers/{Products,Categories,Inventory}Controller.cs`, `Program.cs:69 app.MapControllers()`) — REST chạy được nhưng bind thẳng `MockCatalogStore`, không đi qua Application Layer và **0/13 rpc gRPC**. Chỉ User/Log/Wallet có gRPC server thật.
+2. **Hợp đồng**: 4 bản `shop.proto` / 3 hash; Gateway chỉ có 1 client (`users`). Không có nguồn sự thật duy nhất ⇒ **cấm sửa `shop.proto`** khi chưa chốt (xem `specs/04` §1).
+3. **Auth**: Gateway validate JWT nhưng **không service nào phát JWT**; `UsersApi/Login` chưa implement; 8 backend không có authentication và tin header `x-user-id`.
+4. **Trace/Observability**: `x-trace-id` chỉ được set ở Gateway, **0 backend đọc**; OTel package chỉ có ở Gateway/Log/Wallet (6 service có config nhưng không có package ⇒ config chết).
+5. **Event bus**: chỉ **1 đường publish còn sống** (`User` → `SendOtpEmailIntegrationEvent`; 4 lời gọi `Publish` trong `Wallet/.../StockReservedConsumer.cs` nằm trong consumer không bao giờ chạy); 6/8 event trong `specs/04` không tồn tại trong code; Saga chưa triển khai.
+6. **Test**: chỉ 3/9 repo có test project (Gateway 98 case, User 9 case, Notification 2 case). `dotnet build` 9/9 pass, nhưng **6/9 repo 0 test**.
+7. **Bí mật**: JWT key thật trong `ApiGateway/Nexus.Gateway/appsettings.json:26`; `MatkhaucuaTui123@` trong 6 `Infrastructure/DependencyInjection.cs`, 8 `.env.example`, 8 `README.md`, 8 `docker-compose.yml`.
+8. **Hạ tầng local**: image `postgres:16-alpine` trên máy dev bị hỏng (`exec format error`, script entrypoint 0 byte) ⇒ 8 container DB `Restarting (255)`; `/health` vẫn báo Healthy khi DB chết. Xem `docs/plans/SETUP_PHASE_PLAN.md`.
+
+**Quy tắc rút ra:**
+- **Code nghiệp vụ mới CHỈ được bắt đầu sau khi hoàn tất Track S** trong `docs/plans/SETUP_PHASE_PLAN.md` (proto SoT, secret, port, CI, image Postgres).
+- Mọi tài liệu khi sửa **phải có banner trạng thái** theo `docs/plans/DOC_UPDATE_PROTOCOL.md` (✅ CÓ / ⚠️ MỘT PHẦN / ❌ CHƯA CÓ + nguồn sự thật + ngày).
+- Không được coi `/health` là bằng chứng “service hoạt động”: nó không kiểm tra DB.

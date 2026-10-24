@@ -1,5 +1,9 @@
 # 01 — BẢN ĐỒ DỊCH VỤ, CỔNG MẠNG & HẠ TẦNG (SERVICE CATALOG & PORT MAP)
 
+> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — port trong Docker/`docker-compose` khớp 8/8 ✅, nhưng `Properties/launchSettings.json` (chạy local bằng `dotnet run`) lệch **6/8** service (xem §1.1). Ma trận gRPC ở `specs/02` chỉ có 1/8 service thực sự có server.
+> **Nguồn sự thật:** code + `docker-compose.yml` + `*/Properties/launchSettings.json`. Báo cáo kiểm chứng: `docs/plans/audit/ROOT_INFRA_AUDIT.md`.
+> **Cập nhật lần cuối:** 2026-10-24.
+
 Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ sở dữ liệu và biến môi trường kết nối cho toàn bộ 8 Microservices và ApiGateway.
 
 ---
@@ -17,6 +21,25 @@ Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ s
 | **FulfillmentService** | N/A | `8006` | PostgreSQL | `5438` | `fulfillment_db` | RabbitMQ: `5672` |
 | **NotificationService** | N/A | `8007` | PostgreSQL | `5439` | `notification_db` | RabbitMQ: `5672` |
 | **WalletService** | N/A | `8008` | PostgreSQL | `5440` | `wallet_db` | RabbitMQ: `5672` |
+
+**Trạng thái bảng trên:** ✅ cổng trong `Dockerfile` (`EXPOSE` + `ASPNETCORE_URLS`) và `docker-compose.yml` khớp 8/8 service; ✅ connection string trong `appsettings*.json` khớp DB port/name 8/8. Cột "Cổng HTTP REST" ghi `N/A` là **đặc tả mục tiêu** — hiện mọi service đều mở `/health` qua HTTP và Catalog mở thêm REST mock (xem §1.1).
+
+### 1.1. Cổng THẬT khi chạy local (`dotnet run` → `launchSettings.json`)
+
+Chạy `dotnet run` **không** dùng port đặc tả trừ khi set `ASPNETCORE_URLS`. Đây là port thật trong `Properties/launchSettings.json`:
+
+| Service | Port spec | Port local thật | Trạng thái |
+|:---|:---:|:---:|:---|
+| UserService | `8001` | `8001` | ✅ khớp |
+| CatalogService | `8002` | `5272` (https `7232`) | ❌ lệch |
+| CommerceService | `8003` | `5105` (https `7035`) | ❌ lệch |
+| LogService | `8004` | `5280` (https `7103`) | ❌ lệch |
+| AuctionService | `8005` | `5230` (https `7202`) | ❌ lệch |
+| FulfillmentService | `8006` | `5228` (https `7014`) | ❌ lệch |
+| NotificationService | `8007` | `8007` | ✅ khớp |
+| WalletService | `8008` | `5096` (https `7218`) | ❌ lệch |
+
+Hệ quả: gọi Gateway ở chế độ `Real` tới `http://localhost:8002` sẽ **connection refused** nếu service chạy bằng `dotnet run`. Việc sửa 6 file `launchSettings.json` nằm trong `docs/plans/FIX_BACKLOG.md` (FIX-013) / `docs/plans/SETUP_PHASE_PLAN.md` (S-05).
 
 ---
 
@@ -44,11 +67,13 @@ Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ s
 ### C. OpenTelemetry OTLP Collector (Observability)
 - **gRPC OTLP Receiver Port**: `4317`.
 - **HTTP OTLP Receiver Port**: `4318`.
-- **Tích hợp**: Mọi gRPC call và Gateway request đều được gán `traceId` chuẩn W3C TraceContext và chuyển tiếp qua header `x-trace-id`.
+- **Tích hợp (hiện trạng 2026-10-24):** ⚠️ Một phần — Gateway có set/echo `x-trace-id` (`Nexus.Gateway/Dispatching/GrpcServiceCaller.cs:68`, `Extensions/PipelineExtensions.cs:48`) nhưng **0/8 backend đọc header này** (grep `x-trace-id` trong `src/Services/*` ngoài ApiGateway = 0 hit) và **không** có propagation W3C `traceparent`. OpenTelemetry chỉ được cài ở 3 project: `Nexus.Gateway`, `Wallet.Api`, `Log.Api`; 6 service còn lại có key `Otel:Endpoint` trong `appsettings.json` nhưng không có package ⇒ cấu hình chết.
 
 ---
 
 ## 3. NGUYÊN TẮC QUY ĐỊNH CỔNG CHO AI AGENTS
 
 - **Tuyệt đối KHÔNG thay đổi dải port** từ `8000` đến `8008` trong code hay cấu hình.
+  - ⚠️ **Vi phạm hiện tại:** 6/8 `launchSettings.json` đang dùng port ngoài dải (xem §1.1). Đây là lỗi cần sửa về `8000–8008`, không phải ngoại lệ được phép.
 - Khi tạo mới một service backend hoặc thêm endpoint, địa chỉ gRPC upstream trong `appsettings.json` của Gateway phải ánh xạ đúng port của service đó (ví dụ Catalog $\rightarrow$ `http://localhost:8002`).
+  - ⚠️ **Vi phạm hiện tại:** `Nexus.Gateway/appsettings.json` khai 8 service `Mode: "Real"` + address `8001–8008`, nhưng `Extensions/GrpcClientsExtension.cs:12` chỉ đăng ký **1** client (`users`). 7 địa chỉ còn lại không có client tương ứng nên không gọi được.

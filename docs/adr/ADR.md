@@ -143,7 +143,7 @@ Phân định dứt khoát 2 kênh giao tiếp:
    - Dành cho:
      - Gateway gọi xuống Backend Services để lấy dữ liệu hiển thị (ví dụ: `ListProducts`, `GetCart`, `GetProfile`).
      - Tác vụ cần xác nhận kết quả tức thì trong mạng nội bộ với độ trễ cực thấp (< 5ms).
-2. **Giao tiếp Bất đồng bộ (Asynchronous Event-Driven) qua RabbitMQ & MassTransit 8.4.1**:
+2. **Giao tiếp Bất đồng bộ (Asynchronous Event-Driven) qua RabbitMQ & MassTransit 8.3.0**:
    - Dành cho:
      - Các sự kiện trạng thái thay đổi (Domain Events): `OrderSubmittedEvent`, `StockReservedEvent`, `PaymentCompletedEvent`.
      - Kích hoạt các luồng xử lý phi tập trung không chặn người dùng (gửi email thông báo, ghi log hệ thống).

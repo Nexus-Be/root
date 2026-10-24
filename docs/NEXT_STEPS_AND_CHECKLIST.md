@@ -132,7 +132,7 @@ Khi bắt tay vào code bất kỳ service nào (Ví dụ: `UserService`), hãy 
     builder.Services.AddServiceObservability(builder.Configuration, "Tên_Service");
     ```
 
-- [ ] **Bước 7: Tích Hợp RabbitMQ & MassTransit 8.4.1 (Nếu có bắn hoặc nhận Event)**
+- [ ] **Bước 7: Tích Hợp RabbitMQ & MassTransit 8.3.0 (Nếu có bắn hoặc nhận Event)**
   - Cấu hình `AddMassTransit` kèm **Transactional Outbox Pattern** với EF Core PostgreSQL để chống thất thoát event khi lưu DB.
 
 ---

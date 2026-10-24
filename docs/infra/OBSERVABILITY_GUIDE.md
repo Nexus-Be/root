@@ -1,6 +1,10 @@
 # HƯỚNG DẪN GIÁM SÁT PHÂN TÁN (DISTRIBUTED TRACING): GRAFANA & TEMPO
 ## (OPENTELEMETRY TRACING, WATERFALL VISUALIZATION & DEBUGGING GUIDE)
 
+> **Trạng thái triển khai (2026-10-24):** ❌ Không đạt — trace **không xuyên service**. Bằng chứng: `x-trace-id` chỉ được Gateway sinh và gắn vào metadata (`ApiGateway/Nexus.Gateway/Dispatching/GrpcServiceCaller.cs:68`) nhưng **0/8 backend đọc header này** (grep toàn 8 repo = 0 hit); package OpenTelemetry chỉ có ở **3** project (`ApiGateway`, `Log.Api`, `Wallet.Api`) — 6 service còn lại có key `Otel:Endpoint` trong config nhưng **không có package** ⇒ config chết. Vì vậy biểu đồ Waterfall trong Tempo hiện chỉ có span của Gateway (và của Log/Wallet nếu có gọi trực tiếp), **không** nối được Gateway → backend → DB.
+> **Nguồn sự thật:** `*/Api/Program.cs`, `*.Api.csproj`, `Dispatching/GrpcServiceCaller.cs`.
+> **Cập nhật lần cuối:** 2026-10-24.
+
 > **Mục tiêu tài liệu**: Hướng dẫn cách thức vận hành của hệ thống giám sát phân tán (Observability) trong Nexus Microservices, cách lấy mã `X-Trace-Id` từ phản hồi của Gateway và sử dụng giao diện Grafana Tempo để xem biểu đồ dòng chảy (Waterfall Diagram), phát hiện điểm nghẽn hiệu năng (bottlenecks) và gỡ lỗi xuyên suốt từ Gateway qua Microservices, CSDL và RabbitMQ.
 
 ---

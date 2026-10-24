@@ -1,6 +1,12 @@
 # 05 — CHỈ DẪN VẬN HÀNH DÀNH CHO AI CODING AGENTS (AI AGENT ORCHESTRATION GUIDELINES)
 
+> **Trạng thái triển khai (2026-10-24):** ⚠️ Tài liệu này là **bản sao thứ ba** của cùng một bộ luật (đã có `AGENTS.md` và `CLAUDE.md` ở root, md5 giống hệt nhau). Nội dung 6 nguyên tắc dưới đây **trùng khớp** `AGENTS.md` — khi có sai lệch, **`AGENTS.md` là canonical**, tài liệu này chỉ giữ vai trò **ma trận đọc file** (Mục 3).
+> **Nguồn sự thật:** `AGENTS.md` (luật) + code (hiện trạng).
+> **Cập nhật lần cuối:** 2026-10-24.
+
 Tài liệu này là **Bộ Quy Chuẩn Tối Thượng (Supreme Guidelines)** dành cho các AI Coding Agents (Claude, Cursor, Copilot, DeepSeek Harness, Windsurf, Aider...) và lập trình viên khi hoạt động trong toàn bộ hệ sinh thái Microservices **Nexus**. Bộ quy chuẩn này được thiết kế để giải quyết triệt để vấn đề **mất ngữ cảnh (context loss) khi chuyển phiên/chuyển máy** và **loại bỏ hoàn toàn ảo giác (zero hallucination)**.
+
+> **Đọc kèm:** `docs/plans/SCORECARD.md` (điểm 8 tiêu chí theo từng repo) và `docs/plans/audit/*_AUDIT.md` (bằng chứng chi tiết). Mục 3 dưới đây liệt kê **file phải đọc**, không phải danh sách tính năng đã có.
 
 ---
 
@@ -55,7 +61,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 2 | `specs/00_MASTER_SYSTEM_ARCHITECTURE.md` | Bounded Contexts, kiến trúc C4, các quy tắc phân tách service. |
 | 3 | `specs/01_SERVICE_CATALOG_PORT_MAP.md` | Bảng phân bổ cổng mạng HTTP/gRPC (`8000`-`8008`) và DB (`5433`-`5440`). |
 | 4 | `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md` | Ma trận gRPC đồng bộ vs RabbitMQ MassTransit Saga. |
-| 5 | `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md` | Cơ chế xác thực JWT Bearer, phân quyền 5 roles, chuẩn lỗi RFC 9110. |
+| 5 | `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md` | Cơ chế xác thực JWT Bearer, phân quyền 6 roles, chuẩn lỗi RFC 9110. |
 | 6 | `specs/04_SHARED_CONTRACTS_REGISTRY.md` | Quy chuẩn Protobuf `shop.proto` và các Domain Events dùng chung. |
 | 7 | `specs/05_AI_AGENT_ORCHESTRATION_GUIDELINES.md` | Tài liệu quy chuẩn vận hành agent hiện tại. |
 
@@ -188,8 +194,10 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
    - Mỗi microservice chỉ truy cập cơ sở dữ liệu riêng của mình. Không query chéo database của service khác.
 3. **CẤU HÌNH CỔNG MẠNG VÀ DATABASE LÀ BẤT BIẾN**:
    - Dải port `8000`-`8008` và port database `5433`-`5440` là cố định. Cấm tự ý đổi port trong code hay config.
-4. **NGUỒN SỰ THẬT DUY NHẤT CHO PROTOBUF LÀ `Contracts/shop.proto`**:
-   - Mọi gRPC client và server phải đồng bộ tuyệt đối với `Contracts/shop.proto` tại ApiGateway. Không tự ý đổi tag numbers hiện có.
+4. **NGUỒN SỰ THẬT DUY NHẤT CHO PROTOBUF — HIỆN CHƯA TỒN TẠI**:
+   - Đặc tả: mọi gRPC client và server phải đồng bộ tuyệt đối với `Contracts/shop.proto`; không tự ý đổi tag numbers hiện có.
+   - **Hiện trạng (2026-10-24):** có **4 bản `shop.proto` với 3 nội dung khác nhau** (Gateway 66 dòng chỉ `UsersApi`; User 390 dòng/9 service/63 rpc; Log + Wallet 364 dòng/9 service/61 rpc). Bản được coi là canonical lại **thiếu nhất**. Xem `specs/04_SHARED_CONTRACTS_REGISTRY.md` §1 để biết bảng so sánh và `docs/plans/FIX_BACKLOG.md` mục `FIX-002` cho hướng sửa (proto canonical ở root + script đồng bộ + CI check hash).
+   - Cho tới khi có nguồn sự thật: **không sửa `shop.proto` ở bất kỳ repo nào** nếu chưa chốt quyết định này.
 
 ---
 

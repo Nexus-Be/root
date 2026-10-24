@@ -44,16 +44,22 @@ Hệ thống Nexus cho phép bạn chia tách việc kiểm thử thành 3 trụ
 Các backend microservices chạy giao thức gRPC trên HTTP/2. Nhờ gói thư viện **`Grpc.AspNetCore.Server.Reflection`**, bạn không cần phải copy hay import file `shop.proto` thủ công vào Postman. Postman sẽ tự động truy vấn Server và sinh ra danh sách hàm cùng mẫu payload JSON.
 
 ### Bảng Cổng gRPC Các Backend Services
-| Service | Cổng gRPC | Service Name trong Protobuf |
-| :--- | :---: | :--- |
-| **User Service** | `localhost:8001` | `ShoppingCart.Contracts.V1.UsersApi` |
-| **Catalog Service** | `localhost:8002` | `ShoppingCart.Contracts.V1.CatalogApi` |
-| **Commerce Service**| `localhost:8003` | `ShoppingCart.Contracts.V1.CommerceApi` |
-| **Log Service** | `localhost:8004` | `ShoppingCart.Contracts.V1.LogApi` |
-| **Auction Service** | `localhost:8005` | `ShoppingCart.Contracts.V1.AuctionApi` |
-| **Fulfillment Service** | `localhost:8006` | `ShoppingCart.Contracts.V1.FulfillmentApi` |
-| **Notification Service**| `localhost:8007` | `ShoppingCart.Contracts.V1.NotificationApi` |
-| **Wallet Service** | `localhost:8008` | `ShoppingCart.Contracts.V1.WalletApi` |
+
+> **Trạng thái triển khai (2026-10-24): ❌ Không đạt — chỉ 3/8 service thật sự có gRPC server.** Chỉ các service đánh dấu ✅ mới có `MapGrpcService<…>()` + `MapGrpcReflectionService()`, nên chỉ chúng mới test được bằng Postman reflection. 5 service còn lại **chưa có gRPC** (chỉ `MapGet("/health")`) — bước “Postman tự truy vấn Server” bên dưới sẽ **thất bại** với chúng.
+> **Nguồn sự thật:** `Program.cs` từng service + `*.Api/Services/*GrpcService.cs`.
+
+| Service | Cổng HTTP/gRPC | Service Name trong Protobuf | gRPC server |
+| :--- | :---: | :--- | :--- |
+| **User Service** | `localhost:8001` | `ShoppingCart.Contracts.V1.UsersApi` | ✅ có (`User.Api/Program.cs:64`), reflection bật ở Development |
+| **Catalog Service** | `localhost:8002` | `ShoppingCart.Contracts.V1.CatalogApi` | ❌ **không có** — chỉ REST mock (`api/v1/catalog/*`) |
+| **Commerce Service**| `localhost:8003` | `ShoppingCart.Contracts.V1.CommerceApi` | ❌ **không có** — chỉ `/health` |
+| **Log Service** | `localhost:8004` | `ShoppingCart.Contracts.V1.LogApi` | ✅ có (`Log.Api/Program.cs:47`), reflection bật ở Development |
+| **Auction Service** | `localhost:8005` | `ShoppingCart.Contracts.V1.AuctionApi` | ❌ **không có** — chỉ `/health` |
+| **Fulfillment Service** | `localhost:8006` | `ShoppingCart.Contracts.V1.FulfillmentApi` | ❌ **không có** — chỉ `/health` |
+| **Notification Service**| `localhost:8007` | `ShoppingCart.Contracts.V1.NotificationApi` | ❌ **không có** — chỉ `/health` |
+| **Wallet Service** | `localhost:8008` | `ShoppingCart.Contracts.V1.WalletApi` | ✅ có (`Wallet.Api/Program.cs:47`), reflection bật ở Development |
+
+> ⚠️ Cả 8 service đều có `GET /health` (trả `{"status":"Healthy","service":"…"}`), nhưng **`/health` không phản ánh DB**: khi Postgres chết, `/health` vẫn trả 200 (bằng chứng: `docs/plans/SETUP_PHASE_PLAN.md` §2.4). Không dùng `/health` để kết luận service “chạy được”.
 
 ---
 

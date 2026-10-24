@@ -1,6 +1,10 @@
 # TRUNG TÂM TÀI LIỆU KỸ THUẬT HỆ THỐNG NEXUS
 ## (NEXUS SYSTEM DOCUMENTATION PORTAL)
 
+> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — bộ tài liệu này mô tả **kiến trúc mục tiêu**, trong khi nhiều tính năng chưa có trong code (5/9 service chưa có điểm vào gRPC, Saga chưa triển khai, `POST /api/v1/log/batch` không tồn tại). Đọc kèm bảng điểm thực tế tại `docs/plans/SCORECARD.md` và bằng chứng chi tiết tại `docs/plans/audit/`.
+> **Nguồn sự thật:** code trong `src/Services/*` (không phải tài liệu này).
+> **Cập nhật lần cuối:** 2026-10-24.
+
 Chào mừng bạn đến với trung tâm tài liệu kỹ thuật toàn diện của hệ sinh thái **Nexus Microservices Backend (.NET 8 LTS, C# 12)**.
 
 ---
@@ -28,7 +32,7 @@ Tài liệu thực chiến giúp lập trình viên bắt tay vào làm việc n
   👉 Kim chỉ nam hành động: Lộ trình 4 giai đoạn phát triển 8 services theo thứ tự phụ thuộc dữ liệu và checklist 7 bước code service chuẩn.
 
 * **[Đặc Tả Danh Mục Entity & Enum Chuẩn Form Cho Frontend (FRONTEND_ENTITY_AND_ENUM_CATALOG.md)](FRONTEND_ENTITY_AND_ENUM_CATALOG.md)**  
-  👉 Tra cứu 78 Enums và 88 Entities chuẩn kiểu dữ liệu, nullability và validation cho đội ngũ Frontend.
+  👉 Tra cứu **78 Enums** (✅ khớp code) và **86 entity class** trong `*/Domain/Entities` / **87 bảng** trong `dbml/service/*.dbml` (⚠️ trước đây ghi “88 Entities” — không có nguồn nào cho ra 88).
 
 * **[Cẩm Nang Kiến Trúc & Cấu Trúc Thư Mục Cho Từng Service (Service Guides)]**:
   Mỗi repository của từng service đều có tài liệu `README.md` riêng biệt hướng dẫn chi tiết luồng nghiệp vụ, các thư mục và quy trình phát triển tính năng mới:

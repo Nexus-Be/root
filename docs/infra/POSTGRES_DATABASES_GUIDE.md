@@ -1,6 +1,12 @@
 # HƯỚNG DẪN 8 CƠ SỞ DỮ LIỆU POSTGRESQL & QUẢN LÝ EF CORE MIGRATIONS
 ## (POSTGRESQL DATABASE CATALOG, DBEAVER SETUP & EF CORE MIGRATION GUIDE)
 
+> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — 8 migration `Initial*` **đã được tạo lại** (Auction `20261024103234`, Catalog `20261024103127`, Commerce `20261024103145`, Fulfillment `20261024103218`, Log `20261024103313`, Notification `20261024103253`, User `20261024103058`, Wallet `20261024103202`) và đã commit, nhưng:
+> 1. **Image `postgres:16-alpine` trên máy dev bị hỏng** (`exec /usr/local/bin/docker-entrypoint.sh: exec format error`, script 0 byte) ⇒ 8 container DB `Restarting (255)`; phải dùng `postgres:15-alpine` hoặc `docker rmi` rồi pull lại.
+> 2. Chưa từng có bằng chứng schema được apply thành công: `Program.cs` migrate trong `try/catch` chỉ `LogWarning("Database migration deferred …")` nên app **vẫn khởi động** khi DB chết, và `/health` vẫn trả 200 (xem `docs/plans/SETUP_PHASE_PLAN.md` §2.4).
+> **Nguồn sự thật:** `*/Migrations/*.cs`, `*/Api/Program.cs`, `docs/plans/audit/logs/smoke-catalog.log`.
+> **Cập nhật lần cuối:** 2026-10-24.
+
 > **Mục tiêu tài liệu**: Cung cấp danh mục chi tiết 8 Cơ sở dữ liệu PostgreSQL độc lập theo nguyên tắc **Database-Per-Service (ADR 03)**, hướng dẫn kết nối qua công cụ đồ họa (DBeaver, pgAdmin), và quy trình chuẩn quản lý Code-First Database Migrations bằng Entity Framework Core 8.
 
 ---

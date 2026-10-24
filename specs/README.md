@@ -1,5 +1,9 @@
 # NEXUS MICROSERVICES ECOSYSTEM — MASTER SPEC KIT (BỘ ĐẶC TẢ HỆ THỐNG TỔNG)
 
+> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — bộ spec này mô tả **kiến trúc mục tiêu**; nhiều mục chưa có trong code (xem bảng trạng thái ở từng file). Điểm audit thực tế: `docs/plans/SCORECARD.md`.
+> **Nguồn sự thật:** code trong `src/Services/*` + báo cáo `docs/plans/audit/`.
+> **Cập nhật lần cuối:** 2026-10-24.
+
 Tài liệu này là **Bộ Chỉ Dẫn & Đặc Tả Kỹ Thuật Trung Tâm (Master Specification Kit)** cho toàn bộ hệ sinh thái Microservices **Nexus**. Được thiết kế chuẩn hóa để **Lập trình viên trong team** và các **AI Coding Agents (Claude, Cursor, Copilot, DeepSeek Harness, Windsurf...)** khi chuyển đổi phiên làm việc, chuyển máy tính, hoặc tiếp quản mã nguồn đều có thể đọc, nắm bắt tức thì bối cảnh, hiểu đúng bản chất nghiệp vụ, tuân thủ các quy tắc bất di bất dịch và **tuyệt đối không bị ảo giác (zero-hallucination)**.
 
 ---
@@ -10,9 +14,9 @@ Tài liệu này là **Bộ Chỉ Dẫn & Đặc Tả Kỹ Thuật Trung Tâm (M
 |:---|:---|:---|
 | [00_MASTER_SYSTEM_ARCHITECTURE.md](00_MASTER_SYSTEM_ARCHITECTURE.md) | Kiến trúc tổng thể | Sơ đồ C4 Container, DDD Bounded Contexts, mô hình Edge Gateway, nguyên tắc độc lập giữa các service. |
 | [01_SERVICE_CATALOG_PORT_MAP.md](01_SERVICE_CATALOG_PORT_MAP.md) | Quy hoạch mạng & hạ tầng | Bảng phân bổ cổng HTTP/gRPC (`8000`-`8008`), cổng Database PostgreSQL (`5433`-`5440`), RabbitMQ, Redis. |
-| [02_INTER_SERVICE_COMMUNICATION_MATRIX.md](02_INTER_SERVICE_COMMUNICATION_MATRIX.md) | Giao tiếp liên service | Ma trận gRPC đồng bộ vs RabbitMQ (MassTransit 8.4.1) bất đồng bộ, Điều phối Saga phân tán (Checkout Saga). |
-| [03_SECURITY_RBAC_DATA_GOVERNANCE.md](03_SECURITY_RBAC_DATA_GOVERNANCE.md) | Bảo mật & Chuẩn dữ liệu | JWT Bearer Lifecycle, ma trận phân quyền 5 roles, Gateway Mode (`Standard` vs `Bypass`), chuẩn lỗi RFC 9110 / RFC 6585. |
-| [04_SHARED_CONTRACTS_REGISTRY.md](04_SHARED_CONTRACTS_REGISTRY.md) | Hợp đồng giao tiếp chung | Single Source of Truth `Contracts/shop.proto`, sự kiện dùng chung (Domain Events), quy trình nâng cấp hợp đồng an toàn. |
+| [02_INTER_SERVICE_COMMUNICATION_MATRIX.md](02_INTER_SERVICE_COMMUNICATION_MATRIX.md) | Giao tiếp liên service | Ma trận gRPC đồng bộ vs RabbitMQ (MassTransit **8.3.0** — không phải 8.4.1) bất đồng bộ, Điều phối Saga phân tán (Checkout Saga — ❌ chưa triển khai). |
+| [03_SECURITY_RBAC_DATA_GOVERNANCE.md](03_SECURITY_RBAC_DATA_GOVERNANCE.md) | Bảo mật & Chuẩn dữ liệu | JWT Bearer Lifecycle (❌ chưa có nơi phát token), ma trận phân quyền **6 roles**, Gateway Mode (`Enforce` vs `Bypass` + `Mock/Real` theo từng service), chuẩn lỗi RFC 9110 / RFC 6585. |
+| [04_SHARED_CONTRACTS_REGISTRY.md](04_SHARED_CONTRACTS_REGISTRY.md) | Hợp đồng giao tiếp chung | ⚠️ `Contracts/shop.proto` **chưa** là Single Source of Truth (4 bản/3 hash), sự kiện dùng chung (Domain Events), quy trình nâng cấp hợp đồng an toàn. |
 | [05_AI_AGENT_ORCHESTRATION_GUIDELINES.md](05_AI_AGENT_ORCHESTRATION_GUIDELINES.md) | Chỉ dẫn cho AI Agents | Quy tắc chống ảo giác (Anti-Hallucination), hướng dẫn giữ context khi chuyển máy/phiên, quy tắc Clean Architecture, No-Repository pattern. |
 
 ---
@@ -23,15 +27,15 @@ Mỗi service repository bên trong `src/Services/` là một Git Repository đ�
 
 | STT | Service Repository | Thư Mục | Spec Kit Riêng | Nhiệm Vụ Chính & Bounded Context | Port HTTP/gRPC |
 |:---:|:---|:---|:---:|:---|:---:|
-| 0 | **ApiGateway** | `src/Services/ApiGateway/` | [ApiGateway Spec Kit](../src/Services/ApiGateway/specs/README.md) | Edge Reverse Proxy, REST to gRPC, JWT/RBAC, Rate Limit, Mock Engine, Runtime Mode Switch. | `8000` |
-| 1 | **UserService** | `src/Services/User/` | [UserService Spec Kit](../src/Services/User/specs/README.md) | Đăng ký, đăng nhập, phát hành JWT, User Profile, phân quyền RBAC, xét duyệt Seller. | `8001` |
-| 2 | **CatalogService** | `src/Services/Catalog/` | [CatalogService Spec Kit](../src/Services/Catalog/specs/README.md) | Danh mục (Categories), sản phẩm (Products), quản lý kho ảo của người bán (Seller Inventory). | `8002` |
-| 3 | **CommerceService** | `src/Services/Commerce/` | [CommerceService Spec Kit](../src/Services/Commerce/specs/README.md) | Giỏ hàng (Cart), đơn hàng (Orders), Điều phối Checkout Saga State Machine. | `8003` |
-| 4 | **LogService** | `src/Services/Log/` | [LogService Spec Kit](../src/Services/Log/specs/README.md) | Quản lý nhật ký hệ thống tập trung (Logs), danh mục sự kiện log (Event Types), nghe RabbitMQ. | `8004` |
-| 5 | **AuctionService** | `src/Services/Auction/` | [AuctionService Spec Kit](../src/Services/Auction/specs/README.md) | Phiên đấu giá (Auctions), lượt đặt giá (Bids), quy tắc trả giá và chốt phiên. | `8005` |
-| 6 | **FulfillmentService** | `src/Services/Fulfillment/` | [FulfillmentService Spec Kit](../src/Services/Fulfillment/specs/README.md) | Tồn kho kho bãi vật lý, tính cước vận chuyển (Quotes), tra cứu vận đơn (Tracking). | `8006` |
-| 7 | **NotificationService** | `src/Services/Notification/` | [NotificationService Spec Kit](../src/Services/Notification/specs/README.md) | Thông báo cá nhân, đánh dấu đã đọc, cài đặt nhận thông báo (Preferences). | `8007` |
-| 8 | **WalletService** | `src/Services/Wallet/` | [WalletService Spec Kit](../src/Services/Wallet/specs/README.md) | Ví điện tử riêng biệt, số dư, nạp/rút tiền, chuyển tiền nội bộ, thanh toán đơn hàng. | `8008` |
+| 0 | **ApiGateway** | `src/Services/ApiGateway/` | [ApiGateway Spec Kit](../src/Services/ApiGateway/specs/README.md) | Edge Reverse Proxy, REST to gRPC, JWT/RBAC, Rate Limit, Mock Engine, Runtime Mode Switch — ✅ service hoàn chỉnh nhất (98 test case). | `8000` |
+| 1 | **UserService** | `src/Services/User/` | [UserService Spec Kit](../src/Services/User/specs/README.md) | Đăng ký, OTP, User Profile — ⚠️ **không có Login/JWT** (chưa implement), chưa có xét duyệt Seller. | `8001` |
+| 2 | **CatalogService** | `src/Services/Catalog/` | [CatalogService Spec Kit](../src/Services/Catalog/specs/README.md) | Danh mục/sản phẩm/kho — ⚠️ hiện chỉ là **REST mock in-memory**, 0/13 rpc gRPC, 0 test. | `8002` |
+| 3 | **CommerceService** | `src/Services/Commerce/` | [CommerceService Spec Kit](../src/Services/Commerce/specs/README.md) | Giỏ hàng/đơn hàng — ⚠️ chỉ có 3 query đọc, 0 lệnh ghi, 0 gRPC, Saga ❌ chưa triển khai. | `8003` |
+| 4 | **LogService** | `src/Services/Log/` | [LogService Spec Kit](../src/Services/Log/specs/README.md) | Nhật ký tập trung (Logs), Event Types — ✅ gRPC 4/4 + OTel; ⚠️ thiếu endpoint `POST /api/v1/log/batch` nên Gateway không gửi log được. | `8004` |
+| 5 | **AuctionService** | `src/Services/Auction/` | [AuctionService Spec Kit](../src/Services/Auction/specs/README.md) | Phiên đấu giá/Bids — ❌ 0 điểm vào ngoài `/health`, service không gọi được. | `8005` |
+| 6 | **FulfillmentService** | `src/Services/Fulfillment/` | [FulfillmentService Spec Kit](../src/Services/Fulfillment/specs/README.md) | Tồn kho/vận đơn — ❌ chỉ đọc, 0 lệnh ghi DB, 0 gRPC, 0 test. | `8006` |
+| 7 | **NotificationService** | `src/Services/Notification/` | [NotificationService Spec Kit](../src/Services/Notification/specs/README.md) | Thông báo — ⚠️ chỉ có consumer OTP (không ghi DB), 0 gRPC, gửi mail lỗi vẫn báo thành công. | `8007` |
+| 8 | **WalletService** | `src/Services/Wallet/` | [WalletService Spec Kit](../src/Services/Wallet/specs/README.md) | Ví điện tử — ✅ gRPC 5/5 + OTel; ⚠️ 24 thông báo lỗi tiếng Việt trong ngữ cảnh lỗi, 0 test, tin header `x-user-id` không kiểm chứng, 6/8 bảng không có đường ghi. | `8008` |
 
 *(Lưu ý: Thư mục `Project.CleanArchitecture/` ở root là template khung kiến trúc mẫu, không thuộc phạm vi vận hành của các microservices sản phẩm).*
 
