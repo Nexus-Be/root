@@ -1,0 +1,173 @@
+{
+  "gate": "surface",
+  "repos": [
+    "ApiGateway",
+    "Auction",
+    "Catalog",
+    "Commerce",
+    "Fulfillment",
+    "Log",
+    "Notification",
+    "User",
+    "Wallet"
+  ],
+  "findings": [
+    {
+      "gate": "surface",
+      "severity": "P0",
+      "repo": "Auction",
+      "check": "no-api-surface",
+      "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+      "path": "src/Services/Auction",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "surface",
+      "severity": "P0",
+      "repo": "Catalog",
+      "check": "no-api-surface",
+      "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+      "path": "src/Services/Catalog",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "surface",
+      "severity": "P0",
+      "repo": "Commerce",
+      "check": "no-api-surface",
+      "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+      "path": "src/Services/Commerce",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "surface",
+      "severity": "P0",
+      "repo": "Fulfillment",
+      "check": "no-api-surface",
+      "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+      "path": "src/Services/Fulfillment",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "surface",
+      "severity": "P0",
+      "repo": "Notification",
+      "check": "no-api-surface",
+      "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+      "path": "src/Services/Notification",
+      "line": 0,
+      "evidence": ""
+    }
+  ],
+  "facts": {
+    "ApiGateway": {
+      "grpc_impl_files": [
+        "src/Services/ApiGateway/Nexus.Gateway.Tests/GatewayTests.cs",
+        "src/Services/ApiGateway/Nexus.Gateway.Tests/GatewaySurfaceTests.cs"
+      ],
+      "controllers": [
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/WalletController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/LogController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/AdminUsersController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/NotificationController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/UsersController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/OrdersController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/AuctionController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/InventoryController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/CategoriesController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/AuthController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/FulfillmentController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/GatewayControlController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/HealthProberController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/ProductsController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/CartController.cs"
+      ],
+      "http_action_files": [
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/UsersController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/AuthController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/GatewayControlController.cs",
+        "src/Services/ApiGateway/Nexus.Gateway/Controllers/HealthProberController.cs"
+      ],
+      "minimal_endpoints": [
+        "/",
+        "/health/ready"
+      ]
+    },
+    "Auction": {
+      "grpc_impl_files": [],
+      "controllers": [],
+      "http_action_files": [],
+      "minimal_endpoints": [
+        "/health"
+      ]
+    },
+    "Catalog": {
+      "grpc_impl_files": [],
+      "controllers": [],
+      "http_action_files": [],
+      "minimal_endpoints": [
+        "/health"
+      ]
+    },
+    "Commerce": {
+      "grpc_impl_files": [],
+      "controllers": [],
+      "http_action_files": [],
+      "minimal_endpoints": [
+        "/health"
+      ]
+    },
+    "Fulfillment": {
+      "grpc_impl_files": [],
+      "controllers": [],
+      "http_action_files": [],
+      "minimal_endpoints": [
+        "/health"
+      ]
+    },
+    "Log": {
+      "grpc_impl_files": [
+        "src/Services/Log/Log.Api/Services/LogGrpcService.cs"
+      ],
+      "controllers": [],
+      "http_action_files": [],
+      "minimal_endpoints": [
+        "/health",
+        "/"
+      ]
+    },
+    "Notification": {
+      "grpc_impl_files": [],
+      "controllers": [],
+      "http_action_files": [],
+      "minimal_endpoints": [
+        "/health"
+      ]
+    },
+    "User": {
+      "grpc_impl_files": [
+        "src/Services/User/User.Api/Services/UsersGrpcService.cs"
+      ],
+      "controllers": [],
+      "http_action_files": [],
+      "minimal_endpoints": [
+        "/health"
+      ]
+    },
+    "Wallet": {
+      "grpc_impl_files": [
+        "src/Services/Wallet/Wallet.Api/Services/WalletGrpcService.cs"
+      ],
+      "controllers": [],
+      "http_action_files": [],
+      "minimal_endpoints": [
+        "/health",
+        "/"
+      ]
+    }
+  }
+}

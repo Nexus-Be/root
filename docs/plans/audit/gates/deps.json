@@ -1,0 +1,241 @@
+{
+  "gate": "deps",
+  "repos": [
+    "ApiGateway",
+    "Auction",
+    "Catalog",
+    "Commerce",
+    "Fulfillment",
+    "Log",
+    "Notification",
+    "User",
+    "Wallet"
+  ],
+  "findings": [],
+  "facts": {
+    "ApiGateway": {
+      "edges": [
+        [
+          "Nexus.Gateway.Tests",
+          "Nexus.Gateway"
+        ]
+      ]
+    },
+    "Auction": {
+      "edges": [
+        [
+          "Auction.Application",
+          "Auction.Domain"
+        ],
+        [
+          "Auction.Api",
+          "Auction.Application"
+        ],
+        [
+          "Auction.Api",
+          "Auction.Infrastructure"
+        ],
+        [
+          "Auction.Infrastructure",
+          "Auction.Application"
+        ],
+        [
+          "Auction.Infrastructure",
+          "Auction.Domain"
+        ]
+      ]
+    },
+    "Catalog": {
+      "edges": [
+        [
+          "Catalog.Api",
+          "Catalog.Application"
+        ],
+        [
+          "Catalog.Api",
+          "Catalog.Infrastructure"
+        ],
+        [
+          "Catalog.Application",
+          "Catalog.Domain"
+        ],
+        [
+          "Catalog.Infrastructure",
+          "Catalog.Application"
+        ],
+        [
+          "Catalog.Infrastructure",
+          "Catalog.Domain"
+        ]
+      ]
+    },
+    "Commerce": {
+      "edges": [
+        [
+          "Commerce.Application",
+          "Commerce.Domain"
+        ],
+        [
+          "Commerce.Infrastructure",
+          "Commerce.Application"
+        ],
+        [
+          "Commerce.Infrastructure",
+          "Commerce.Domain"
+        ],
+        [
+          "Commerce.Api",
+          "Commerce.Application"
+        ],
+        [
+          "Commerce.Api",
+          "Commerce.Infrastructure"
+        ]
+      ]
+    },
+    "Fulfillment": {
+      "edges": [
+        [
+          "Fulfillment.Infrastructure",
+          "Fulfillment.Application"
+        ],
+        [
+          "Fulfillment.Infrastructure",
+          "Fulfillment.Domain"
+        ],
+        [
+          "Fulfillment.Api",
+          "Fulfillment.Application"
+        ],
+        [
+          "Fulfillment.Api",
+          "Fulfillment.Infrastructure"
+        ],
+        [
+          "Fulfillment.Application",
+          "Fulfillment.Domain"
+        ]
+      ]
+    },
+    "Log": {
+      "edges": [
+        [
+          "Log.Api",
+          "Log.Application"
+        ],
+        [
+          "Log.Api",
+          "Log.Infrastructure"
+        ],
+        [
+          "Log.Application",
+          "Log.Domain"
+        ],
+        [
+          "Log.Infrastructure",
+          "Log.Application"
+        ],
+        [
+          "Log.Infrastructure",
+          "Log.Domain"
+        ]
+      ]
+    },
+    "Notification": {
+      "edges": [
+        [
+          "Notification.Tests",
+          "Notification.Application"
+        ],
+        [
+          "Notification.Tests",
+          "Notification.Infrastructure"
+        ],
+        [
+          "Notification.Tests",
+          "Notification.Domain"
+        ],
+        [
+          "Notification.Infrastructure",
+          "Notification.Application"
+        ],
+        [
+          "Notification.Infrastructure",
+          "Notification.Domain"
+        ],
+        [
+          "Notification.Api",
+          "Notification.Application"
+        ],
+        [
+          "Notification.Api",
+          "Notification.Infrastructure"
+        ],
+        [
+          "Notification.Application",
+          "Notification.Domain"
+        ]
+      ]
+    },
+    "User": {
+      "edges": [
+        [
+          "User.Infrastructure",
+          "User.Application"
+        ],
+        [
+          "User.Infrastructure",
+          "User.Domain"
+        ],
+        [
+          "User.Application",
+          "User.Domain"
+        ],
+        [
+          "User.Api",
+          "User.Application"
+        ],
+        [
+          "User.Api",
+          "User.Infrastructure"
+        ],
+        [
+          "User.Tests",
+          "User.Application"
+        ],
+        [
+          "User.Tests",
+          "User.Infrastructure"
+        ],
+        [
+          "User.Tests",
+          "User.Domain"
+        ]
+      ]
+    },
+    "Wallet": {
+      "edges": [
+        [
+          "Wallet.Application",
+          "Wallet.Domain"
+        ],
+        [
+          "Wallet.Infrastructure",
+          "Wallet.Application"
+        ],
+        [
+          "Wallet.Infrastructure",
+          "Wallet.Domain"
+        ],
+        [
+          "Wallet.Api",
+          "Wallet.Application"
+        ],
+        [
+          "Wallet.Api",
+          "Wallet.Infrastructure"
+        ]
+      ]
+    }
+  }
+}

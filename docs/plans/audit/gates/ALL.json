@@ -1,0 +1,1702 @@
+[
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "ApiGateway",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"{field} phải là UUID\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/Common/ValidationHelpers.cs",
+    "line": 23,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "ApiGateway",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"{field} là bắt buộc\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/Common/ValidationHelpers.cs",
+    "line": 29,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "ApiGateway",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"{field} phải là số > 0\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/Common/MoneyPrecision.cs",
+    "line": 18,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Log",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"ID nhật ký không hợp lệ\"",
+    "path": "src/Services/Log/Log.Api/Services/LogGrpcService.cs",
+    "line": 70,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Log",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Không tìm thấy nhật ký tương ứng\"",
+    "path": "src/Services/Log/Log.Api/Services/LogGrpcService.cs",
+    "line": 74,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Log",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Code không được để trống\"",
+    "path": "src/Services/Log/Log.Api/Services/LogGrpcService.cs",
+    "line": 122,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Số tiền đơn hàng không hợp lệ: {TotalAmount}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Consumers/StockReservedConsumer.cs",
+    "line": 32,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Không tìm thấy ví cho User {UserId}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Consumers/StockReservedConsumer.cs",
+    "line": 49,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Số dư ví không đủ để thanh toán đơn {OrderId}: {Message}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Consumers/StockReservedConsumer.cs",
+    "line": 93,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Số tiền nạp phải lớn hơn 0.\"",
+    "path": "src/Services/Wallet/Wallet.Domain/Entities/WalletAccount.cs",
+    "line": 23,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Số tiền rút phải lớn hơn 0.\"",
+    "path": "src/Services/Wallet/Wallet.Domain/Entities/WalletAccount.cs",
+    "line": 32,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Số tiền trừ phải lớn hơn 0.\"",
+    "path": "src/Services/Wallet/Wallet.Domain/Entities/WalletAccount.cs",
+    "line": 44,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"UserId không được để trống.\"",
+    "path": "src/Services/Wallet/Wallet.Api/Services/WalletGrpcService.cs",
+    "line": 31,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Số tiền nạp không hợp lệ.\"",
+    "path": "src/Services/Wallet/Wallet.Api/Services/WalletGrpcService.cs",
+    "line": 51,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Lỗi khi xử lý nạp tiền cho user {UserId}\"",
+    "path": "src/Services/Wallet/Wallet.Api/Services/WalletGrpcService.cs",
+    "line": 61,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Số tiền rút không hợp lệ.\"",
+    "path": "src/Services/Wallet/Wallet.Api/Services/WalletGrpcService.cs",
+    "line": 71,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Lỗi khi rút tiền cho user {UserId}\"",
+    "path": "src/Services/Wallet/Wallet.Api/Services/WalletGrpcService.cs",
+    "line": 89,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Số tiền chuyển không hợp lệ.\"",
+    "path": "src/Services/Wallet/Wallet.Api/Services/WalletGrpcService.cs",
+    "line": 99,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "vietnamese-error-message",
+    "message": "thông báo lỗi tiếng Việt: \"Lỗi khi chuyển tiền từ user {Sender} sang user {Recipient}\"",
+    "path": "src/Services/Wallet/Wallet.Api/Services/WalletGrpcService.cs",
+    "line": 117,
+    "evidence": ""
+  },
+  {
+    "gate": "proto",
+    "severity": "P0",
+    "repo": "Auction",
+    "check": "no-grpc-server",
+    "message": "Không có `MapGrpcService<>` → service không expose gRPC nào",
+    "path": "src/Services/Auction",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "proto",
+    "severity": "P0",
+    "repo": "Catalog",
+    "check": "no-grpc-server",
+    "message": "Không có `MapGrpcService<>` → service không expose gRPC nào",
+    "path": "src/Services/Catalog",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "proto",
+    "severity": "P0",
+    "repo": "Commerce",
+    "check": "no-grpc-server",
+    "message": "Không có `MapGrpcService<>` → service không expose gRPC nào",
+    "path": "src/Services/Commerce",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "proto",
+    "severity": "P0",
+    "repo": "Fulfillment",
+    "check": "no-grpc-server",
+    "message": "Không có `MapGrpcService<>` → service không expose gRPC nào",
+    "path": "src/Services/Fulfillment",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "proto",
+    "severity": "P0",
+    "repo": "Notification",
+    "check": "no-grpc-server",
+    "message": "Không có `MapGrpcService<>` → service không expose gRPC nào",
+    "path": "src/Services/Notification",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "proto",
+    "severity": "P0",
+    "repo": "SYSTEM",
+    "check": "proto-drift",
+    "message": "4 bản shop.proto nhưng có 3 hash khác nhau",
+    "path": "",
+    "line": 0,
+    "evidence": "588427ad… ×2 (src/Services/Wallet/Wallet.Api/Contracts/shop.proto); 9268ed5d… ×1 (src/Services/ApiGateway/Nexus.Gateway/Contracts/shop.proto); f5bf2ce3… ×1 (src/Services/User/User.Api/Contracts/shop.proto)"
+  },
+  {
+    "gate": "surface",
+    "severity": "P0",
+    "repo": "Auction",
+    "check": "no-api-surface",
+    "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+    "path": "src/Services/Auction",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "surface",
+    "severity": "P0",
+    "repo": "Catalog",
+    "check": "no-api-surface",
+    "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+    "path": "src/Services/Catalog",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "surface",
+    "severity": "P0",
+    "repo": "Commerce",
+    "check": "no-api-surface",
+    "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+    "path": "src/Services/Commerce",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "surface",
+    "severity": "P0",
+    "repo": "Fulfillment",
+    "check": "no-api-surface",
+    "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+    "path": "src/Services/Fulfillment",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "surface",
+    "severity": "P0",
+    "repo": "Notification",
+    "check": "no-api-surface",
+    "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+    "path": "src/Services/Notification",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "test",
+    "severity": "P0",
+    "repo": "Auction",
+    "check": "no-test-project",
+    "message": "không có test project → DoD của AGENTS.md không thể thoả",
+    "path": "src/Services/Auction",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "test",
+    "severity": "P0",
+    "repo": "Catalog",
+    "check": "no-test-project",
+    "message": "không có test project → DoD của AGENTS.md không thể thoả",
+    "path": "src/Services/Catalog",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "test",
+    "severity": "P0",
+    "repo": "Commerce",
+    "check": "no-test-project",
+    "message": "không có test project → DoD của AGENTS.md không thể thoả",
+    "path": "src/Services/Commerce",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "test",
+    "severity": "P0",
+    "repo": "Fulfillment",
+    "check": "no-test-project",
+    "message": "không có test project → DoD của AGENTS.md không thể thoả",
+    "path": "src/Services/Fulfillment",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "test",
+    "severity": "P0",
+    "repo": "Log",
+    "check": "no-test-project",
+    "message": "không có test project → DoD của AGENTS.md không thể thoả",
+    "path": "src/Services/Log",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "test",
+    "severity": "P0",
+    "repo": "Wallet",
+    "check": "no-test-project",
+    "message": "không có test project → DoD của AGENTS.md không thể thoả",
+    "path": "src/Services/Wallet",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P0",
+    "repo": "Auction",
+    "check": "no-otel",
+    "message": "không có package OpenTelemetry.* → không phát trace",
+    "path": "src/Services/Auction",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P0",
+    "repo": "Catalog",
+    "check": "no-otel",
+    "message": "không có package OpenTelemetry.* → không phát trace",
+    "path": "src/Services/Catalog",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P0",
+    "repo": "Commerce",
+    "check": "no-otel",
+    "message": "không có package OpenTelemetry.* → không phát trace",
+    "path": "src/Services/Commerce",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P0",
+    "repo": "Fulfillment",
+    "check": "no-otel",
+    "message": "không có package OpenTelemetry.* → không phát trace",
+    "path": "src/Services/Fulfillment",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P0",
+    "repo": "Notification",
+    "check": "no-otel",
+    "message": "không có package OpenTelemetry.* → không phát trace",
+    "path": "src/Services/Notification",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P0",
+    "repo": "User",
+    "check": "no-otel",
+    "message": "không có package OpenTelemetry.* → không phát trace",
+    "path": "src/Services/User",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "doclink",
+    "severity": "P1",
+    "repo": "ApiGateway",
+    "check": "stray-doc",
+    "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+    "path": "src/Services/ApiGateway/SETUP_GUIDE_SERVICES.md",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "doclink",
+    "severity": "P1",
+    "repo": "ApiGateway",
+    "check": "stray-doc",
+    "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+    "path": "src/Services/ApiGateway/PLAN.md",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "doclink",
+    "severity": "P1",
+    "repo": "ApiGateway",
+    "check": "stray-doc",
+    "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+    "path": "src/Services/ApiGateway/CONFIG_REFERENCE.md",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "doclink",
+    "severity": "P1",
+    "repo": "ApiGateway",
+    "check": "stray-doc",
+    "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+    "path": "src/Services/ApiGateway/input.md",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "doclink",
+    "severity": "P1",
+    "repo": "ApiGateway",
+    "check": "stray-doc",
+    "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+    "path": "src/Services/ApiGateway/ADR.md",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "doclink",
+    "severity": "P1",
+    "repo": "ApiGateway",
+    "check": "stray-doc",
+    "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+    "path": "src/Services/ApiGateway/dac_ta.md",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P1",
+    "repo": "ApiGateway",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"HTTP {(int)response.StatusCode} {response.ReasonPhrase}\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/HealthProber/HealthProberManager.cs",
+    "line": 217,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P1",
+    "repo": "ApiGateway",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"Failure threshold exceeded, service declared UNHEALTHY\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/HealthProber/HealthProberManager.cs",
+    "line": 301,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P1",
+    "repo": "Notification",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"Failed to send email to '{ToEmail}' via SMTP ({Host}:{Port}).\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Services/Email/MailKitEmailSenderService.cs",
+    "line": 66,
+    "evidence": ""
+  },
+  {
+    "gate": "port",
+    "severity": "P1",
+    "repo": "Auction",
+    "check": "launchsettings-port",
+    "message": "`dotnet run` sẽ nghe ['5230', '7202'], không phải 8005 như Dockerfile/spec",
+    "path": "src/Services/Auction/Auction.Api/Properties/launchSettings.json",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "port",
+    "severity": "P1",
+    "repo": "Catalog",
+    "check": "launchsettings-port",
+    "message": "`dotnet run` sẽ nghe ['5272', '7232'], không phải 8002 như Dockerfile/spec",
+    "path": "src/Services/Catalog/Catalog.Api/Properties/launchSettings.json",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "port",
+    "severity": "P1",
+    "repo": "Commerce",
+    "check": "launchsettings-port",
+    "message": "`dotnet run` sẽ nghe ['5105', '7035'], không phải 8003 như Dockerfile/spec",
+    "path": "src/Services/Commerce/Commerce.Api/Properties/launchSettings.json",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "port",
+    "severity": "P1",
+    "repo": "Fulfillment",
+    "check": "launchsettings-port",
+    "message": "`dotnet run` sẽ nghe ['5228', '7014'], không phải 8006 như Dockerfile/spec",
+    "path": "src/Services/Fulfillment/Fulfillment.Api/Properties/launchSettings.json",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "port",
+    "severity": "P1",
+    "repo": "Log",
+    "check": "launchsettings-port",
+    "message": "`dotnet run` sẽ nghe ['5280', '7103'], không phải 8004 như Dockerfile/spec",
+    "path": "src/Services/Log/Log.Api/Properties/launchSettings.json",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "port",
+    "severity": "P1",
+    "repo": "Wallet",
+    "check": "launchsettings-port",
+    "message": "`dotnet run` sẽ nghe ['5096', '7218'], không phải 8008 như Dockerfile/spec",
+    "path": "src/Services/Wallet/Wallet.Api/Properties/launchSettings.json",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P1",
+    "repo": "Auction",
+    "check": "no-propagation",
+    "message": "không thấy propagate `traceparent`/`x-trace-id`",
+    "path": "src/Services/Auction",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P1",
+    "repo": "Catalog",
+    "check": "no-propagation",
+    "message": "không thấy propagate `traceparent`/`x-trace-id`",
+    "path": "src/Services/Catalog",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P1",
+    "repo": "Commerce",
+    "check": "no-propagation",
+    "message": "không thấy propagate `traceparent`/`x-trace-id`",
+    "path": "src/Services/Commerce",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P1",
+    "repo": "Fulfillment",
+    "check": "no-propagation",
+    "message": "không thấy propagate `traceparent`/`x-trace-id`",
+    "path": "src/Services/Fulfillment",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P1",
+    "repo": "Log",
+    "check": "no-propagation",
+    "message": "không thấy propagate `traceparent`/`x-trace-id`",
+    "path": "src/Services/Log",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P1",
+    "repo": "Notification",
+    "check": "no-propagation",
+    "message": "không thấy propagate `traceparent`/`x-trace-id`",
+    "path": "src/Services/Notification",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P1",
+    "repo": "User",
+    "check": "no-propagation",
+    "message": "không thấy propagate `traceparent`/`x-trace-id`",
+    "path": "src/Services/User",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "trace",
+    "severity": "P1",
+    "repo": "Wallet",
+    "check": "no-propagation",
+    "message": "không thấy propagate `traceparent`/`x-trace-id`",
+    "path": "src/Services/Wallet",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "ApiGateway",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"page >= 1 và pageSize trong khoảng 1..100\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/Common/ValidationHelpers.cs",
+    "line": 9,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "ApiGateway",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"Service '{Service}' is UNHEALTHY! Initiating Circuit Breaker, Saga Rollback and Container \"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/HealthProber/HealthProberManager.cs",
+    "line": 338,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "ApiGateway",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"Bad HTTP request\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/Middleware/GatewayExceptionHandler.cs",
+    "line": 78,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "ApiGateway",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"Missing POST for /api/v1/auth/register in Swagger\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway.Tests/MockEngineTests.cs",
+    "line": 171,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "ApiGateway",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"Missing POST for /api/v1/auth/login in Swagger\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway.Tests/MockEngineTests.cs",
+    "line": 174,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "ApiGateway",
+    "check": "title-case-message",
+    "message": "chuỗi Title Case (phải sentence case): \"Downstream Service Unavailable\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/Dispatching/GatewayDispatcher.cs",
+    "line": 108,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "ApiGateway",
+    "check": "title-case-message",
+    "message": "chuỗi Title Case (phải sentence case): \"Downstream Service Unavailable\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway/Dispatching/GatewayDispatcher.cs",
+    "line": 172,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "ApiGateway",
+    "check": "title-case-message",
+    "message": "chuỗi Title Case (phải sentence case): \"Real Backend User\"",
+    "path": "src/Services/ApiGateway/Nexus.Gateway.Tests/GatewayTests.cs",
+    "line": 205,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Auction",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Chính sách tham gia và chống bắn tỉa mặc định toàn sàn\"",
+    "path": "src/Services/Auction/Auction.Infrastructure/Persistence/Seeds/AuctionSeedData.cs",
+    "line": 27,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Auction",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Mũ Bảo Hiểm Xe Đạp Nexus Aero - Đỏ / Size M\"",
+    "path": "src/Services/Auction/Auction.Infrastructure/Persistence/Seeds/AuctionSeedData.cs",
+    "line": 44,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thiết Bị Điện Tử & Công Nghệ\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 25,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Điện thoại, máy tính, tai nghe và phụ kiện thông minh\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 26,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thời Trang & Phụ Kiện\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 37,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Quần áo, áo khoác, phụ kiện thời trang unisex\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 38,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Nhà Cửa & Đời Sống\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 49,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thiết bị gia dụng tiện ích và đồ dùng gia đình\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 50,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thể Thao & Dã Ngoại\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 61,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Dụng cụ thể thao, xe đạp và đồ bảo hộ dã ngoại\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 62,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Sách & Tri Thức\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 73,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Sách công nghệ thông tin, kiến trúc phần mềm và văn hóa doanh nghiệp\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 74,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Áo Hoodie Nexus Unisex Cotton\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 113,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Áo hoodie chất liệu cotton 100% thoáng mát, form rộng unisex phong cách trẻ trung năng độn\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 114,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Ấm Siêu Tốc Thông Minh Nexus 1.7L\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 129,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Ấm đun nước siêu tốc inox 304 giữ nhiệt và điều khiển nhiệt độ thông minh qua app.\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 130,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Mũ Bảo Hiểm Xe Đạp Nexus Aero\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 145,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Mũ bảo hiểm khí động học trọng lượng siêu nhẹ chuẩn an toàn quốc tế CE EN 1078.\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 146,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Cẩm nang chuyên sâu về kiến trúc phần mềm hướng miền và thiết kế hệ thống phân tán chịu tả\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 162,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Áo Hoodie Nexus Unisex Cotton - Đen / Size L\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 202,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Ấm Siêu Tốc Thông Minh Nexus 1.7L Trắng Tinh Khôi\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 217,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Mũ Bảo Hiểm Xe Đạp Nexus Aero - Đỏ / Size M\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 232,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Clean Architecture trong Microservices (Bìa Cứng)\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 247,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Áo Hoodie Nexus Unisex Cotton Đen\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 280,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Ấm Siêu Tốc Thông Minh Nexus 1.7L Trắng\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 293,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Mũ Bảo Hiểm Xe Đạp Nexus Aero Đỏ\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 306,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Clean Architecture trong Microservices Bìa Cứng\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 319,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"Flagship phone with OLED 120Hz display, 50MP triple camera system and 5000mAh battery.\"",
+    "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
+    "line": 98,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Khuyến mại chào mừng thành viên mới\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 28,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số ngày không hoạt động trước khi giỏ hàng thành ABANDONED\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 61,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Hạn thanh toán sau khi tạo đơn tổng (phút)\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 74,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Hạn người bán phản hồi đơn đã thanh toán (giờ)\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 87,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số ngày tự hoàn tất đơn đã giao thành công\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 100,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số lần thử thanh toán tối đa cho mỗi đơn tổng\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 113,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số lượng tối đa cho mỗi sản phẩm trong giỏ hàng\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 126,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số dòng sản phẩm tối đa trong giỏ hàng\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 139,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Áo Hoodie Nexus Unisex Cotton - Đen / Size L\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 199,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Commerce",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Ấm Siêu Tốc Thông Minh Nexus 1.7L Trắng Tinh Khôi\"",
+    "path": "src/Services/Commerce/Commerce.Infrastructure/Persistence/Seeds/CommerceSeedData.cs",
+    "line": 278,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Fulfillment",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Kho Trung Tâm Sàn Nexus\"",
+    "path": "src/Services/Fulfillment/Fulfillment.Infrastructure/Persistence/Seeds/FulfillmentSeedData.cs",
+    "line": 22,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Fulfillment",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Hà Nội, Việt Nam\"",
+    "path": "src/Services/Fulfillment/Fulfillment.Infrastructure/Persistence/Seeds/FulfillmentSeedData.cs",
+    "line": 24,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Fulfillment",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Giao Hàng Nhanh\"",
+    "path": "src/Services/Fulfillment/Fulfillment.Infrastructure/Persistence/Seeds/FulfillmentSeedData.cs",
+    "line": 38,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Bỏ qua log cho event {EventType} vì IsEnabled = false\"",
+    "path": "src/Services/Log/Log.Application/Consumers/GlobalLogConsumer.cs",
+    "line": 32,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Đã lưu log: {ServiceName} - {EventType} - {EntityName}:{EntityId}\"",
+    "path": "src/Services/Log/Log.Application/Consumers/GlobalLogConsumer.cs",
+    "line": 56,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Mã sự kiện (Code) không được để trống.\"",
+    "path": "src/Services/Log/Log.Application/Features/Commands/SetLogEventTypeEnabled/SetLogEventTypeEnabledCommand.cs",
+    "line": 16,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Tự động sinh cấu hình cho {request.Code}\"",
+    "path": "src/Services/Log/Log.Application/Features/Commands/SetLogEventTypeEnabled/SetLogEventTypeEnabledCommand.cs",
+    "line": 41,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Đăng ký tài khoản người dùng mới\"",
+    "path": "src/Services/Log/Log.Infrastructure/Persistence/Seeds/LogSeedData.cs",
+    "line": 23,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Phê duyệt hồ sơ người bán hàng\"",
+    "path": "src/Services/Log/Log.Infrastructure/Persistence/Seeds/LogSeedData.cs",
+    "line": 33,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thanh toán đơn hàng thành công qua ví điện tử\"",
+    "path": "src/Services/Log/Log.Infrastructure/Persistence/Seeds/LogSeedData.cs",
+    "line": 43,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Khách hàng đặt giá thầu trong phiên đấu giá\"",
+    "path": "src/Services/Log/Log.Infrastructure/Persistence/Seeds/LogSeedData.cs",
+    "line": 53,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Giao hàng thành công tới người mua\"",
+    "path": "src/Services/Log/Log.Infrastructure/Persistence/Seeds/LogSeedData.cs",
+    "line": 63,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thư điện tử (Email)\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 20,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thông báo đẩy di động (Push)\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 31,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thông báo trung tâm ứng dụng (InApp)\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 42,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Tin nhắn viễn thông (SMS)\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 52,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Xác nhận thanh toán đơn hàng {{OrderNo}}\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 71,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Đơn hàng {{OrderNo}} của bạn đã được thanh toán thành công số tiền {{TotalAmount}}.\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 72,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Đơn hàng {{OrderNo}} đang trên đường giao đến bạn\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 86,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Đơn hàng {{OrderNo}} của bạn đã được đóng gói và bàn giao cho đơn vị vận chuyển.\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 87,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thanh toán thành công đơn hàng SUB-20260101-0001\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 106,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Đơn hàng SUB-20260101-0001 với số tiền 850.000 đ đã được thanh toán thành công qua Ví Nexu\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Persistence/Seeds/NotificationSeedData.cs",
+    "line": 107,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"Successfully sent email to '{ToEmail}' via SMTP ({Host}:{Port}).\"",
+    "path": "src/Services/Notification/Notification.Infrastructure/Services/Email/MailKitEmailSenderService.cs",
+    "line": 61,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "User",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Khách mua hàng và tham gia đấu giá\"",
+    "path": "src/Services/User/User.Infrastructure/Persistence/Seeds/UserSeedData.cs",
+    "line": 26,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "User",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Người bán hàng và mở phiên đấu giá\"",
+    "path": "src/Services/User/User.Infrastructure/Persistence/Seeds/UserSeedData.cs",
+    "line": 37,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "User",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Nhân viên hỗ trợ thẩm định và chăm sóc khách hàng\"",
+    "path": "src/Services/User/User.Infrastructure/Persistence/Seeds/UserSeedData.cs",
+    "line": 48,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "User",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Quản trị viên tối cao sàn\"",
+    "path": "src/Services/User/User.Infrastructure/Persistence/Seeds/UserSeedData.cs",
+    "line": 59,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "User",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Điểm uy tín mặc định khi đăng ký mới\"",
+    "path": "src/Services/User/User.Infrastructure/Persistence/Seeds/UserSeedData.cs",
+    "line": 267,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "User",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Tự động kích hoạt tài khoản buyer sau xác thực email\"",
+    "path": "src/Services/User/User.Infrastructure/Persistence/Seeds/UserSeedData.cs",
+    "line": 278,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "User",
+    "check": "title-case-message",
+    "message": "chuỗi Title Case (phải sentence case): \"Nexus Official Store\"",
+    "path": "src/Services/User/User.Infrastructure/Persistence/Seeds/UserSeedData.cs",
+    "line": 187,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Nhận StockReservedEvent cho đơn hàng {OrderId}, UserId {UserId}, Số tiền {Amount}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Consumers/StockReservedConsumer.cs",
+    "line": 27,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số tiền thanh toán không hợp lệ\"",
+    "path": "src/Services/Wallet/Wallet.Application/Consumers/StockReservedConsumer.cs",
+    "line": 36,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Người dùng chưa có tài khoản ví\"",
+    "path": "src/Services/Wallet/Wallet.Application/Consumers/StockReservedConsumer.cs",
+    "line": 53,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thanh toán đơn hàng #{message.OrderId}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Consumers/StockReservedConsumer.cs",
+    "line": 74,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thanh toán thành công đơn hàng {OrderId}. Số dư còn lại: {Balance}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Consumers/StockReservedConsumer.cs",
+    "line": 80,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số dư ví không đủ để thanh toán đơn hàng\"",
+    "path": "src/Services/Wallet/Wallet.Application/Consumers/StockReservedConsumer.cs",
+    "line": 98,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Người gửi không được để trống.\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Transfer/TransferCommand.cs",
+    "line": 18,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Người nhận không được để trống.\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Transfer/TransferCommand.cs",
+    "line": 19,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số tiền chuyển phải lớn hơn 0.\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Transfer/TransferCommand.cs",
+    "line": 20,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Không thể chuyển tiền cho chính mình.\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Transfer/TransferCommand.cs",
+    "line": 21,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Chuyển tiền tới user {request.RecipientUserId}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Transfer/TransferCommand.cs",
+    "line": 78,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Nhận tiền từ user {request.SenderUserId}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Transfer/TransferCommand.cs",
+    "line": 91,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"UserId không được để trống.\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Deposit/DepositCommand.cs",
+    "line": 17,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số tiền nạp phải lớn hơn 0.\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Deposit/DepositCommand.cs",
+    "line": 18,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Nạp tiền qua {request.PaymentMethod}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Deposit/DepositCommand.cs",
+    "line": 63,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"UserId không được để trống.\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Withdraw/WithdrawCommand.cs",
+    "line": 18,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số tiền rút phải lớn hơn 0.\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Withdraw/WithdrawCommand.cs",
+    "line": 19,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Tài khoản ngân hàng không được để trống.\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Withdraw/WithdrawCommand.cs",
+    "line": 20,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Rút tiền về tài khoản ngân hàng: {request.BankAccount}\"",
+    "path": "src/Services/Wallet/Wallet.Application/Features/Commands/Withdraw/WithdrawCommand.cs",
+    "line": 55,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Số dư ví không đủ. Hiện tại: {currentBalance}, yêu cầu: {requestedAmount}\"",
+    "path": "src/Services/Wallet/Wallet.Domain/Exceptions/DomainException.cs",
+    "line": 25,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Không tìm thấy ví của người dùng '{userId}'.\"",
+    "path": "src/Services/Wallet/Wallet.Domain/Exceptions/DomainException.cs",
+    "line": 31,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thanh toán đơn hàng SUB-20260101-0001\"",
+    "path": "src/Services/Wallet/Wallet.Infrastructure/Persistence/Seeds/WalletSeedData.cs",
+    "line": 119,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "all-caps-message",
+    "message": "chuỗi ALL CAPS trong thông báo: \"NEXUS OFFICIAL STORE\"",
+    "path": "src/Services/Wallet/Wallet.Infrastructure/Persistence/Seeds/WalletSeedData.cs",
+    "line": 97,
+    "evidence": ""
+  },
+  {
+    "gate": "format",
+    "severity": "P2",
+    "repo": "Log",
+    "check": "format-csproj_packages",
+    "message": "PackageReference: khác baseline 7 service; thừa ['FluentValidation', 'FluentValidation.DependencyInjectionExtensions', 'Google.Protobuf', 'Grpc.AspNetCore', 'Grpc.AspNetCore.Server.Reflection', 'Grpc.Tools', 'MediatR', 'MediatR.Contracts']",
+    "path": "",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "format",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "format-root_files",
+    "message": "File ở root repo: khác baseline 7 service; thừa ['nuget.config']",
+    "path": "",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "format",
+    "severity": "P2",
+    "repo": "Notification",
+    "check": "format-csproj_packages",
+    "message": "PackageReference: khác baseline 7 service; thừa ['MailKit', 'Microsoft.Extensions.Options.ConfigurationExtensions', 'Microsoft.NET.Test.Sdk', 'MimeKit', 'Moq', 'xunit', 'xunit.runner.visualstudio']",
+    "path": "",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "format",
+    "severity": "P2",
+    "repo": "User",
+    "check": "format-root_files",
+    "message": "File ở root repo: khác baseline 7 service; thừa ['nuget.config']",
+    "path": "",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "format",
+    "severity": "P2",
+    "repo": "User",
+    "check": "format-csproj_packages",
+    "message": "PackageReference: khác baseline 7 service; thừa ['BCrypt.Net-Next', 'Google.Protobuf', 'Grpc.AspNetCore', 'Grpc.AspNetCore.Server.Reflection', 'Grpc.Tools', 'MassTransit.Abstractions', 'Microsoft.EntityFrameworkCore.InMemory', 'Microsoft.Extensions.Logging.Abstractions']",
+    "path": "",
+    "line": 0,
+    "evidence": ""
+  },
+  {
+    "gate": "format",
+    "severity": "P2",
+    "repo": "Wallet",
+    "check": "format-csproj_packages",
+    "message": "PackageReference: khác baseline 7 service; thừa ['FluentValidation', 'FluentValidation.DependencyInjectionExtensions', 'Google.Protobuf', 'Grpc.AspNetCore', 'Grpc.AspNetCore.Server.Reflection', 'Grpc.Tools', 'MediatR', 'MediatR.Contracts']",
+    "path": "",
+    "line": 0,
+    "evidence": ""
+  }
+]

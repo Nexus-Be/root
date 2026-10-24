@@ -1,0 +1,650 @@
+{
+  "gate": "format",
+  "repos": [
+    "ApiGateway",
+    "Auction",
+    "Catalog",
+    "Commerce",
+    "Fulfillment",
+    "Log",
+    "Notification",
+    "User",
+    "Wallet"
+  ],
+  "findings": [
+    {
+      "gate": "format",
+      "severity": "P2",
+      "repo": "Notification",
+      "check": "format-root_files",
+      "message": "File ở root repo: khác baseline 7 service; thừa ['nuget.config']",
+      "path": "",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "format",
+      "severity": "P2",
+      "repo": "User",
+      "check": "format-root_files",
+      "message": "File ở root repo: khác baseline 7 service; thừa ['nuget.config']",
+      "path": "",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "format",
+      "severity": "P2",
+      "repo": "Log",
+      "check": "format-csproj_packages",
+      "message": "PackageReference: khác baseline 7 service; thừa ['FluentValidation', 'FluentValidation.DependencyInjectionExtensions', 'Google.Protobuf', 'Grpc.AspNetCore', 'Grpc.AspNetCore.Server.Reflection', 'Grpc.Tools', 'MediatR', 'MediatR.Contracts']",
+      "path": "",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "format",
+      "severity": "P2",
+      "repo": "Notification",
+      "check": "format-csproj_packages",
+      "message": "PackageReference: khác baseline 7 service; thừa ['MailKit', 'Microsoft.Extensions.Options.ConfigurationExtensions', 'Microsoft.NET.Test.Sdk', 'MimeKit', 'Moq', 'xunit', 'xunit.runner.visualstudio']",
+      "path": "",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "format",
+      "severity": "P2",
+      "repo": "User",
+      "check": "format-csproj_packages",
+      "message": "PackageReference: khác baseline 7 service; thừa ['BCrypt.Net-Next', 'Google.Protobuf', 'Grpc.AspNetCore', 'Grpc.AspNetCore.Server.Reflection', 'Grpc.Tools', 'MassTransit.Abstractions', 'Microsoft.EntityFrameworkCore.InMemory', 'Microsoft.Extensions.Logging.Abstractions']",
+      "path": "",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "format",
+      "severity": "P2",
+      "repo": "Wallet",
+      "check": "format-csproj_packages",
+      "message": "PackageReference: khác baseline 7 service; thừa ['FluentValidation', 'FluentValidation.DependencyInjectionExtensions', 'Google.Protobuf', 'Grpc.AspNetCore', 'Grpc.AspNetCore.Server.Reflection', 'Grpc.Tools', 'MediatR', 'MediatR.Contracts']",
+      "path": "",
+      "line": 0,
+      "evidence": ""
+    }
+  ],
+  "facts": {
+    "matrix": {
+      "Auction": {
+        "top_dirs": [
+          ".github",
+          "Auction.Api",
+          "Auction.Application",
+          "Auction.Domain",
+          "Auction.Infrastructure",
+          "specs"
+        ],
+        "root_files": [
+          "AGENTS.md",
+          "Auction.sln",
+          "CLAUDE.md",
+          "README.md",
+          "docker-compose.yml"
+        ],
+        "csproj_packages": [
+          "MassTransit",
+          "MassTransit.EntityFrameworkCore",
+          "MassTransit.RabbitMQ",
+          "Microsoft.AspNetCore.OpenApi",
+          "Microsoft.EntityFrameworkCore",
+          "Microsoft.EntityFrameworkCore.Design",
+          "Microsoft.EntityFrameworkCore.Relational",
+          "Microsoft.EntityFrameworkCore.Tools",
+          "Microsoft.Extensions.Configuration.Abstractions",
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Npgsql.EntityFrameworkCore.PostgreSQL",
+          "Swashbuckle.AspNetCore"
+        ],
+        "program_pipeline": [
+          "app.UseGlobalExceptionHandler(",
+          "app.UseSwagger(",
+          "app.UseSwaggerUI(",
+          "app.MapGet("
+        ],
+        "appsettings_keys": [
+          "AllowedHosts",
+          "ConnectionStrings.DefaultConnection",
+          "Logging.LogLevel.Default",
+          "Logging.LogLevel.Microsoft.AspNetCore",
+          "Otel.Endpoint",
+          "RabbitMq.Host",
+          "RabbitMq.Password",
+          "RabbitMq.Port",
+          "RabbitMq.User"
+        ],
+        "specs": [
+          "00_AGENT_MISSION_GUARDRAILS.md",
+          "01_CLEAN_ARCHITECTURE_LAYERS.md",
+          "02_API_GRPC_CONTRACTS.md",
+          "03_EVENT_MESSAGING.md",
+          "04_DATA_PERSISTENCE.md",
+          "05_DEV_VERIFICATION_CHECKLIST.md",
+          "README.md"
+        ],
+        "dockerfile_stages": [
+          "base",
+          "build",
+          "publish",
+          "final"
+        ]
+      },
+      "Catalog": {
+        "top_dirs": [
+          ".github",
+          "Catalog.Api",
+          "Catalog.Application",
+          "Catalog.Domain",
+          "Catalog.Infrastructure",
+          "specs"
+        ],
+        "root_files": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "Catalog.sln",
+          "README.md",
+          "docker-compose.yml"
+        ],
+        "csproj_packages": [
+          "MassTransit",
+          "MassTransit.EntityFrameworkCore",
+          "MassTransit.RabbitMQ",
+          "Microsoft.AspNetCore.OpenApi",
+          "Microsoft.EntityFrameworkCore",
+          "Microsoft.EntityFrameworkCore.Design",
+          "Microsoft.EntityFrameworkCore.Relational",
+          "Microsoft.EntityFrameworkCore.Tools",
+          "Microsoft.Extensions.Configuration.Abstractions",
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Npgsql.EntityFrameworkCore.PostgreSQL",
+          "Swashbuckle.AspNetCore"
+        ],
+        "program_pipeline": [
+          "app.UseGlobalExceptionHandler(",
+          "app.UseSwagger(",
+          "app.UseSwaggerUI(",
+          "app.MapGet("
+        ],
+        "appsettings_keys": [
+          "AllowedHosts",
+          "ConnectionStrings.DefaultConnection",
+          "Logging.LogLevel.Default",
+          "Logging.LogLevel.Microsoft.AspNetCore",
+          "Otel.Endpoint",
+          "RabbitMq.Host",
+          "RabbitMq.Password",
+          "RabbitMq.Port",
+          "RabbitMq.User"
+        ],
+        "specs": [
+          "00_AGENT_MISSION_GUARDRAILS.md",
+          "01_CLEAN_ARCHITECTURE_LAYERS.md",
+          "02_API_GRPC_CONTRACTS.md",
+          "03_EVENT_MESSAGING.md",
+          "04_DATA_PERSISTENCE.md",
+          "05_DEV_VERIFICATION_CHECKLIST.md",
+          "README.md"
+        ],
+        "dockerfile_stages": [
+          "base",
+          "build",
+          "publish",
+          "final"
+        ]
+      },
+      "Commerce": {
+        "top_dirs": [
+          ".github",
+          "Commerce.Api",
+          "Commerce.Application",
+          "Commerce.Domain",
+          "Commerce.Infrastructure",
+          "specs"
+        ],
+        "root_files": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "Commerce.sln",
+          "README.md",
+          "docker-compose.yml"
+        ],
+        "csproj_packages": [
+          "MassTransit",
+          "MassTransit.EntityFrameworkCore",
+          "MassTransit.RabbitMQ",
+          "Microsoft.AspNetCore.OpenApi",
+          "Microsoft.EntityFrameworkCore",
+          "Microsoft.EntityFrameworkCore.Design",
+          "Microsoft.EntityFrameworkCore.Relational",
+          "Microsoft.EntityFrameworkCore.Tools",
+          "Microsoft.Extensions.Configuration.Abstractions",
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Npgsql.EntityFrameworkCore.PostgreSQL",
+          "Swashbuckle.AspNetCore"
+        ],
+        "program_pipeline": [
+          "app.UseGlobalExceptionHandler(",
+          "app.UseSwagger(",
+          "app.UseSwaggerUI(",
+          "app.MapGet("
+        ],
+        "appsettings_keys": [
+          "AllowedHosts",
+          "ConnectionStrings.DefaultConnection",
+          "Logging.LogLevel.Default",
+          "Logging.LogLevel.Microsoft.AspNetCore",
+          "Otel.Endpoint",
+          "RabbitMq.Host",
+          "RabbitMq.Password",
+          "RabbitMq.Port",
+          "RabbitMq.User"
+        ],
+        "specs": [
+          "00_AGENT_MISSION_GUARDRAILS.md",
+          "01_CLEAN_ARCHITECTURE_LAYERS.md",
+          "02_API_GRPC_CONTRACTS.md",
+          "03_EVENT_MESSAGING.md",
+          "04_DATA_PERSISTENCE.md",
+          "05_DEV_VERIFICATION_CHECKLIST.md",
+          "README.md"
+        ],
+        "dockerfile_stages": [
+          "base",
+          "build",
+          "publish",
+          "final"
+        ]
+      },
+      "Fulfillment": {
+        "top_dirs": [
+          ".github",
+          "Fulfillment.Api",
+          "Fulfillment.Application",
+          "Fulfillment.Domain",
+          "Fulfillment.Infrastructure",
+          "specs"
+        ],
+        "root_files": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "Fulfillment.sln",
+          "README.md",
+          "docker-compose.yml"
+        ],
+        "csproj_packages": [
+          "MassTransit",
+          "MassTransit.EntityFrameworkCore",
+          "MassTransit.RabbitMQ",
+          "Microsoft.AspNetCore.OpenApi",
+          "Microsoft.EntityFrameworkCore",
+          "Microsoft.EntityFrameworkCore.Design",
+          "Microsoft.EntityFrameworkCore.Relational",
+          "Microsoft.EntityFrameworkCore.Tools",
+          "Microsoft.Extensions.Configuration.Abstractions",
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Npgsql.EntityFrameworkCore.PostgreSQL",
+          "Swashbuckle.AspNetCore"
+        ],
+        "program_pipeline": [
+          "app.UseGlobalExceptionHandler(",
+          "app.UseSwagger(",
+          "app.UseSwaggerUI(",
+          "app.MapGet("
+        ],
+        "appsettings_keys": [
+          "AllowedHosts",
+          "ConnectionStrings.DefaultConnection",
+          "Logging.LogLevel.Default",
+          "Logging.LogLevel.Microsoft.AspNetCore",
+          "Otel.Endpoint",
+          "RabbitMq.Host",
+          "RabbitMq.Password",
+          "RabbitMq.Port",
+          "RabbitMq.User"
+        ],
+        "specs": [
+          "00_AGENT_MISSION_GUARDRAILS.md",
+          "01_CLEAN_ARCHITECTURE_LAYERS.md",
+          "02_API_GRPC_CONTRACTS.md",
+          "03_EVENT_MESSAGING.md",
+          "04_DATA_PERSISTENCE.md",
+          "05_DEV_VERIFICATION_CHECKLIST.md",
+          "README.md"
+        ],
+        "dockerfile_stages": [
+          "base",
+          "build",
+          "publish",
+          "final"
+        ]
+      },
+      "Log": {
+        "top_dirs": [
+          ".github",
+          "Log.Api",
+          "Log.Application",
+          "Log.Domain",
+          "Log.Infrastructure",
+          "specs"
+        ],
+        "root_files": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "Log.sln",
+          "README.md",
+          "docker-compose.yml"
+        ],
+        "csproj_packages": [
+          "FluentValidation",
+          "FluentValidation.DependencyInjectionExtensions",
+          "Google.Protobuf",
+          "Grpc.AspNetCore",
+          "Grpc.AspNetCore.Server.Reflection",
+          "Grpc.Tools",
+          "MassTransit",
+          "MassTransit.EntityFrameworkCore",
+          "MassTransit.RabbitMQ",
+          "MediatR",
+          "MediatR.Contracts",
+          "Microsoft.AspNetCore.OpenApi",
+          "Microsoft.EntityFrameworkCore",
+          "Microsoft.EntityFrameworkCore.Design",
+          "Microsoft.EntityFrameworkCore.Relational",
+          "Microsoft.EntityFrameworkCore.Tools",
+          "Microsoft.Extensions.Configuration.Abstractions",
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Microsoft.Extensions.Logging.Abstractions",
+          "Npgsql.EntityFrameworkCore.PostgreSQL",
+          "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+          "OpenTelemetry.Extensions.Hosting",
+          "OpenTelemetry.Instrumentation.AspNetCore",
+          "OpenTelemetry.Instrumentation.Http",
+          "Swashbuckle.AspNetCore"
+        ],
+        "program_pipeline": [
+          "app.UseGlobalExceptionHandler(",
+          "app.UseSwagger(",
+          "app.UseSwaggerUI(",
+          "app.MapGrpcReflectionService(",
+          "app.UseHttpsRedirection(",
+          "app.MapGet(",
+          "app.MapGet("
+        ],
+        "appsettings_keys": [
+          "AllowedHosts",
+          "ConnectionStrings.DefaultConnection",
+          "Logging.LogLevel.Default",
+          "Logging.LogLevel.Microsoft.AspNetCore",
+          "Otel.Endpoint",
+          "RabbitMq.Host",
+          "RabbitMq.Password",
+          "RabbitMq.Port",
+          "RabbitMq.User"
+        ],
+        "specs": [
+          "00_AGENT_MISSION_GUARDRAILS.md",
+          "01_CLEAN_ARCHITECTURE_LAYERS.md",
+          "02_API_GRPC_CONTRACTS.md",
+          "03_EVENT_MESSAGING.md",
+          "04_DATA_PERSISTENCE.md",
+          "05_DEV_VERIFICATION_CHECKLIST.md",
+          "README.md"
+        ],
+        "dockerfile_stages": [
+          "base",
+          "build",
+          "publish",
+          "final"
+        ]
+      },
+      "Notification": {
+        "top_dirs": [
+          ".github",
+          "Notification.Api",
+          "Notification.Application",
+          "Notification.Domain",
+          "Notification.Infrastructure",
+          "specs"
+        ],
+        "root_files": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "Notification.sln",
+          "README.md",
+          "docker-compose.yml",
+          "nuget.config"
+        ],
+        "csproj_packages": [
+          "MailKit",
+          "MassTransit",
+          "MassTransit.EntityFrameworkCore",
+          "MassTransit.RabbitMQ",
+          "Microsoft.AspNetCore.OpenApi",
+          "Microsoft.EntityFrameworkCore",
+          "Microsoft.EntityFrameworkCore.Design",
+          "Microsoft.EntityFrameworkCore.Relational",
+          "Microsoft.EntityFrameworkCore.Tools",
+          "Microsoft.Extensions.Configuration.Abstractions",
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Microsoft.Extensions.Options.ConfigurationExtensions",
+          "Microsoft.NET.Test.Sdk",
+          "MimeKit",
+          "Moq",
+          "Npgsql.EntityFrameworkCore.PostgreSQL",
+          "Swashbuckle.AspNetCore",
+          "xunit",
+          "xunit.runner.visualstudio"
+        ],
+        "program_pipeline": [
+          "app.UseGlobalExceptionHandler(",
+          "app.UseSwagger(",
+          "app.UseSwaggerUI(",
+          "app.MapGet("
+        ],
+        "appsettings_keys": [
+          "AllowedHosts",
+          "ConnectionStrings.DefaultConnection",
+          "Logging.LogLevel.Default",
+          "Logging.LogLevel.Microsoft.AspNetCore",
+          "Otel.Endpoint",
+          "RabbitMq.Host",
+          "RabbitMq.Password",
+          "RabbitMq.Port",
+          "RabbitMq.User",
+          "Smtp.Host",
+          "Smtp.Password",
+          "Smtp.Port",
+          "Smtp.SenderEmail",
+          "Smtp.SenderName",
+          "Smtp.UseSsl",
+          "Smtp.Username"
+        ],
+        "specs": [
+          "00_AGENT_MISSION_GUARDRAILS.md",
+          "01_CLEAN_ARCHITECTURE_LAYERS.md",
+          "02_API_GRPC_CONTRACTS.md",
+          "03_EVENT_MESSAGING.md",
+          "04_DATA_PERSISTENCE.md",
+          "05_DEV_VERIFICATION_CHECKLIST.md",
+          "README.md"
+        ],
+        "dockerfile_stages": [
+          "base",
+          "build",
+          "publish",
+          "final"
+        ]
+      },
+      "User": {
+        "top_dirs": [
+          ".github",
+          "User.Api",
+          "User.Application",
+          "User.Domain",
+          "User.Infrastructure",
+          "specs"
+        ],
+        "root_files": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "README.md",
+          "User.sln",
+          "docker-compose.yml",
+          "nuget.config"
+        ],
+        "csproj_packages": [
+          "BCrypt.Net-Next",
+          "Google.Protobuf",
+          "Grpc.AspNetCore",
+          "Grpc.AspNetCore.Server.Reflection",
+          "Grpc.Tools",
+          "MassTransit",
+          "MassTransit.Abstractions",
+          "MassTransit.EntityFrameworkCore",
+          "MassTransit.RabbitMQ",
+          "Microsoft.AspNetCore.OpenApi",
+          "Microsoft.EntityFrameworkCore",
+          "Microsoft.EntityFrameworkCore.Design",
+          "Microsoft.EntityFrameworkCore.InMemory",
+          "Microsoft.EntityFrameworkCore.Relational",
+          "Microsoft.EntityFrameworkCore.Tools",
+          "Microsoft.Extensions.Configuration.Abstractions",
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Microsoft.Extensions.Logging.Abstractions",
+          "Microsoft.NET.Test.Sdk",
+          "Npgsql.EntityFrameworkCore.PostgreSQL",
+          "StackExchange.Redis",
+          "Swashbuckle.AspNetCore",
+          "xunit",
+          "xunit.runner.visualstudio"
+        ],
+        "program_pipeline": [
+          "app.UseGlobalExceptionHandler(",
+          "app.UseSwagger(",
+          "app.UseSwaggerUI(",
+          "app.MapGrpcReflectionService(",
+          "app.MapGet("
+        ],
+        "appsettings_keys": [
+          "AllowedHosts",
+          "ConnectionStrings.DefaultConnection",
+          "Jwt.Audience",
+          "Jwt.ExpirationInMinutes",
+          "Jwt.Issuer",
+          "Jwt.Signature",
+          "Logging.LogLevel.Default",
+          "Logging.LogLevel.Microsoft.AspNetCore",
+          "Otel.Endpoint",
+          "RabbitMq.Host",
+          "RabbitMq.Password",
+          "RabbitMq.Port",
+          "RabbitMq.User",
+          "Redis.ConnectionString"
+        ],
+        "specs": [
+          "00_AGENT_MISSION_GUARDRAILS.md",
+          "01_CLEAN_ARCHITECTURE_LAYERS.md",
+          "02_API_GRPC_CONTRACTS.md",
+          "03_EVENT_MESSAGING.md",
+          "04_DATA_PERSISTENCE.md",
+          "05_DEV_VERIFICATION_CHECKLIST.md",
+          "README.md"
+        ],
+        "dockerfile_stages": [
+          "base",
+          "build",
+          "publish",
+          "final"
+        ]
+      },
+      "Wallet": {
+        "top_dirs": [
+          ".github",
+          "Wallet.Api",
+          "Wallet.Application",
+          "Wallet.Domain",
+          "Wallet.Infrastructure",
+          "specs"
+        ],
+        "root_files": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "README.md",
+          "Wallet.sln",
+          "docker-compose.yml"
+        ],
+        "csproj_packages": [
+          "FluentValidation",
+          "FluentValidation.DependencyInjectionExtensions",
+          "Google.Protobuf",
+          "Grpc.AspNetCore",
+          "Grpc.AspNetCore.Server.Reflection",
+          "Grpc.Tools",
+          "MassTransit",
+          "MassTransit.EntityFrameworkCore",
+          "MassTransit.RabbitMQ",
+          "MediatR",
+          "MediatR.Contracts",
+          "Microsoft.AspNetCore.OpenApi",
+          "Microsoft.EntityFrameworkCore",
+          "Microsoft.EntityFrameworkCore.Design",
+          "Microsoft.EntityFrameworkCore.Relational",
+          "Microsoft.EntityFrameworkCore.Tools",
+          "Microsoft.Extensions.Configuration.Abstractions",
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Microsoft.Extensions.Logging.Abstractions",
+          "Npgsql.EntityFrameworkCore.PostgreSQL",
+          "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+          "OpenTelemetry.Extensions.Hosting",
+          "OpenTelemetry.Instrumentation.AspNetCore",
+          "OpenTelemetry.Instrumentation.Http",
+          "Swashbuckle.AspNetCore"
+        ],
+        "program_pipeline": [
+          "app.UseGlobalExceptionHandler(",
+          "app.UseSwagger(",
+          "app.UseSwaggerUI(",
+          "app.MapGrpcReflectionService(",
+          "app.UseHttpsRedirection(",
+          "app.MapGet(",
+          "app.MapGet("
+        ],
+        "appsettings_keys": [
+          "AllowedHosts",
+          "ConnectionStrings.DefaultConnection",
+          "Logging.LogLevel.Default",
+          "Logging.LogLevel.Microsoft.AspNetCore",
+          "Otel.Endpoint",
+          "RabbitMq.Host",
+          "RabbitMq.Password",
+          "RabbitMq.Port",
+          "RabbitMq.User"
+        ],
+        "specs": [
+          "00_AGENT_MISSION_GUARDRAILS.md",
+          "01_CLEAN_ARCHITECTURE_LAYERS.md",
+          "02_API_GRPC_CONTRACTS.md",
+          "03_EVENT_MESSAGING.md",
+          "04_DATA_PERSISTENCE.md",
+          "05_DEV_VERIFICATION_CHECKLIST.md",
+          "README.md"
+        ],
+        "dockerfile_stages": [
+          "base",
+          "build",
+          "publish",
+          "final"
+        ]
+      }
+    }
+  }
+}

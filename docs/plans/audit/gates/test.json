@@ -1,0 +1,140 @@
+{
+  "gate": "test",
+  "repos": [
+    "ApiGateway",
+    "Auction",
+    "Catalog",
+    "Commerce",
+    "Fulfillment",
+    "Log",
+    "Notification",
+    "User",
+    "Wallet"
+  ],
+  "findings": [
+    {
+      "gate": "test",
+      "severity": "P0",
+      "repo": "Auction",
+      "check": "no-test-project",
+      "message": "không có test project → DoD của AGENTS.md không thể thoả",
+      "path": "src/Services/Auction",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "test",
+      "severity": "P0",
+      "repo": "Catalog",
+      "check": "no-test-project",
+      "message": "không có test project → DoD của AGENTS.md không thể thoả",
+      "path": "src/Services/Catalog",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "test",
+      "severity": "P0",
+      "repo": "Commerce",
+      "check": "no-test-project",
+      "message": "không có test project → DoD của AGENTS.md không thể thoả",
+      "path": "src/Services/Commerce",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "test",
+      "severity": "P0",
+      "repo": "Fulfillment",
+      "check": "no-test-project",
+      "message": "không có test project → DoD của AGENTS.md không thể thoả",
+      "path": "src/Services/Fulfillment",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "test",
+      "severity": "P0",
+      "repo": "Log",
+      "check": "no-test-project",
+      "message": "không có test project → DoD của AGENTS.md không thể thoả",
+      "path": "src/Services/Log",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "test",
+      "severity": "P0",
+      "repo": "Wallet",
+      "check": "no-test-project",
+      "message": "không có test project → DoD của AGENTS.md không thể thoả",
+      "path": "src/Services/Wallet",
+      "line": 0,
+      "evidence": ""
+    }
+  ],
+  "facts": {
+    "ApiGateway": {
+      "test_projects": [
+        "src/Services/ApiGateway/Nexus.Gateway.Tests/Nexus.Gateway.Tests.csproj"
+      ],
+      "test_files": 19,
+      "test_cases": 62,
+      "harness": [
+        "Microsoft.AspNetCore.Mvc.Testing"
+      ]
+    },
+    "Auction": {
+      "test_projects": [],
+      "test_files": 0,
+      "test_cases": 0,
+      "harness": []
+    },
+    "Catalog": {
+      "test_projects": [],
+      "test_files": 0,
+      "test_cases": 0,
+      "harness": []
+    },
+    "Commerce": {
+      "test_projects": [],
+      "test_files": 0,
+      "test_cases": 0,
+      "harness": []
+    },
+    "Fulfillment": {
+      "test_projects": [],
+      "test_files": 0,
+      "test_cases": 0,
+      "harness": []
+    },
+    "Log": {
+      "test_projects": [],
+      "test_files": 0,
+      "test_cases": 0,
+      "harness": []
+    },
+    "Notification": {
+      "test_projects": [
+        "src/Services/Notification/Notification.Tests/Notification.Tests.csproj"
+      ],
+      "test_files": 1,
+      "test_cases": 2,
+      "harness": []
+    },
+    "User": {
+      "test_projects": [
+        "src/Services/User/User.Tests/User.Tests.csproj"
+      ],
+      "test_files": 1,
+      "test_cases": 9,
+      "harness": []
+    },
+    "Wallet": {
+      "test_projects": [],
+      "test_files": 0,
+      "test_cases": 0,
+      "harness": []
+    }
+  }
+}

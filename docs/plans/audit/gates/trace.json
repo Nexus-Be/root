@@ -1,0 +1,333 @@
+{
+  "gate": "trace",
+  "repos": [
+    "ApiGateway",
+    "Auction",
+    "Catalog",
+    "Commerce",
+    "Fulfillment",
+    "Log",
+    "Notification",
+    "User",
+    "Wallet"
+  ],
+  "findings": [
+    {
+      "gate": "trace",
+      "severity": "P0",
+      "repo": "Auction",
+      "check": "no-otel",
+      "message": "không có package OpenTelemetry.* → không phát trace",
+      "path": "src/Services/Auction",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P1",
+      "repo": "Auction",
+      "check": "no-propagation",
+      "message": "không thấy propagate `traceparent`/`x-trace-id`",
+      "path": "src/Services/Auction",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P0",
+      "repo": "Catalog",
+      "check": "no-otel",
+      "message": "không có package OpenTelemetry.* → không phát trace",
+      "path": "src/Services/Catalog",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P1",
+      "repo": "Catalog",
+      "check": "no-propagation",
+      "message": "không thấy propagate `traceparent`/`x-trace-id`",
+      "path": "src/Services/Catalog",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P0",
+      "repo": "Commerce",
+      "check": "no-otel",
+      "message": "không có package OpenTelemetry.* → không phát trace",
+      "path": "src/Services/Commerce",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P1",
+      "repo": "Commerce",
+      "check": "no-propagation",
+      "message": "không thấy propagate `traceparent`/`x-trace-id`",
+      "path": "src/Services/Commerce",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P0",
+      "repo": "Fulfillment",
+      "check": "no-otel",
+      "message": "không có package OpenTelemetry.* → không phát trace",
+      "path": "src/Services/Fulfillment",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P1",
+      "repo": "Fulfillment",
+      "check": "no-propagation",
+      "message": "không thấy propagate `traceparent`/`x-trace-id`",
+      "path": "src/Services/Fulfillment",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P1",
+      "repo": "Log",
+      "check": "no-propagation",
+      "message": "không thấy propagate `traceparent`/`x-trace-id`",
+      "path": "src/Services/Log",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P0",
+      "repo": "Notification",
+      "check": "no-otel",
+      "message": "không có package OpenTelemetry.* → không phát trace",
+      "path": "src/Services/Notification",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P1",
+      "repo": "Notification",
+      "check": "no-propagation",
+      "message": "không thấy propagate `traceparent`/`x-trace-id`",
+      "path": "src/Services/Notification",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P0",
+      "repo": "User",
+      "check": "no-otel",
+      "message": "không có package OpenTelemetry.* → không phát trace",
+      "path": "src/Services/User",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P1",
+      "repo": "User",
+      "check": "no-propagation",
+      "message": "không thấy propagate `traceparent`/`x-trace-id`",
+      "path": "src/Services/User",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "trace",
+      "severity": "P1",
+      "repo": "Wallet",
+      "check": "no-propagation",
+      "message": "không thấy propagate `traceparent`/`x-trace-id`",
+      "path": "src/Services/Wallet",
+      "line": 0,
+      "evidence": ""
+    }
+  ],
+  "facts": {
+    "ApiGateway": {
+      "otel_packages": [
+        "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+        "OpenTelemetry.Extensions.Hosting",
+        "OpenTelemetry.Instrumentation.AspNetCore",
+        "OpenTelemetry.Instrumentation.Http"
+      ],
+      "hits": {
+        "serilog-traceid": [
+          "src/Services/ApiGateway/Nexus.Gateway/Security/SecurityConfiguration.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Security/EdgeMiddlewareConfiguration.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Middleware/GatewayExceptionHandler.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Responses/ApiResponse.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Responses/ApiResponseFactory.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Responses/IApiResponseFactory.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Responses/ApiErrorResponse.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Extensions/LoggingExtensions.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Extensions/PipelineExtensions.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Extensions/CoreServicesExtension.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Dispatching/GrpcServiceCaller.cs",
+          "src/Services/ApiGateway/Nexus.Gateway.Tests/ApiResponseFactoryTests.cs",
+          "src/Services/ApiGateway/Nexus.Gateway.Tests/TraceConsistencyTests.cs",
+          "src/Services/ApiGateway/Nexus.Gateway.Tests/ModelBindingResponseTests.cs",
+          "src/Services/ApiGateway/Nexus.Gateway.Tests/GatewayInputExceptionTests.cs"
+        ],
+        "x-trace-id": [
+          "src/Services/ApiGateway/Nexus.Gateway/Security/EdgeMiddlewareConfiguration.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Extensions/PipelineExtensions.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Dispatching/GrpcServiceCaller.cs",
+          "src/Services/ApiGateway/Nexus.Gateway.Tests/TraceConsistencyTests.cs",
+          "src/Services/ApiGateway/Nexus.Gateway.Tests/ModelBindingResponseTests.cs",
+          "src/Services/ApiGateway/Nexus.Gateway.Tests/GatewayTests.cs",
+          "src/Services/ApiGateway/Nexus.Gateway.Tests/GatewayInputExceptionTests.cs"
+        ],
+        "Activity.Current": [
+          "src/Services/ApiGateway/Nexus.Gateway/Responses/ApiResponseFactory.cs",
+          "src/Services/ApiGateway/Nexus.Gateway/Extensions/CoreServicesExtension.cs"
+        ],
+        "AddOpenTelemetry": [
+          "src/Services/ApiGateway/Nexus.Gateway/Extensions/TelemetryExtension.cs"
+        ],
+        "ActivitySource": [
+          "src/Services/ApiGateway/Nexus.Gateway.Tests/TraceConsistencyTests.cs"
+        ]
+      }
+    },
+    "Auction": {
+      "otel_packages": [],
+      "hits": {
+        "Activity.Current": [
+          "src/Services/Auction/Auction.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ],
+        "serilog-traceid": [
+          "src/Services/Auction/Auction.Api/Middleware/GlobalExceptionHandlerMiddleware.cs",
+          "src/Services/Auction/Auction.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs",
+          "src/Services/Auction/Auction.Domain/Entities/AuditLog.cs"
+        ]
+      }
+    },
+    "Catalog": {
+      "otel_packages": [],
+      "hits": {
+        "Activity.Current": [
+          "src/Services/Catalog/Catalog.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ],
+        "serilog-traceid": [
+          "src/Services/Catalog/Catalog.Api/Middleware/GlobalExceptionHandlerMiddleware.cs",
+          "src/Services/Catalog/Catalog.Domain/Entities/AuditLog.cs",
+          "src/Services/Catalog/Catalog.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs"
+        ]
+      }
+    },
+    "Commerce": {
+      "otel_packages": [],
+      "hits": {
+        "serilog-traceid": [
+          "src/Services/Commerce/Commerce.Domain/Entities/AuditLog.cs",
+          "src/Services/Commerce/Commerce.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs",
+          "src/Services/Commerce/Commerce.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ],
+        "Activity.Current": [
+          "src/Services/Commerce/Commerce.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ]
+      }
+    },
+    "Fulfillment": {
+      "otel_packages": [],
+      "hits": {
+        "serilog-traceid": [
+          "src/Services/Fulfillment/Fulfillment.Domain/Entities/AuditLog.cs",
+          "src/Services/Fulfillment/Fulfillment.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs",
+          "src/Services/Fulfillment/Fulfillment.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ],
+        "Activity.Current": [
+          "src/Services/Fulfillment/Fulfillment.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ]
+      }
+    },
+    "Log": {
+      "otel_packages": [
+        "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+        "OpenTelemetry.Extensions.Hosting",
+        "OpenTelemetry.Instrumentation.AspNetCore",
+        "OpenTelemetry.Instrumentation.Http"
+      ],
+      "hits": {
+        "serilog-traceid": [
+          "src/Services/Log/Log.Api/Services/LogGrpcService.cs",
+          "src/Services/Log/Log.Api/Middleware/GlobalExceptionHandlerMiddleware.cs",
+          "src/Services/Log/Log.Domain/Entities/CentralAuditLog.cs",
+          "src/Services/Log/Log.Domain/Entities/LogEntry.cs",
+          "src/Services/Log/Log.Application/Consumers/GlobalLogConsumer.cs",
+          "src/Services/Log/Log.Application/DTOs/LogDto.cs",
+          "src/Services/Log/Log.Application/Features/Queries/QueryLogs/QueryLogsQuery.cs",
+          "src/Services/Log/Log.Application/Features/Queries/GetLog/GetLogQuery.cs",
+          "src/Services/Log/Log.Infrastructure/Persistence/Seeds/LogSeedData.cs",
+          "src/Services/Log/Log.Infrastructure/Persistence/Configurations/LogEntryConfiguration.cs",
+          "src/Services/Log/Log.Infrastructure/Persistence/Configurations/CentralAuditLogConfiguration.cs"
+        ],
+        "Activity.Current": [
+          "src/Services/Log/Log.Api/Middleware/GlobalExceptionHandlerMiddleware.cs",
+          "src/Services/Log/Log.Application/Consumers/GlobalLogConsumer.cs"
+        ],
+        "AddOpenTelemetry": [
+          "src/Services/Log/Log.Api/Extensions/ObservabilityExtensions.cs"
+        ]
+      }
+    },
+    "Notification": {
+      "otel_packages": [],
+      "hits": {
+        "serilog-traceid": [
+          "src/Services/Notification/Notification.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs",
+          "src/Services/Notification/Notification.Domain/Entities/AuditLog.cs",
+          "src/Services/Notification/Notification.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ],
+        "Activity.Current": [
+          "src/Services/Notification/Notification.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ]
+      }
+    },
+    "User": {
+      "otel_packages": [],
+      "hits": {
+        "serilog-traceid": [
+          "src/Services/User/User.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs",
+          "src/Services/User/User.Domain/Entities/AuditLog.cs",
+          "src/Services/User/User.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ],
+        "Activity.Current": [
+          "src/Services/User/User.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ]
+      }
+    },
+    "Wallet": {
+      "otel_packages": [
+        "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+        "OpenTelemetry.Extensions.Hosting",
+        "OpenTelemetry.Instrumentation.AspNetCore",
+        "OpenTelemetry.Instrumentation.Http"
+      ],
+      "hits": {
+        "serilog-traceid": [
+          "src/Services/Wallet/Wallet.Domain/Entities/AuditLog.cs",
+          "src/Services/Wallet/Wallet.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs",
+          "src/Services/Wallet/Wallet.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ],
+        "Activity.Current": [
+          "src/Services/Wallet/Wallet.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+        ],
+        "AddOpenTelemetry": [
+          "src/Services/Wallet/Wallet.Api/Extensions/ObservabilityExtensions.cs"
+        ]
+      }
+    }
+  }
+}

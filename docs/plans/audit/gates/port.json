@@ -1,0 +1,314 @@
+{
+  "gate": "port",
+  "repos": [
+    "ApiGateway",
+    "Auction",
+    "Catalog",
+    "Commerce",
+    "Fulfillment",
+    "Log",
+    "Notification",
+    "User",
+    "Wallet"
+  ],
+  "findings": [
+    {
+      "gate": "port",
+      "severity": "P1",
+      "repo": "Auction",
+      "check": "launchsettings-port",
+      "message": "`dotnet run` sẽ nghe ['5230', '7202'], không phải 8005 như Dockerfile/spec",
+      "path": "src/Services/Auction/Auction.Api/Properties/launchSettings.json",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "port",
+      "severity": "P1",
+      "repo": "Catalog",
+      "check": "launchsettings-port",
+      "message": "`dotnet run` sẽ nghe ['5272', '7232'], không phải 8002 như Dockerfile/spec",
+      "path": "src/Services/Catalog/Catalog.Api/Properties/launchSettings.json",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "port",
+      "severity": "P1",
+      "repo": "Commerce",
+      "check": "launchsettings-port",
+      "message": "`dotnet run` sẽ nghe ['5105', '7035'], không phải 8003 như Dockerfile/spec",
+      "path": "src/Services/Commerce/Commerce.Api/Properties/launchSettings.json",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "port",
+      "severity": "P1",
+      "repo": "Fulfillment",
+      "check": "launchsettings-port",
+      "message": "`dotnet run` sẽ nghe ['5228', '7014'], không phải 8006 như Dockerfile/spec",
+      "path": "src/Services/Fulfillment/Fulfillment.Api/Properties/launchSettings.json",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "port",
+      "severity": "P1",
+      "repo": "Log",
+      "check": "launchsettings-port",
+      "message": "`dotnet run` sẽ nghe ['5280', '7103'], không phải 8004 như Dockerfile/spec",
+      "path": "src/Services/Log/Log.Api/Properties/launchSettings.json",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "port",
+      "severity": "P1",
+      "repo": "Wallet",
+      "check": "launchsettings-port",
+      "message": "`dotnet run` sẽ nghe ['5096', '7218'], không phải 8008 như Dockerfile/spec",
+      "path": "src/Services/Wallet/Wallet.Api/Properties/launchSettings.json",
+      "line": 0,
+      "evidence": ""
+    }
+  ],
+  "facts": {
+    "ApiGateway": {
+      "expected": {
+        "http": "8000",
+        "grpc": null,
+        "db_engine": "Redis",
+        "db_port": "6379",
+        "db_name": "db0"
+      },
+      "sources": {
+        "dockerfile": {
+          "expose": [
+            "8000"
+          ],
+          "urls": [
+            "8000"
+          ]
+        },
+        "launchSettings": [
+          "8000"
+        ]
+      }
+    },
+    "Auction": {
+      "expected": {
+        "http": null,
+        "grpc": "8005",
+        "db_engine": "PostgreSQL",
+        "db_port": "5437",
+        "db_name": "auction_db"
+      },
+      "sources": {
+        "dockerfile": {
+          "expose": [
+            "8005"
+          ],
+          "urls": [
+            "8005"
+          ]
+        },
+        "launchSettings": [
+          "5230",
+          "7202"
+        ],
+        "connection": {
+          "appsettings.json": "Host=localhost;Port=5437;Database=auction_db;Username=postgres;Password=MatkhaucuaTui123@",
+          "appsettings.example.json": "Host=localhost;Port=5437;Database=auction_db;Username=postgres;Password=<REPLACE_WITH_DB_PASSWORD>"
+        }
+      }
+    },
+    "Catalog": {
+      "expected": {
+        "http": null,
+        "grpc": "8002",
+        "db_engine": "PostgreSQL",
+        "db_port": "5434",
+        "db_name": "category_db"
+      },
+      "sources": {
+        "dockerfile": {
+          "expose": [
+            "8002"
+          ],
+          "urls": [
+            "8002"
+          ]
+        },
+        "launchSettings": [
+          "5272",
+          "7232"
+        ],
+        "connection": {
+          "appsettings.json": "Host=localhost;Port=5434;Database=category_db;Username=postgres;Password=MatkhaucuaTui123@",
+          "appsettings.example.json": "Host=localhost;Port=5434;Database=category_db;Username=postgres;Password=<REPLACE_WITH_DB_PASSWORD>"
+        }
+      }
+    },
+    "Commerce": {
+      "expected": {
+        "http": null,
+        "grpc": "8003",
+        "db_engine": "PostgreSQL",
+        "db_port": "5435",
+        "db_name": "commerce_db"
+      },
+      "sources": {
+        "dockerfile": {
+          "expose": [
+            "8003"
+          ],
+          "urls": [
+            "8003"
+          ]
+        },
+        "launchSettings": [
+          "5105",
+          "7035"
+        ],
+        "connection": {
+          "appsettings.json": "Host=localhost;Port=5435;Database=commerce_db;Username=postgres;Password=MatkhaucuaTui123@",
+          "appsettings.example.json": "Host=localhost;Port=5435;Database=commerce_db;Username=postgres;Password=<REPLACE_WITH_DB_PASSWORD>"
+        }
+      }
+    },
+    "Fulfillment": {
+      "expected": {
+        "http": null,
+        "grpc": "8006",
+        "db_engine": "PostgreSQL",
+        "db_port": "5438",
+        "db_name": "fulfillment_db"
+      },
+      "sources": {
+        "dockerfile": {
+          "expose": [
+            "8006"
+          ],
+          "urls": [
+            "8006"
+          ]
+        },
+        "launchSettings": [
+          "5228",
+          "7014"
+        ],
+        "connection": {
+          "appsettings.json": "Host=localhost;Port=5438;Database=fulfillment_db;Username=postgres;Password=MatkhaucuaTui123@",
+          "appsettings.example.json": "Host=localhost;Port=5438;Database=fulfillment_db;Username=postgres;Password=<REPLACE_WITH_DB_PASSWORD>"
+        }
+      }
+    },
+    "Log": {
+      "expected": {
+        "http": null,
+        "grpc": "8004",
+        "db_engine": "PostgreSQL",
+        "db_port": "5436",
+        "db_name": "log_db"
+      },
+      "sources": {
+        "dockerfile": {
+          "expose": [
+            "8004"
+          ],
+          "urls": [
+            "8004"
+          ]
+        },
+        "launchSettings": [
+          "5280",
+          "7103"
+        ],
+        "connection": {
+          "appsettings.json": "Host=localhost;Port=5436;Database=log_db;Username=postgres;Password=MatkhaucuaTui123@",
+          "appsettings.example.json": "Host=localhost;Port=5436;Database=log_db;Username=postgres;Password=<REPLACE_WITH_DB_PASSWORD>"
+        }
+      }
+    },
+    "Notification": {
+      "expected": {
+        "http": null,
+        "grpc": "8007",
+        "db_engine": "PostgreSQL",
+        "db_port": "5439",
+        "db_name": "notification_db"
+      },
+      "sources": {
+        "dockerfile": {
+          "expose": [
+            "8007"
+          ],
+          "urls": [
+            "8007"
+          ]
+        },
+        "launchSettings": [
+          "8007"
+        ],
+        "connection": {
+          "appsettings.json": "Host=localhost;Port=5439;Database=notification_db;Username=postgres;Password=MatkhaucuaTui123@",
+          "appsettings.example.json": "Host=localhost;Port=5439;Database=notification_db;Username=postgres;Password=<REPLACE_WITH_DB_PASSWORD>"
+        }
+      }
+    },
+    "User": {
+      "expected": {
+        "http": null,
+        "grpc": "8001",
+        "db_engine": "PostgreSQL",
+        "db_port": "5433",
+        "db_name": "usermanagement_db"
+      },
+      "sources": {
+        "dockerfile": {
+          "expose": [
+            "8001"
+          ],
+          "urls": [
+            "8001"
+          ]
+        },
+        "launchSettings": [
+          "8001"
+        ],
+        "connection": {
+          "appsettings.json": "Host=localhost;Port=5433;Database=usermanagement_db;Username=postgres;Password=MatkhaucuaTui123@",
+          "appsettings.example.json": "Host=localhost;Port=5433;Database=usermanagement_db;Username=postgres;Password=<REPLACE_WITH_DB_PASSWORD>"
+        }
+      }
+    },
+    "Wallet": {
+      "expected": {
+        "http": null,
+        "grpc": "8008",
+        "db_engine": "PostgreSQL",
+        "db_port": "5440",
+        "db_name": "wallet_db"
+      },
+      "sources": {
+        "dockerfile": {
+          "expose": [
+            "8008"
+          ],
+          "urls": [
+            "8008"
+          ]
+        },
+        "launchSettings": [
+          "5096",
+          "7218"
+        ],
+        "connection": {
+          "appsettings.json": "Host=localhost;Port=5440;Database=wallet_db;Username=postgres;Password=MatkhaucuaTui123@",
+          "appsettings.example.json": "Host=localhost;Port=5440;Database=wallet_db;Username=postgres;Password=<REPLACE_WITH_DB_PASSWORD>"
+        }
+      }
+    }
+  }
+}

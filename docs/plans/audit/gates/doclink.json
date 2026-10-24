@@ -1,0 +1,130 @@
+{
+  "gate": "doclink",
+  "repos": [
+    "ApiGateway",
+    "Auction",
+    "Catalog",
+    "Commerce",
+    "Fulfillment",
+    "Log",
+    "Notification",
+    "User",
+    "Wallet"
+  ],
+  "findings": [
+    {
+      "gate": "doclink",
+      "severity": "P1",
+      "repo": "ApiGateway",
+      "check": "stray-doc",
+      "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+      "path": "src/Services/ApiGateway/SETUP_GUIDE_SERVICES.md",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "doclink",
+      "severity": "P1",
+      "repo": "ApiGateway",
+      "check": "stray-doc",
+      "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+      "path": "src/Services/ApiGateway/PLAN.md",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "doclink",
+      "severity": "P1",
+      "repo": "ApiGateway",
+      "check": "stray-doc",
+      "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+      "path": "src/Services/ApiGateway/CONFIG_REFERENCE.md",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "doclink",
+      "severity": "P1",
+      "repo": "ApiGateway",
+      "check": "stray-doc",
+      "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+      "path": "src/Services/ApiGateway/input.md",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "doclink",
+      "severity": "P1",
+      "repo": "ApiGateway",
+      "check": "stray-doc",
+      "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+      "path": "src/Services/ApiGateway/ADR.md",
+      "line": 0,
+      "evidence": ""
+    },
+    {
+      "gate": "doclink",
+      "severity": "P1",
+      "repo": "ApiGateway",
+      "check": "stray-doc",
+      "message": "file .md không thuộc danh mục tài liệu chuẩn của repo",
+      "path": "src/Services/ApiGateway/dac_ta.md",
+      "line": 0,
+      "evidence": ""
+    }
+  ],
+  "facts": {
+    "ApiGateway": {
+      "md_count": 23,
+      "outward": [],
+      "stray": [
+        "src/Services/ApiGateway/SETUP_GUIDE_SERVICES.md",
+        "src/Services/ApiGateway/PLAN.md",
+        "src/Services/ApiGateway/CONFIG_REFERENCE.md",
+        "src/Services/ApiGateway/input.md",
+        "src/Services/ApiGateway/ADR.md",
+        "src/Services/ApiGateway/dac_ta.md"
+      ]
+    },
+    "Auction": {
+      "md_count": 10,
+      "outward": [],
+      "stray": []
+    },
+    "Catalog": {
+      "md_count": 10,
+      "outward": [],
+      "stray": []
+    },
+    "Commerce": {
+      "md_count": 10,
+      "outward": [],
+      "stray": []
+    },
+    "Fulfillment": {
+      "md_count": 10,
+      "outward": [],
+      "stray": []
+    },
+    "Log": {
+      "md_count": 10,
+      "outward": [],
+      "stray": []
+    },
+    "Notification": {
+      "md_count": 10,
+      "outward": [],
+      "stray": []
+    },
+    "User": {
+      "md_count": 10,
+      "outward": [],
+      "stray": []
+    },
+    "Wallet": {
+      "md_count": 10,
+      "outward": [],
+      "stray": []
+    }
+  }
+}
