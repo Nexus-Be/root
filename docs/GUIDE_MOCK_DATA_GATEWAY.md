@@ -1,219 +1,293 @@
-# HƯỚNG DẪN TẠO MOCK DATA TẠI API GATEWAY DÀNH CHO DEVELOPER
-## (QUY TRÌNH MOCK DỮ LIỆU ĐỘC LẬP CHO FRONTEND & BACKEND TEAM)
+# HƯỚNG DẪN TẠO MOCK API, CHUYỂN ĐỔI RUNTIME, BYPASS AUTH & KIỂM TRA HEALTH CHECK
+## (NEXUS GATEWAY MOCK ENGINE, RUNTIME SWITCHING & HEALTH PROBER GUIDE)
 
-> **Mục tiêu**: Hướng dẫn bất kỳ developer nào (Frontend, Backend, QA) đọc xong tài liệu này trong **3 phút** là có thể tự tay tạo được dữ liệu Mock cho một API bất kỳ để phát triển giao diện mà không cần chờ Backend code xong.
+> **Mục tiêu**: Cung cấp cẩm nang thực hành toàn diện giúp Developer (Frontend, Backend, QA) nắm vững:
+> 1. Quy trình tạo Mock API mới trong **3 bước** (cả Declarative Mock và Controller Seed).
+> 2. Cách chuyển đổi linh hoạt giữa chế độ **`Mock`** và **`Real`**.
+> 3. Cách sử dụng tính năng **Bypass Auth Mode** để test không cần JWT token.
+> 4. Cách sử dụng và kiểm tra hệ thống **Health Check & Prober Daemon**.
 
 ---
 
-## 💡 Tổng Quan: Có 2 Cách Mock Dữ Liệu Tại Gateway
+## PHẦN 1: TẠO MOCK API MỚI TRONG 3 BƯỚC
+
+Hệ thống hỗ trợ 2 phương pháp Mock tùy theo vai trò và nhu cầu của bạn:
 
 | Phương Pháp | Khi Nào Sử Dụng? | Cần Viết Code C# Không? | Có Hiện Trên Swagger Không? |
 | :--- | :--- | :---: | :---: |
-| **Cách 1: Declarative Mock (`*.mock.json`)**<br>*(Khuyên dùng cho FE)* | Khi Backend **chưa có code C#**, FE cần ngay 1 endpoint REST để ghép giao diện. | ❌ **0 dòng code C#** | ✅ **Tự động hiện lên Swagger** |
-| **Cách 2: Controller Seed Fixtures (`Seeds/`)**<br>*(Khuyên dùng cho BE)* | Khi đã viết **Controller Action C#**, cần dữ liệu mẫu chuẩn Protobuf gRPC khi bật chế độ Mock. | ✅ Có Action C# | ✅ Hiện theo Controller Swagger |
+| **Cách 1: Declarative Mock (`Mocks/*.mock.json`)**<br>*(Khuyên dùng cho Frontend & QA)* | Khi Backend **chưa viết code C#**, Frontend cần ngay 1 endpoint REST để ghép giao diện. | ❌ **0 dòng code C#** | ✅ **Tự động hiện lên Swagger** |
+| **Cách 2: Controller Seed Fixtures (`Seeds/`)**<br>*(Khuyên dùng cho Backend)* | Khi đã viết **Controller Action C#**, cần dữ liệu mẫu chuẩn khi service chạy ở chế độ Mock. | ✅ Có Action C# | ✅ Hiện theo Controller Swagger |
 
 ---
 
-# CÁCH 1: TẠO MOCK API SIÊU TỐC (0 DÒNG C# — ĂN NGAY TRONG 30 GIÂY)
+### 👉 CÁCH 1: DECLARATIVE MOCK (0 DÒNG C# — ĂN NGAY TRONG 30 GIÂY)
 
-Dành cho trường hợp: Bạn cần tạo một API mới tinh (ví dụ `GET /api/v1/catalog/promotions`) để Frontend gọi thử mà không cần đụng vào code C#.
+Dành cho trường hợp: Bạn cần tạo một API mới tinh (ví dụ `GET /api/v1/catalog/promotions`) mà không cần đụng vào code C#.
 
-### Bước 1: Tạo file JSON tại thư mục `Mocks/`
-Vào thư mục: `src/Services/ApiGateway/Nexus.Gateway/Mocks/{tên_service}/`  
-Tạo một file có đuôi bắt buộc là: `*.mock.json` (hoặc `*.def.json`).  
-*Ví dụ:* `src/Services/ApiGateway/Nexus.Gateway/Mocks/catalog/promotions.mock.json`
+#### Bước 1: Tạo file JSON tại thư mục `Mocks/`
+Vào thư mục: `src/Services/ApiGateway/Nexus.Gateway/Mocks/`  
+Tạo một file có đuôi bắt buộc là: `*.mock.json` (ví dụ: `promotions.mock.json`).
 
----
-
-### Bước 2: Copy một trong 3 Template mẫu dưới đây
-
-#### 👉 Template A: API Trả Về 1 Đối Tượng Đơn Lẻ (Single Object)
-Gateway sẽ tự động bọc dữ liệu của bạn vào vỏ chuẩn: `{"success": true, "statusCode": 200, "data": { ... }}`
+#### Bước 2: Điền cấu hình theo Template
+Gateway tự động bọc dữ liệu của bạn vào vỏ chuẩn `ApiResponse<T>`:
 
 ```json
 {
-  "id": "mock-get-promotion-detail",
-  "service": "catalog",
-  "method": "GET",
-  "path": "/api/v1/catalog/promotions/{id}",
-  "description": "Lấy chi tiết mã khuyến mãi",
-  "policy": "public",
-  "statusCode": 200,
-  "responseType": "single",
-  "message": "Lấy thông tin khuyến mãi thành công.",
-  "response": {
-    "id": "promo-001",
-    "title": "Siêu sale công nghệ 50%",
-    "discountPercent": 50,
-    "maxDiscountAmount": "500000.00",
-    "startDate": "2026-10-01T00:00:00Z",
-    "endDate": "2026-10-31T23:59:59Z"
-  }
-}
-```
-
----
-
-#### 👉 Template B: API Trả Về Danh Sách Phân Trang (Paged List)
-Gateway tự động hỗ trợ nhận Query String `?page=1&pageSize=20` và bọc dữ liệu phân trang:
-
-```json
-{
-  "id": "mock-list-promotions-paged",
+  "id": "mock-get-promotions",
   "service": "catalog",
   "method": "GET",
   "path": "/api/v1/catalog/promotions",
-  "description": "Danh sách khuyến mãi đang chạy",
+  "description": "Lấy danh sách mã khuyến mãi",
   "policy": "public",
   "statusCode": 200,
   "responseType": "paged",
+  "message": "Promotions retrieved successfully.",
   "response": {
     "items": [
       {
         "id": "promo-001",
-        "title": "Giảm 50K cho đơn từ 200K",
-        "code": "TECH50K"
-      },
-      {
-        "id": "promo-002",
-        "title": "Miễn phí vận chuyển toàn quốc",
-        "code": "FREESHIP"
+        "title": "Siêu sale công nghệ 50%",
+        "discountPercent": 50,
+        "maxDiscountAmount": "500000.00"
       }
     ],
-    "total": 2
+    "total": 1
   }
 }
 ```
 
----
-
-#### 👉 Template C: API Giả Lập Báo Lỗi (Để Frontend Test Xử Lý Lỗi UI)
-Khi bạn muốn test xem giao diện xử lý ra sao khi API trả về lỗi 400 hoặc 404:
-
-```json
-{
-  "id": "mock-promotion-out-of-stock-error",
-  "service": "catalog",
-  "method": "POST",
-  "path": "/api/v1/catalog/promotions/apply",
-  "description": "Giả lập lỗi voucher đã hết lượt",
-  "policy": "public",
-  "statusCode": 400,
-  "responseType": "raw",
-  "response": {
-    "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-    "title": "Voucher Expired",
-    "status": 400,
-    "errorCode": "VOUCHER_DEPLETED",
-    "detail": "Mã khuyến mãi này đã hết lượt sử dụng."
-  }
-}
-```
-
----
-
-### Bước 3: Lưu file và Test Ngay!
-1. **Lưu file lại:** Gateway hỗ trợ **Hot-Reload tức thì** (tự động phát hiện file mới thêm hoặc sửa mà không cần tắt/bật lại server).
-2. **Mở trình duyệt:** Truy cập `http://localhost:8000/swagger`. Bạn sẽ thấy endpoint mock tự động xuất hiện trên Swagger UI!
+#### Bước 3: Lưu file & Kiểm tra trên Swagger
+1. **Lưu file lại**: Gateway hỗ trợ **Hot-Reload tức thì** (tự động phát hiện file mới thêm mà không cần khởi động lại server).
+2. **Mở trình duyệt**: Truy cập `http://localhost:8000/swagger`. Endpoint mock sẽ tự động xuất hiện.
 3. Bấm **Try it out** $\rightarrow$ **Execute** $\rightarrow$ Nhận ngay kết quả JSON chuẩn!
 
 ---
 
-# CÁCH 2: MOCK DỮ LIỆU CHO CONTROLLER C# CHÍNH THỨC (SEED FIXTURES)
+### 👉 CÁCH 2: CONTROLLER SEED FIXTURES (DÀNH CHO BACKEND C#)
 
-Dành cho Backend Developer: Khi bạn đã viết xong Action trong Controller (ví dụ `CatalogController.cs`), nhưng Backend microservice gRPC thật chưa code xong hoặc chưa bật database.
+Thư mục `Seeds/` được tổ chức theo **từng nhóm tính năng nghiệp vụ (Feature-based)**:
+```
+Seeds/
+├── auth/         # register.json, login.json, verify-otp.json, resend-otp.json
+├── users/        # profile.json (GET /api/v1/users/me)
+├── products/     # products.json, product.json (Catalog)
+├── cart/         # cart.json (Commerce)
+└── orders/       # orders.json, order.json (Commerce)
+```
 
-### Bước 1: Xem tên Operation trong Controller
-Trong Action Controller, bạn gọi dòng lệnh Dispatcher:
+#### Bước 1: Khai báo Endpoint trong Controller tương ứng
+Vào Controller (ví dụ `ProductsController.cs`):
 ```csharp
-[HttpGet("catalog/brands")]
-public Task<IResult> ListBrands([FromQuery] PaginationRequest pagination)
+[HttpGet("catalog/products")]
+[AllowAnonymous]
+public Task<IResult> ListProducts()
 {
-    return _dispatcher.DispatchPagedAsync(
-        HttpContext, "catalog", "brands", ...); // <-- Tên service: "catalog", tên operation: "brands"
+    return _dispatcher.DispatchAsync(
+        HttpContext,
+        "products",   // Tên thư mục hoặc service trong Seeds/
+        "products",   // Tên file JSON trong Seeds/ (không cần đuôi .json)
+        o => null!,   // Callback gRPC thật (truyền null khi đang làm mock)
+        null!,        // Parser Protobuf (truyền null khi chưa có proto)
+        successMessage: "Products retrieved successfully."
+    );
 }
 ```
 
-### Bước 2: Tạo file JSON tương ứng tại thư mục `Seeds/`
-Quy tắc đường dẫn file:  
-`src/Services/ApiGateway/Nexus.Gateway/Seeds/{tên_service}/{tên_operation}.json`
-
-*Ví dụ:* `src/Services/ApiGateway/Nexus.Gateway/Seeds/catalog/brands.json`
-
-Điền dữ liệu mẫu JSON:
+#### Bước 2: Tạo file JSON dữ liệu mẫu trong `Seeds/{feature}/`
+Tạo file `Seeds/products/products.json`:
 ```json
 {
   "items": [
-    { "id": "brand-01", "name": "Keychron", "logoUrl": "https://example.com/keychron.png" },
-    { "id": "brand-02", "name": "Logitech", "logoUrl": "https://example.com/logitech.png" }
+    {
+      "id": "prod-001",
+      "name": "Bàn phím cơ không dây",
+      "price": 1250000,
+      "status": "Active"
+    }
   ],
-  "total": 2
+  "total": 1
 }
 ```
 
-### Bước 3: Đảm bảo Service đang ở chế độ Mock
+#### Bước 3: Đảm bảo Service đang ở chế độ Mock & Test
+Trong `gateway.runtime.json`, đảm bảo `"catalog": { "Mode": "Mock" }`.  
+Mở Swagger `http://localhost:8000/swagger` và thực thi API $\rightarrow$ Gateway tự động bọc dữ liệu vào `ApiResponse<T>` chuẩn kèm `traceId` và `timestamp`!
+
+---
+
+## PHẦN 2: HƯỚNG DẪN SỬ DỤNG TÍNH NĂNG CHUYỂN ĐỔI MOCK $\leftrightarrow$ REAL
+
+Gateway hỗ trợ 3 cơ chế chuyển đổi chế độ runtime:
+
+### Cách 1: Đổi qua file cấu hình `gateway.runtime.json` (Áp dụng toàn sàn)
 Mở file `src/Services/ApiGateway/Nexus.Gateway/gateway.runtime.json`:
 ```json
-"catalog": {
-  "Mode": "Mock"
+"Services": {
+  "catalog": {
+    "Mode": "Real",          // Đổi "Mock" thành "Real" khi Backend thật đã sẵn sàng
+    "Address": "http://localhost:8002",
+    "TimeoutSeconds": 5
+  }
 }
 ```
-*(Nếu đang là `"Real"`, đổi thành `"Mock"` và lưu lại. Gateway sẽ tự động lấy dữ liệu từ file JSON bạn vừa tạo).*
+*Đặc tính:* Hỗ trợ **Hot-Reload trong 0ms**, lưu file là ăn ngay, không cần tắt/bật lại Gateway.
+
+### Cách 2: Đổi qua Control-Plane API (Dành cho Quản trị viên & Automation Script)
+Gateway cung cấp sẵn bộ API quản trị (yêu cầu quyền Admin):
+* **Xem trạng thái hiện tại của cả 8 services:**
+  ```http
+  GET /api/v1/gateway/modes
+  ```
+* **Cập nhật chế độ cho 1 service cụ thể:**
+  ```http
+  PUT /api/v1/gateway/modes/catalog
+  Content-Type: application/json
+
+  {
+    "mode": "Real"
+  }
+  ```
+* **Cập nhật hàng loạt (Bulk Update):**
+  ```http
+  PUT /api/v1/gateway/modes
+  Content-Type: application/json
+
+  {
+    "authMode": "Enforce",
+    "services": {
+      "catalog": "Real",
+      "users": "Real",
+      "commerce": "Mock"
+    }
+  }
+  ```
+
+### Cách 3: Ghi đè theo từng Request qua HTTP Header (Khuyên dùng khi Test)
+Khi service đang ở chế độ `Mock`, nhưng bạn muốn test thử 1 request gọi sang Backend thật:
+* Đính kèm Header trong cURL / Postman:
+  ```http
+  X-Service-Mode-catalog: Real
+  ```
+* Hoặc ép toàn bộ request dùng Mock:
+  ```http
+  X-Mock-Mode: true
+  ```
+Gateway sẽ ưu tiên Header của request cao nhất, giúp bạn test song song mà không ảnh hưởng người khác.
 
 ---
 
-# 🔑 BẢNG TRA CỨU CÁC TRƯỜNG CẤU HÌNH TRONG FILE MOCK
+## PHẦN 3: HƯỚNG DẪN TÍNH NĂNG BYPASS AUTH MODE
 
-| Trường (Field) | Bắt buộc? | Giá trị hợp lệ | Ý nghĩa |
-| :--- | :---: | :--- | :--- |
-| **`id`** | Có | Chuỗi bất kỳ, viết thường nối gạch ngang | Định danh duy nhất của mock endpoint (ví dụ: `mock-user-profile`). |
-| **`service`** | Có | `users`, `catalog`, `commerce`, `log`, `auction`, `fulfillment`, `notification`, `wallet` | Service phụ trách endpoint này. |
-| **`method`** | Có | `GET`, `POST`, `PUT`, `PATCH`, `DELETE` | Phương thức HTTP của API. |
-| **`path`** | Có | `/api/v1/...` (hỗ trợ biến URL `{id}`) | Đường dẫn URL của API. |
-| **`description`** | Không | Chuỗi mô tả ngắn | Hiển thị làm chú thích trên Swagger UI. |
-| **`policy`** | Không | `public`, `authenticated`, `seller`, `staff`, `admin` | Phân quyền bảo vệ endpoint (xem chi tiết bên dưới). Mặc định là `public`. |
-| **`statusCode`** | Có | `200`, `201`, `400`, `404`, `500`... | HTTP status code trả về cho Client. |
-| **`responseType`** | Không | `single` (mặc định), `paged`, `raw` | Kiểu đóng gói phản hồi (xem giải thích bên dưới). |
-| **`response`** | Có | Object `{ ... }` | Dữ liệu JSON thực tế trả về. |
+### 1. Ý nghĩa & Vấn đề giải quyết:
+Khi phát triển giao diện Frontend, nhiều trang màn hình yêu cầu phải có Token đăng nhập (ví dụ: Xem thông tin cá nhân `policy: "authenticated"`, hoặc Đăng sản phẩm `policy: "seller"`). Nếu Backend `UserService` chưa chạy thật hoặc dev không muốn tốn thời gian gọi API login để lấy token:
+$\rightarrow$ **Bypass Auth Mode** cho phép bạn gọi các API này hoàn toàn ẩn danh mà **không bị chặn mã lỗi 401 Unauthorized hay 403 Forbidden**!
 
----
+### 2. Cách kích hoạt:
+Mở file `gateway.runtime.json`, sửa:
+```json
+{
+  "Gateway": {
+    "AuthMode": "Bypass"
+  }
+}
+```
 
-### Ý Nghĩa Của `responseType`:
-- **`"single"` (Khuyên dùng)**: Gateway tự động bọc dữ liệu trong envelope chuẩn `ApiResponse<T>`:
-  `{"success": true, "statusCode": 200, "message": "...", "data": { ... }, "traceId": "...", "timestamp": "..."}`.
-- **`"paged"`**: Dành cho danh sách phân trang. Gateway tự động bọc trong `data.items` và `data.pagination` (`pageIndex`, `pageSize`, `totalCount`, `totalPages`).
-- **`"raw"`**: Trả về dữ liệu thô nguyên bản trong trường `response`, không bọc thêm bất kỳ vỏ bọc nào (thường dùng khi giả lập mã lỗi RFC Problem Details).
-
----
-
-### Ý Nghĩa Của Phân Quyền `policy`:
-- **`"public"`**: API công khai, bất kỳ ai cũng gọi được mà không cần Token đăng nhập.
-- **`"authenticated"`**: Yêu cầu phải gửi JWT Bearer Token (bất kỳ ai đã đăng nhập).
-- **`"seller"`**: Chỉ tài khoản có vai trò Người bán (Seller) mới gọi được.
-- **`"staff"`**: Chỉ nhân viên hỗ trợ (Support Staff) mới gọi được.
-- **`"admin"`**: Chỉ Quản trị viên (Admin) mới gọi được.
+### 3. Cơ chế hoạt động ngầm (`MockSecurityAdapterMiddleware`):
+Khi ở chế độ `Bypass`:
+- Nếu client không gửi Token, Gateway tự động gán một ClaimsPrincipal danh tính mẫu:
+  - `User ID`: `11111111-1111-1111-1111-000000000004`
+  - `Roles`: `buyer`, `seller`, `staff`, `admin`
+- Các endpoint có thuộc tính `[Authorize]` sẽ tự động cho phép request đi qua.
+- **Lưu ý an ninh**: Tính năng Bypass **chỉ hoạt động ở môi trường Development** (`ASPNETCORE_ENVIRONMENT=Development`). Trên môi trường Production, Gateway luôn bắt buộc chế độ `"Enforce"` nghiêm ngặt. Ngoài ra, các API quản trị Gateway (`/api/v1/gateway/*`) luôn yêu cầu Token Admin thật, không bao giờ bị bypass.
 
 ---
 
-# ⚡ MẸO HAY DÀNH CHO DEVELOPER (TIPS & TRICKS)
+## PHẦN 4: HƯỚNG DẪN KIỂM TRA HEALTH CHECK & HEALTH PROBER
 
-### 1. Test Mock Nhanh Không Cần Đăng Nhập (Bypass Auth Mode)
-Khi bạn đang làm giao diện Frontend và không muốn mất công đăng nhập lấy token:
-1. Mở file `src/Services/ApiGateway/Nexus.Gateway/gateway.runtime.json`.
-2. Sửa `"AuthMode": "Bypass"`.
-3. Lưu file $\rightarrow$ Giờ đây bạn có thể gọi **mọi API mock (kể cả có `policy: "authenticated"` hay `"seller"`)** mà không bị chặn lỗi 401/403!
+Gateway trang bị hệ thống kiểm tra sức khỏe phân tầng:
 
-### 2. Ép Nạp Lại Mock Ngay Lập Tức
-Nếu bạn vừa sửa file mock mà muốn Gateway cập nhật ngay lập tức không cần đợi debounce:
-- Gửi request `POST http://localhost:8000/api/v1/mock-engine/reload` (hoặc bấm nút này trên Swagger).
-- Gateway sẽ quét lại toàn bộ thư mục `Mocks/` và báo số lượng endpoint đã nạp.
+```
+[ K8s / Load Balancer ] ──▶ [ GET /health/live & /health/ready ] (Gateway Health)
+                                       │
+                                       ▼ (Prober Daemons)
+                         ┌─────────────────────────────┐
+                         │   Thăm dò 8 Microservices   │
+                         │   (Interval 60s, Timeout 30s)
+                         └─────────────────────────────┘
+```
 
-### 3. Đổi Riêng 1 Request Sang Backend Thật (Header Override)
-Nếu bạn đang để service ở `Mock` nhưng muốn test thử 1 request gọi sang Backend thật:
-- Đính kèm Header trong Postman/cURL:
-  `X-Service-Mode-catalog: Real`
-- Gateway sẽ gọi thẳng gRPC sang backend cho riêng request đó!
+### 1. Endpoints Kiểm Tra Sức Khỏe Tự Thân Của Gateway:
+* **`GET http://localhost:8000/health/live` (Liveness Probe)**:
+  - Trả về HTTP 200 OK nếu tiến trình Gateway đang sống. Kubernetes sử dụng endpoint này để biết container có bị treo (deadlock) hay không để restart.
+* **`GET http://localhost:8000/health/ready` (Readiness Probe)**:
+  - Trả về HTTP 200 OK khi Gateway đã sẵn sàng tiếp nhận lưu lượng (Redis đã kết nối, MockEngine đã tải xong định nghĩa).
 
 ---
 
-*Chúc các bạn phát triển tính năng và giao diện thuận lợi!*
+### 2. Quản Lý Hệ Thống Health Prober Daemons Của 8 Services:
+Mỗi backend service có một luồng Prober Daemon chạy ngầm trong Gateway. Mặc định khi khởi động, các daemon ở trạng thái `Disabled` để tiết kiệm tài nguyên.
+
+#### A. Xem trạng thái sức khỏe của toàn bộ 8 services:
+```bash
+curl -X GET http://localhost:8000/api/v1/gateway/prober/status \
+     -H "Authorization: Bearer <token_admin>"
+```
+Response mẫu:
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "catalog": {
+      "daemonStatus": "Enabled",
+      "healthState": "Healthy",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-10-24T12:00:00Z",
+      "address": "http://localhost:8002"
+    },
+    "users": {
+      "daemonStatus": "Disabled",
+      "healthState": "Unknown",
+      "consecutiveFailures": 0,
+      "address": "http://localhost:8001"
+    }
+  }
+}
+```
+
+#### B. Bật giám sát sức khỏe cho 1 service:
+```bash
+curl -X PUT http://localhost:8000/api/v1/gateway/prober/catalog \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <token_admin>" \
+     -d '{
+       "enabled": true,
+       "intervalSeconds": 30,
+       "failureThreshold": 3
+     }'
+```
+
+#### C. Kích hoạt kiểm tra sức khỏe tức thì (Manual Probe):
+Khi bạn vừa deploy xong một service và muốn Gateway kiểm tra ngay lập tức mà không cần đợi chu kỳ 60 giây:
+```bash
+curl -X POST http://localhost:8000/api/v1/gateway/prober/check/catalog \
+     -H "Authorization: Bearer <token_admin>"
+```
+
+---
+
+### 3. Cơ Chế Circuit Breaker Fast-Fail (503 ProblemDetails):
+Khi một service bị chết (ví dụ `catalog` bị sập quá 5 lần probe liên tiếp):
+- Prober Daemon chuyển trạng thái của service sang **`Unhealthy`**.
+- **Circuit Breaker tự động kích hoạt:** Toàn bộ các request tiếp theo gửi tới `/api/v1/catalog/*` sẽ bị Gateway ngắt mạch ngay lập tức trong **0ms** và trả về mã lỗi **HTTP 503**:
+  ```json
+  {
+    "type": "https://tools.ietf.org/html/rfc9110#section-15.6.4",
+    "title": "Service Unavailable",
+    "status": 503,
+    "detail": "Service 'catalog' is currently unhealthy and unavailable.",
+    "errorCode": "DOWNSTREAM_UNHEALTHY",
+    "traceId": "0HNPH0O1RS5U4"
+  }
+  ```
+- *Lợi ích:* Giúp Gateway không bị treo luồng khi chờ timeout của service chết, bảo vệ toàn bộ hệ thống không bị sập dây chuyền (Cascading Failure).

@@ -56,9 +56,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 5s
-      timeout: 3s
+      interval: 1m
+      timeout: 30s
       retries: 5
+      start_period: 60s
 
   # 1.2 Redis (Bộ nhớ đệm phân tán & Rate Limiting cục bộ)
   redis:
@@ -69,9 +70,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
+      interval: 1m
+      timeout: 30s
+      retries: 5
+      start_period: 60s
     volumes:
       - redis_data:/data
 
@@ -125,9 +127,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d usermanagement_db"]
-      interval: 5s
-      timeout: 3s
+      interval: 1m
+      timeout: 30s
       retries: 5
+      start_period: 60s
 
   # 2.2 Database cho Catalog Service (Port 5434)
   catalog-db:
@@ -144,9 +147,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d category_db"]
-      interval: 5s
-      timeout: 3s
+      interval: 1m
+      timeout: 30s
       retries: 5
+      start_period: 60s
 
   # 2.3 Database cho Commerce Service (Port 5435)
   commerce-db:
@@ -163,9 +167,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d commerce_db"]
-      interval: 5s
-      timeout: 3s
+      interval: 1m
+      timeout: 30s
       retries: 5
+      start_period: 60s
 
   # 2.4 Database cho Log Service (Port 5436)
   log-db:
@@ -182,9 +187,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d log_db"]
-      interval: 5s
-      timeout: 3s
+      interval: 1m
+      timeout: 30s
       retries: 5
+      start_period: 60s
 
   # 2.5 Database cho Auction Service (Port 5437)
   auction-db:
@@ -201,9 +207,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d auction_db"]
-      interval: 5s
-      timeout: 3s
+      interval: 1m
+      timeout: 30s
       retries: 5
+      start_period: 60s
 
   # 2.6 Database cho Fulfillment Service (Port 5438)
   fulfillment-db:
@@ -220,9 +227,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d fulfillment_db"]
-      interval: 5s
-      timeout: 3s
+      interval: 1m
+      timeout: 30s
       retries: 5
+      start_period: 60s
 
   # 2.7 Database cho Notification Service (Port 5439)
   notification-db:
@@ -239,9 +247,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d notification_db"]
-      interval: 5s
-      timeout: 3s
+      interval: 1m
+      timeout: 30s
       retries: 5
+      start_period: 60s
 
   # 2.8 Database cho Wallet Service (Port 5440)
   wallet-db:
@@ -258,9 +267,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d wallet_db"]
-      interval: 5s
-      timeout: 3s
+      interval: 1m
+      timeout: 30s
       retries: 5
+      start_period: 60s
 
 
   # =========================================================================

@@ -77,12 +77,26 @@ dotnet run --project Catalog.Api
 
 ---
 
-## 4. Tài Liệu Kỹ Thuật Chi Tiết
-- **[Hướng Dẫn Các Bước Tiếp Theo & Checklist Triển Khai (docs/NEXT_STEPS_AND_CHECKLIST.md)](docs/NEXT_STEPS_AND_CHECKLIST.md)**
-- **[Kiến Trúc Health Prober & Chiến Lược Log Tập Trung (docs/HEALTH_AND_LOGGING_ARCHITECTURE.md)](docs/HEALTH_AND_LOGGING_ARCHITECTURE.md)**
+## 4. Tài Liệu Kỹ Thuật Chi Tiết (Documentation Index)
+
+Toàn bộ tài liệu kỹ thuật được chuẩn hóa và lưu trữ tại thư mục **`docs/`**:
+
+### 📘 Cẩm Nang Phát Triển (Developer Guides):
+- **[Cẩm Nang Phát Triển & Kiểm Thử Độc Lập 1 Service (docs/INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)](docs/INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)** *(Đọc trước khi code service)*
+- **[Quy Chuẩn Kiến Trúc Clean Architecture 4 Tầng Cho Microservices (docs/CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)](docs/CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)**
+- **[Hướng Dẫn Tạo Mock API, Chuyển Đổi Runtime, Bypass Auth & Health Check (docs/GUIDE_MOCK_DATA_GATEWAY.md)](docs/GUIDE_MOCK_DATA_GATEWAY.md)**
+- **[Đặc Tả Kiến Trúc & Cẩm Nang 15 Thư Mục API Gateway (docs/GATEWAY_ARCHITECTURE_AND_FOLDERS.md)](docs/GATEWAY_ARCHITECTURE_AND_FOLDERS.md)**
+- **[Lộ Trình Các Bước Kế Tiếp & Checklist Triển Khai (docs/NEXT_STEPS_AND_CHECKLIST.md)](docs/NEXT_STEPS_AND_CHECKLIST.md)**
 - **[Đặc Tả Danh Mục Entity & Enum Chuẩn Form Cho Frontend (docs/FRONTEND_ENTITY_AND_ENUM_CATALOG.md)](docs/FRONTEND_ENTITY_AND_ENUM_CATALOG.md)**
-- **[Hướng Dẫn Tạo Mock Data Tại Gateway Cho Dev Team (docs/GUIDE_MOCK_DATA_GATEWAY.md)](docs/GUIDE_MOCK_DATA_GATEWAY.md)**
-- [Tài liệu Hệ Thống & Quy Chuẩn (specs/README.md)](specs/README.md)
-- [Hệ Thống 15 Quyết Định Kiến Trúc (docs/adr/ADR.md)](docs/adr/ADR.md)
-- [Hướng Dẫn Phát Triển API Gateway (src/Services/ApiGateway/DEV_GUIDE.md)](src/Services/ApiGateway/DEV_GUIDE.md)
-- [Hướng Dẫn Tích Hợp Backend Services (src/Services/ApiGateway/SETUP_GUIDE_SERVICES.md)](src/Services/ApiGateway/SETUP_GUIDE_SERVICES.md)
+
+### 🛠️ Cẩm Nang Hạ Tầng Kỹ Thuật Chuyên Biệt (Infrastructure Guides):
+- **[Hướng Dẫn Hạ Tầng RabbitMQ & MassTransit Message Bus (docs/infra/RABBITMQ_GUIDE.md)](docs/infra/RABBITMQ_GUIDE.md)**
+- **[Hướng Dẫn Hạ Tầng Redis: Rate Limiting & Mã OTP (docs/infra/REDIS_GUIDE.md)](docs/infra/REDIS_GUIDE.md)**
+- **[Hướng Dẫn Giám Sát Phân Tán: Grafana & Tempo Traces (docs/infra/OBSERVABILITY_GUIDE.md)](docs/infra/OBSERVABILITY_GUIDE.md)**
+- **[Hướng Dẫn 8 Cơ Sở Dữ Liệu PostgreSQL & EF Core Migrations (docs/infra/POSTGRES_DATABASES_GUIDE.md)](docs/infra/POSTGRES_DATABASES_GUIDE.md)**
+
+### 🏛️ Quyết Định Kiến Trúc & Quy Chuẩn Hệ Thống:
+- **[Hệ Thống 15 Quyết Định Kiến Trúc Toàn Hệ Thống (docs/adr/ADR.md)](docs/adr/ADR.md)**
+- **[Kiến Trúc Health Prober & Chiến Lược Log Tập Trung (docs/HEALTH_AND_LOGGING_ARCHITECTURE.md)](docs/HEALTH_AND_LOGGING_ARCHITECTURE.md)**
+- **[Bộ Đặc Tả Kỹ Thuật Trung Tâm (specs/README.md)](specs/README.md)**
+- **[Trung Tâm Điều Hướng Tài Liệu Tổng Thể (docs/README.md)](docs/README.md)**
