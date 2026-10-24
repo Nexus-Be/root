@@ -172,7 +172,8 @@
           "app.UseGlobalExceptionHandler(",
           "app.UseSwagger(",
           "app.UseSwaggerUI(",
-          "app.MapGet("
+          "app.MapGet(",
+          "app.MapControllers("
         ],
         "appsettings_keys": [
           "AllowedHosts",

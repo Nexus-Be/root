@@ -263,8 +263,8 @@
     "gate": "surface",
     "severity": "P0",
     "repo": "Catalog",
-    "check": "no-api-surface",
-    "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+    "check": "no-grpc-surface",
+    "message": "có controller nhưng spec quy định backend chỉ gRPC",
     "path": "src/Services/Catalog",
     "line": 0,
     "evidence": ""
@@ -747,6 +747,66 @@
     "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Mũ Bảo Hiểm Xe Đạp Nexus Aero - Đỏ / Size M\"",
     "path": "src/Services/Auction/Auction.Infrastructure/Persistence/Seeds/AuctionSeedData.cs",
     "line": 44,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thiết Bị Điện Tử\"",
+    "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+    "line": 67,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Điện thoại, máy tính, phụ kiện công nghệ\"",
+    "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+    "line": 67,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thời Trang & Phụ Kiện\"",
+    "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+    "line": 68,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Quần áo, giày dép, phụ kiện\"",
+    "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+    "line": 68,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Bàn phím cơ không dây Nexus Pro Wireless\"",
+    "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+    "line": 77,
+    "evidence": ""
+  },
+  {
+    "gate": "errmsg",
+    "severity": "P2",
+    "repo": "Catalog",
+    "check": "vietnamese-non-error",
+    "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Bàn phím cơ 3 modes kết nối (Type-C, 2.4G, Bluetooth 5.0)\"",
+    "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+    "line": 78,
     "evidence": ""
   },
   {

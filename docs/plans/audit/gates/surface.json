@@ -26,8 +26,8 @@
       "gate": "surface",
       "severity": "P0",
       "repo": "Catalog",
-      "check": "no-api-surface",
-      "message": "0 gRPC service / 0 controller; chỉ có 1 minimal endpoint (/health)",
+      "check": "no-grpc-surface",
+      "message": "có controller nhưng spec quy định backend chỉ gRPC",
       "path": "src/Services/Catalog",
       "line": 0,
       "evidence": ""
@@ -107,8 +107,16 @@
     },
     "Catalog": {
       "grpc_impl_files": [],
-      "controllers": [],
-      "http_action_files": [],
+      "controllers": [
+        "src/Services/Catalog/Catalog.Api/Controllers/InventoryController.cs",
+        "src/Services/Catalog/Catalog.Api/Controllers/CategoriesController.cs",
+        "src/Services/Catalog/Catalog.Api/Controllers/ProductsController.cs"
+      ],
+      "http_action_files": [
+        "src/Services/Catalog/Catalog.Api/Controllers/InventoryController.cs",
+        "src/Services/Catalog/Catalog.Api/Controllers/CategoriesController.cs",
+        "src/Services/Catalog/Catalog.Api/Controllers/ProductsController.cs"
+      ],
       "minimal_endpoints": [
         "/health"
       ]

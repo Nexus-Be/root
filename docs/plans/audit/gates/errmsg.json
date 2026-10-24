@@ -167,6 +167,66 @@
       "severity": "P2",
       "repo": "Catalog",
       "check": "vietnamese-non-error",
+      "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thiết Bị Điện Tử\"",
+      "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+      "line": 67,
+      "evidence": ""
+    },
+    {
+      "gate": "errmsg",
+      "severity": "P2",
+      "repo": "Catalog",
+      "check": "vietnamese-non-error",
+      "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Điện thoại, máy tính, phụ kiện công nghệ\"",
+      "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+      "line": 67,
+      "evidence": ""
+    },
+    {
+      "gate": "errmsg",
+      "severity": "P2",
+      "repo": "Catalog",
+      "check": "vietnamese-non-error",
+      "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thời Trang & Phụ Kiện\"",
+      "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+      "line": 68,
+      "evidence": ""
+    },
+    {
+      "gate": "errmsg",
+      "severity": "P2",
+      "repo": "Catalog",
+      "check": "vietnamese-non-error",
+      "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Quần áo, giày dép, phụ kiện\"",
+      "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+      "line": 68,
+      "evidence": ""
+    },
+    {
+      "gate": "errmsg",
+      "severity": "P2",
+      "repo": "Catalog",
+      "check": "vietnamese-non-error",
+      "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Bàn phím cơ không dây Nexus Pro Wireless\"",
+      "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+      "line": 77,
+      "evidence": ""
+    },
+    {
+      "gate": "errmsg",
+      "severity": "P2",
+      "repo": "Catalog",
+      "check": "vietnamese-non-error",
+      "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Bàn phím cơ 3 modes kết nối (Type-C, 2.4G, Bluetooth 5.0)\"",
+      "path": "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+      "line": 78,
+      "evidence": ""
+    },
+    {
+      "gate": "errmsg",
+      "severity": "P2",
+      "repo": "Catalog",
+      "check": "vietnamese-non-error",
       "message": "chuỗi tiếng Việt ngoài ngữ cảnh lỗi (seed/log): \"Thiết Bị Điện Tử & Công Nghệ\"",
       "path": "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
       "line": 25,
@@ -1319,6 +1379,36 @@
     "Catalog": {
       "vietnamese_error": [],
       "vietnamese_non_error": [
+        [
+          "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+          67,
+          "Thiết Bị Điện Tử"
+        ],
+        [
+          "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+          67,
+          "Điện thoại, máy tính, phụ kiện công nghệ"
+        ],
+        [
+          "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+          68,
+          "Thời Trang & Phụ Kiện"
+        ],
+        [
+          "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+          68,
+          "Quần áo, giày dép, phụ kiện"
+        ],
+        [
+          "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+          77,
+          "Bàn phím cơ không dây Nexus Pro Wireless"
+        ],
+        [
+          "src/Services/Catalog/Catalog.Api/Mock/MockCatalogStore.cs",
+          78,
+          "Bàn phím cơ 3 modes kết nối (Type-C, 2.4G, Bluetooth 5.0)"
+        ],
         [
           "src/Services/Catalog/Catalog.Infrastructure/Persistence/Seeds/CatalogSeedData.cs",
           25,

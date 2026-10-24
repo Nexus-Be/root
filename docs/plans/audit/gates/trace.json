@@ -217,10 +217,14 @@
       "otel_packages": [],
       "hits": {
         "Activity.Current": [
-          "src/Services/Catalog/Catalog.Api/Middleware/GlobalExceptionHandlerMiddleware.cs"
+          "src/Services/Catalog/Catalog.Api/Middleware/GlobalExceptionHandlerMiddleware.cs",
+          "src/Services/Catalog/Catalog.Api/Responses/ApiResponseFactory.cs"
         ],
         "serilog-traceid": [
           "src/Services/Catalog/Catalog.Api/Middleware/GlobalExceptionHandlerMiddleware.cs",
+          "src/Services/Catalog/Catalog.Api/Responses/ApiResponse.cs",
+          "src/Services/Catalog/Catalog.Api/Responses/ApiResponseFactory.cs",
+          "src/Services/Catalog/Catalog.Api/Responses/IApiResponseFactory.cs",
           "src/Services/Catalog/Catalog.Domain/Entities/AuditLog.cs",
           "src/Services/Catalog/Catalog.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs"
         ]
