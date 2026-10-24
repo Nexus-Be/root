@@ -30,6 +30,18 @@ Tài liệu thực chiến giúp lập trình viên bắt tay vào làm việc n
 * **[Đặc Tả Danh Mục Entity & Enum Chuẩn Form Cho Frontend (FRONTEND_ENTITY_AND_ENUM_CATALOG.md)](FRONTEND_ENTITY_AND_ENUM_CATALOG.md)**  
   👉 Tra cứu 78 Enums và 88 Entities chuẩn kiểu dữ liệu, nullability và validation cho đội ngũ Frontend.
 
+* **[Cẩm Nang Kiến Trúc & Cấu Trúc Thư Mục Cho Từng Service (Service Guides)]**:
+  Mỗi repository của từng service đều có tài liệu `README.md` riêng biệt hướng dẫn chi tiết luồng nghiệp vụ, các thư mục và quy trình phát triển tính năng mới:
+  - **UserService**: [src/Services/User/README.md](../src/Services/User/README.md)
+  - **CatalogService**: [src/Services/Catalog/README.md](../src/Services/Catalog/README.md)
+  - **CommerceService**: [src/Services/Commerce/README.md](../src/Services/Commerce/README.md)
+  - **AuctionService**: [src/Services/Auction/README.md](../src/Services/Auction/README.md)
+  - **FulfillmentService**: [src/Services/Fulfillment/README.md](../src/Services/Fulfillment/README.md)
+  - **NotificationService**: [src/Services/Notification/README.md](../src/Services/Notification/README.md)
+  - **LogService**: [src/Services/Log/README.md](../src/Services/Log/README.md)
+  - **WalletService**: [src/Services/Wallet/README.md](../src/Services/Wallet/README.md)
+  - **ApiGateway**: [src/Services/ApiGateway/README.md](../src/Services/ApiGateway/README.md)
+
 ---
 
 ## 2. HƯỚNG DẪN HẠ TẦNG KỸ THUẬT CHUYÊN BIỆT (INFRASTRUCTURE GUIDES)

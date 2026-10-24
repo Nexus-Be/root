@@ -54,32 +54,36 @@ Mỗi Microservice được cấu trúc thành một Solution `.sln` độc lậ
 
 ---
 
-### 2.2. TẦNG APPLICATION (`{Service}.Application`) — ĐIỀU PHỐI CA SỬ DỤNG
+### 2.2. TẦNG APPLICATION (`{Service}.Application`) — ĐIỀU PHỐI CA SỬ DỤNG (USE CASES)
 
-* **Bản chất**: Hiện thực hóa các Use Cases của hệ thống theo mô hình **CQRS (Command Query Responsibility Segregation)** kết hợp `MediatR`.
+* **Bản chất**: Hiện thực hóa các Use Cases của hệ thống. Khử ghép nối lỏng (Loose Coupling), phân tách theo từng miền tính năng (Feature-based Services).
 * **Cấu trúc thư mục**:
   ```
   {Service}.Application/
-  ├── Commands/           # Các ca sử dụng làm THAY ĐỔI dữ liệu (Create, Update, Delete)
-  │   └── RegisterUser/
-  │       ├── RegisterUserCommand.cs
-  │       ├── RegisterUserCommandHandler.cs
-  │       └── RegisterUserCommandValidator.cs
-  ├── Queries/            # Các ca sử dụng CHỈ ĐỌC dữ liệu (Get, List, Search)
-  │   └── GetUserProfile/
-  │       ├── GetUserProfileQuery.cs
-  │       └── GetUserProfileQueryHandler.cs
-  ├── DTOs/               # Data Transfer Objects trao đổi giữa các tầng
-  ├── Interfaces/         # Hợp đồng giao tiếp (IApplicationDbContext, IEmailSender, ITokenService...)
-  └── Validators/         # Quy chuẩn kiểm tra dữ liệu đầu vào (sử dụng FluentValidation)
+  ├── Interfaces/                                    # Interfaces của CSDL và các dịch vụ hạ tầng ngoài
+  │   ├── I{Service}DbContext.cs                     # Abstraction của DbContext
+  │   └── I{External}Service.cs                      # Abstraction dịch vụ hạ tầng (Email, Cache, Storage...)
+  │
+  ├── Common/                                        # Các thành phần dùng chung trong Application
+  │   ├── Exceptions/                                # NotFoundException, ValidationException...
+  │   └── Models/                                    # Result<T>, PaginatedList<T>...
+  │
+  ├── Services/                                      # CÁC DỊCH VỤ XỬ LÝ USE CASE (MODULE HÓA THEO FEATURE)
+  │   ├── {FeatureA}/                                # Ví dụ: Cart/ hoặc Auth/ hoặc Product/
+  │   │   ├── I{FeatureA}Service.cs                  # Interface ca sử dụng của feature đó
+  │   │   ├── {FeatureA}Service.cs                   # Class hiện thực use case (kế thừa interface trên)
+  │   │   └── {FeatureA}Dtos.cs                      # DTOs riêng biệt phục vụ cho feature này
+  │   └── {FeatureB}/                                # Ví dụ: Order/ hoặc User/ hoặc Category/
+  │       ├── I{FeatureB}Service.cs
+  │       ├── {FeatureB}Service.cs
+  │       └── {FeatureB}Dtos.cs
+  │
+  └── DependencyInjection.cs                         # Đăng ký AddApplicationServices()
   ```
 * **Quy chuẩn lập trình bắt buộc**:
-  - **Tách biệt rõ ràng Command và Query**:
-    - `Command`: Trả về `Result<T>` hoặc `Guid/Id` của bản ghi mới tạo. Có thể bắn Domain Event hoặc Integration Event.
-    - `Query`: Luôn luôn sử dụng truy vấn `.AsNoTracking()` của EF Core để tối ưu hóa bộ nhớ và tốc độ xử lý.
-  - **Khai báo Interface, không triển khai cụ thể**:
-    - Ví dụ khai báo `IUserDbContext` chứa các `DbSet<User>`, `Task<int> SaveChangesAsync(...)`.
-    - Việc DbContext chạy trên PostgreSQL, SQL Server hay In-Memory do tầng `Infrastructure` chịu trách nhiệm.
+  - **Đóng gói trọn vẹn theo Feature**: Mỗi feature service (như `CartService`, `OrderService`, `AuthService`) sở hữu trọn vẹn Interface, Implementation và DTOs tương ứng bên trong cùng thư mục `Services/{Feature}/`.
+  - **Khai báo Interface, không phụ thuộc cụ thể**: Tầng Application chỉ phụ thuộc vào `I{Service}DbContext` và abstraction `I{External}Service`, hoàn toàn không biết chi tiết hạ tầng (PostgreSQL, Redis, MailKit, AWS SES...).
+  - **Truy vấn đọc tối ưu**: Luôn luôn sử dụng truy vấn `.AsNoTracking()` của EF Core khi đọc dữ liệu để đạt hiệu năng tối đa.
 
 ---
 
@@ -89,46 +93,58 @@ Mỗi Microservice được cấu trúc thành một Solution `.sln` độc lậ
 * **Cấu trúc thư mục**:
   ```
   {Service}.Infrastructure/
-  ├── Persistence/        # Cấu hình Cơ sở dữ liệu Entity Framework Core 8
-  │   ├── Configurations/ # Fluent API Configurations (*Configuration.cs)
-  │   ├── Migrations/     # Code-first DB Migrations sinh tự động bởi EF Core
-  │   └── ApplicationDbContext.cs # Triển khai interface IApplicationDbContext
-  ├── Consumers/          # MassTransit Message Consumers lắng nghe sự kiện RabbitMQ
+  ├── Persistence/                                   # Quản lý CSDL PostgreSQL & EF Core 8
+  │   ├── AppDbContext.cs                            # Triển khai I{Service}DbContext
+  │   ├── Configurations/                            # Fluent API Configurations (*Configuration.cs)
+  │   ├── Migrations/                                # Code-first DB Migrations sinh bởi EF Core
+  │   └── Seeds/                                     # Dữ liệu hạt giống (Seed Data)
+  │
+  ├── Services/                                      # CÁC DỊCH VỤ HẠ TẦNG KỸ THUẬT (THEO MODULE RIÊNG)
+  │   ├── Email/                                     # Module gửi Email (nếu service có dùng)
+  │   │   ├── IEmailService.cs                       # Interface nội bộ tầng infra
+  │   │   ├── SmtpOptions.cs                         # Options cấu hình đọc từ appsettings
+  │   │   └── MailKitEmailSenderService.cs           # Triển khai cụ thể dùng MailKit
+  │   ├── Redis/                                     # Module Cache / OTP (nếu service có dùng)
+  │   │   ├── RedisOptions.cs                        # Options cấu hình
+  │   │   └── RedisOtpService.cs                     # Triển khai thao tác Redis
+  │   └── ...                                        # Sau này đổi sang SendGrid/SES chỉ sửa folder này
+  │
+  ├── Consumers/                                     # MassTransit Message Consumers lắng nghe RabbitMQ
   │   └── OrderCreatedConsumer.cs
-  ├── Services/           # Triển khai các dịch vụ kỹ thuật (BCryptHasher, MailKitSender, RedisCache...)
-  └── ValueConverters/    # Chuyển đổi kiểu dữ liệu tùy biến cho CSDL PostgreSQL
+  ├── Common/                                        # Tiện ích dùng chung trong Infrastructure
+  └── DependencyInjection.cs                         # Đăng ký AddInfrastructureServices(configuration)
   ```
 * **Quy chuẩn lập trình bắt buộc**:
   - **Áp dụng No-Repository Pattern (ADR 05)**:
     - Không viết thêm tầng `GenericRepository<T>` bọc ngoài `DbContext`. `DbContext` và `DbSet` của EF Core bản thân nó đã là Unit of Work & Repository hoàn hảo.
-    - Tầng `Application` inject trực tiếp `IApplicationDbContext` để viết câu truy vấn LINQ linh hoạt.
+    - Tầng `Application` inject trực tiếp `I{Service}DbContext` để viết câu truy vấn LINQ linh hoạt.
+  - **Đóng gói dịch vụ hạ tầng theo Folder riêng**: Mỗi module hạ tầng (như `Email/`, `Redis/`) có riêng Interface, Options và Class triển khai.
   - **Cấu hình bảng qua Fluent API**:
     - Toàn bộ ràng buộc CSDL (Primary Key, Foreign Key, Index, MaxLength, Nullability) được định nghĩa trong thư mục `Configurations/` bằng cách triển khai `IEntityTypeConfiguration<T>`.
     - Không dùng Data Annotations bừa bãi trong Entity của Domain.
-  - **Event-Driven Messaging**:
-    - Nhận tin nhắn qua MassTransit Consumers kế thừa `IConsumer<TIntegrationEvent>`.
-    - Đảm bảo tính Idempotent (chống xử lý lặp lại tin nhắn khi mạng chập chờn).
 
 ---
 
-### 2.4. TẦNG API (`{Service}.Api`) — ĐẦU MỐI GIAO TIẾP GIAO THỨC
+### 2.4. TẦNG API (`{Service}.Api`) — ĐẦU MỐI GIAO TIẾP & MIDDLEWARE TOÀN CỤC
 
-* **Bản chất**: Điểm khởi động ứng dụng (Entry Point), tiếp nhận các cuộc gọi gRPC từ API Gateway hoặc các Service khác.
+* **Bản chất**: Điểm khởi động ứng dụng (Entry Point), tiếp nhận các cuộc gọi gRPC từ API Gateway hoặc các Service khác, trang bị Middleware toàn cục.
 * **Cấu trúc thư mục**:
   ```
   {Service}.Api/
-  ├── Contracts/          # Chứa file shop.proto đồng bộ từ Gateway
-  ├── Services/           # Triển khai gRPC Services kế thừa từ Base Class do Protobuf sinh ra
+  ├── Middleware/                                    # MIDDLEWARE TOÀN CỤC CỦA SERVICE
+  │   └── GlobalExceptionHandlerMiddleware.cs        # Bắt mọi lỗi ngoại lệ, format RFC 9110 ProblemDetails
+  ├── Services/                                      # Triển khai gRPC Services kế thừa từ Base Class do Protobuf sinh ra
   │   └── UsersGrpcService.cs
-  ├── Extensions/         # Extension methods nạp Dependency Injection (AddApplication, AddInfrastructure)
-  ├── appsettings.json    # Cấu hình ConnectionString, RabbitMQ, Redis, Logging
-  └── Program.cs          # Khởi động ứng dụng, nạp DI, Map gRPC endpoints, Health Checks
+  ├── Contracts/                                     # Chứa file shop.proto đồng bộ từ Gateway
+  ├── appsettings.json                               # Cấu hình ConnectionString, RabbitMQ, Redis, Logging
+  └── Program.cs                                     # Khởi động ứng dụng, nạp DI, app.UseGlobalExceptionHandler()
   ```
 * **Quy chuẩn lập trình bắt buộc**:
+  - **Global Exception Middleware**: Mỗi service bắt buộc phải có `GlobalExceptionHandlerMiddleware` tại tầng Api để bắt mọi ngoại lệ未 xử lý, ghi log chi tiết kèm `TraceId` và trả về JSON chuẩn RFC 9110 ProblemDetails cho client.
   - **Cực kỳ mỏng (Thin Presentation Layer)**:
-    - `UsersGrpcService` chỉ làm 3 việc:
-      1. Nhận gRPC request $\rightarrow$ Map sang Application Command/Query.
-      2. Gửi qua MediatR `_sender.Send(command, cancellationToken)`.
+    - `*GrpcService` chỉ làm nhiệm vụ:
+      1. Nhận gRPC request $\rightarrow$ Map sang Application DTO.
+      2. Gọi Application Service xử lý nghiệp vụ.
       3. Nhận kết quả $\rightarrow$ Map sang gRPC Protobuf Response và trả về.
     - Tuyệt đối **không viết logic nghiệp vụ hay truy vấn SQL trong gRPC Service**.
   - **Bảo mật danh tính qua gRPC Metadata**:

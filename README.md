@@ -88,6 +88,9 @@ Toàn bộ tài liệu kỹ thuật được chuẩn hóa và lưu trữ tại t
 - **[Đặc Tả Kiến Trúc & Cẩm Nang 15 Thư Mục API Gateway (docs/GATEWAY_ARCHITECTURE_AND_FOLDERS.md)](docs/GATEWAY_ARCHITECTURE_AND_FOLDERS.md)**
 - **[Lộ Trình Các Bước Kế Tiếp & Checklist Triển Khai (docs/NEXT_STEPS_AND_CHECKLIST.md)](docs/NEXT_STEPS_AND_CHECKLIST.md)**
 - **[Đặc Tả Danh Mục Entity & Enum Chuẩn Form Cho Frontend (docs/FRONTEND_ENTITY_AND_ENUM_CATALOG.md)](docs/FRONTEND_ENTITY_AND_ENUM_CATALOG.md)**
+- **Cẩm Nang Riêng Của Từng Service**:
+  - [UserService](src/Services/User/README.md) | [CatalogService](src/Services/Catalog/README.md) | [CommerceService](src/Services/Commerce/README.md) | [AuctionService](src/Services/Auction/README.md)
+  - [FulfillmentService](src/Services/Fulfillment/README.md) | [NotificationService](src/Services/Notification/README.md) | [LogService](src/Services/Log/README.md) | [WalletService](src/Services/Wallet/README.md) | [ApiGateway](src/Services/ApiGateway/README.md)
 
 ### 🛠️ Cẩm Nang Hạ Tầng Kỹ Thuật Chuyên Biệt (Infrastructure Guides):
 - **[Hướng Dẫn Hạ Tầng RabbitMQ & MassTransit Message Bus (docs/infra/RABBITMQ_GUIDE.md)](docs/infra/RABBITMQ_GUIDE.md)**
