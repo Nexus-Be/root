@@ -12,11 +12,14 @@ Tài liệu thực chiến giúp lập trình viên bắt tay vào làm việc n
 * **[Cẩm Nang Phát Triển & Kiểm Thử Độc Lập Từng Service (INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)](INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)**  
   👉 **BẮT BUỘC ĐỌC ĐỐI VỚI DEV:** Hướng dẫn cách một developer chỉ phụ trách 1 service có thể tự code, chạy database riêng và test độc lập với API Gateway mà **KHÔNG CẦN bật toàn bộ 9 services**, tiết kiệm RAM (< 2GB).
 
+* **[Cẩm Nang Kiểm Thử Độc Lập gRPC, Event Bus & Chẩn Đoán Lỗi (ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)](ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)**  
+  👉 **HƯỚNG DẪN TEST POSTMAN & DEBUG:** Chi tiết cách dùng Postman gRPC Request (Server Reflection) test từng Function, Postman HTTP REST test từng Event Consumer qua RabbitMQ Management API, và quy trình 3 tầng chẩn đoán lỗi chuyên sâu bằng Grafana Tempo & Dead-Letter Queues.
+
 * **[Quy Chuẩn Kiến Trúc Clean Architecture 4 Tầng Cho Microservices (CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)](CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)**  
   👉 Hướng dẫn cấu trúc thư mục 4 tầng (`*.Domain`, `*.Application`, `*.Infrastructure`, `*.Api`): phần nào làm cái nào, Entity viết ở đâu, DbContext cấu hình thế nào, gRPC Server viết ở đâu, và quy tắc thông báo lỗi 100% tiếng Anh.
 
 * **[Hướng Dẫn Tạo Mock API, Chuyển Đổi Runtime, Bypass Auth & Health Check (GUIDE_MOCK_DATA_GATEWAY.md)](GUIDE_MOCK_DATA_GATEWAY.md)**  
-  👉 Hướng dẫn quy trình 3 bước tạo Mock API mới (Declarative Mock `Mocks/` cho Frontend & Controller Seed `Seeds/` cho Backend), cách chuyển `Mock` $\leftrightarrow$ `Real`, bật Bypass Auth để test không cần token, và sử dụng Health Prober.
+  👉 Hướng dẫn quy trình 3 bước tạo Mock API chuẩn duy nhất (Controller Action + Seeds/ Fixture), kiến trúc pipeline 6 bước, cách chuyển `Mock` $\leftrightarrow$ `Real`, bật Bypass Auth để test không cần token, và sử dụng Health Prober.
 
 * **[Đặc Tả Kiến Trúc & Cẩm Nang 15 Thư Mục Của API Gateway (GATEWAY_ARCHITECTURE_AND_FOLDERS.md)](GATEWAY_ARCHITECTURE_AND_FOLDERS.md)**  
   👉 Bức tranh toàn cảnh về Edge API Gateway, giải thích chi tiết chức năng của 15 thư mục mã nguồn và danh mục các tính năng cốt lõi (Fine-grained Rate Limiting, Dual-Runtime, Enum conversion...).

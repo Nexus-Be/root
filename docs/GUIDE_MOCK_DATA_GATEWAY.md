@@ -2,116 +2,273 @@
 ## (NEXUS GATEWAY MOCK ENGINE, RUNTIME SWITCHING & HEALTH PROBER GUIDE)
 
 > **Mục tiêu**: Cung cấp cẩm nang thực hành toàn diện giúp Developer (Frontend, Backend, QA) nắm vững:
-> 1. Quy trình tạo Mock API mới trong **3 bước** (cả Declarative Mock và Controller Seed).
+> 1. Kiến trúc tiền xử lý của Gateway và quy trình tạo Mock API chuẩn **DUY NHẤT**: **Khai báo Endpoint trong Controller C# + Tạo dữ liệu Seed Fixture tại thư mục `Seeds/`**.
 > 2. Cách chuyển đổi linh hoạt giữa chế độ **`Mock`** và **`Real`**.
 > 3. Cách sử dụng tính năng **Bypass Auth Mode** để test không cần JWT token.
 > 4. Cách sử dụng và kiểm tra hệ thống **Health Check & Prober Daemon**.
 
 ---
 
-## PHẦN 1: TẠO MOCK API MỚI TRONG 3 BƯỚC
-
-Hệ thống hỗ trợ 2 phương pháp Mock tùy theo vai trò và nhu cầu của bạn:
-
-| Phương Pháp | Khi Nào Sử Dụng? | Cần Viết Code C# Không? | Có Hiện Trên Swagger Không? |
-| :--- | :--- | :---: | :---: |
-| **Cách 1: Declarative Mock (`Mocks/*.mock.json`)**<br>*(Khuyên dùng cho Frontend & QA)* | Khi Backend **chưa viết code C#**, Frontend cần ngay 1 endpoint REST để ghép giao diện. | ❌ **0 dòng code C#** | ✅ **Tự động hiện lên Swagger** |
-| **Cách 2: Controller Seed Fixtures (`Seeds/`)**<br>*(Khuyên dùng cho Backend)* | Khi đã viết **Controller Action C#**, cần dữ liệu mẫu chuẩn khi service chạy ở chế độ Mock. | ✅ Có Action C# | ✅ Hiện theo Controller Swagger |
+## PHẦN 1: KIẾN TRÚC GATEWAY & QUY TRÌNH TẠO MOCK API CHUẨN
 
 ---
 
-### 👉 CÁCH 1: DECLARATIVE MOCK (0 DÒNG C# — ĂN NGAY TRONG 30 GIÂY)
+### 1. Kiến Trúc & Các Bước Tiền Xử Lý Của Gateway (Request Pipeline)
 
-Dành cho trường hợp: Bạn cần tạo một API mới tinh (ví dụ `GET /api/v1/catalog/promotions`) mà không cần đụng vào code C#.
+Mọi request khi gửi đến Nexus API Gateway đều được xử lý tuần tự và tự động qua **6 bước trong Middleware Pipeline** (`PipelineExtensions.cs`) trước khi trả về cho client:
 
-#### Bước 1: Tạo file JSON tại thư mục `Mocks/`
-Vào thư mục: `src/Services/ApiGateway/Nexus.Gateway/Mocks/`  
-Tạo một file có đuôi bắt buộc là: `*.mock.json` (ví dụ: `promotions.mock.json`).
-
-#### Bước 2: Điền cấu hình theo Template
-Gateway tự động bọc dữ liệu của bạn vào vỏ chuẩn `ApiResponse<T>`:
-
-```json
-{
-  "id": "mock-get-promotions",
-  "service": "catalog",
-  "method": "GET",
-  "path": "/api/v1/catalog/promotions",
-  "description": "Lấy danh sách mã khuyến mãi",
-  "policy": "public",
-  "statusCode": 200,
-  "responseType": "paged",
-  "message": "Promotions retrieved successfully.",
-  "response": {
-    "items": [
-      {
-        "id": "promo-001",
-        "title": "Siêu sale công nghệ 50%",
-        "discountPercent": 50,
-        "maxDiscountAmount": "500000.00"
-      }
-    ],
-    "total": 1
-  }
-}
+```
+[ Client Request ]
+       │
+       ▼
+1. Exception Handler & Centralized Logging (Bắt ngoại lệ toàn cục, cấp phát X-Trace-Id)
+       │
+       ▼
+2. URL Rewrite & Route Resolution (/gateway/api/* -> /api/*, ánh xạ tới Controller Action)
+       │
+       ▼
+3. Mode & Auth Resolution (Xác định Service Mode: "Mock"/"Real", AuthMode: "Enforce"/"Bypass")
+       │
+       ▼
+4. Security & Rate Limiting (JWT Bearer Token, [Authorize] RBAC, Redis Rate Limiting)
+       │
+       ▼
+5. Controller Model Binding & Input Validation (Bind DTO, tự động validate dữ liệu đầu vào)
+       │
+       ▼
+6. Gateway Dispatcher Execution (IGatewayDispatcher điều phối: Mock -> Seeds/ | Real -> gRPC)
+       │
+       ▼
+[ Client Response: ApiResponse<T> ]
 ```
 
-#### Bước 3: Lưu file & Kiểm tra trên Swagger
-1. **Lưu file lại**: Gateway hỗ trợ **Hot-Reload tức thì** (tự động phát hiện file mới thêm mà không cần khởi động lại server).
-2. **Mở trình duyệt**: Truy cập `http://localhost:8000/swagger`. Endpoint mock sẽ tự động xuất hiện.
-3. Bấm **Try it out** $\rightarrow$ **Execute** $\rightarrow$ Nhận ngay kết quả JSON chuẩn!
+#### Chi tiết 6 bước xử lý:
+1. **Global Exception Handling & Diagnostics**:
+   - `GatewayExceptionHandler` bắt toàn bộ lỗi, tự động chuyển đổi sang chuẩn **RFC 9110 ProblemDetails** và bọc trong envelope lỗi chuẩn (`ApiErrorResponse`).
+   - Cấp phát mã `X-Trace-Id` duy nhất xuyên suốt toàn bộ vòng đời request và đồng bộ sang Grafana Tempo.
+2. **URL Rewrite & Route Resolution**:
+   - Tự động chuẩn hóa `/gateway/api/v1/...` về `/api/v1/...` để đảm bảo tương thích ngược.
+   - Nhận diện Service phụ trách thông qua attribute `[BackendTag("service_name")]` trên Controller và khớp Route với Controller Action.
+3. **Gateway Request Resolution & Mode Evaluation**:
+   - `GatewayRequestResolution` kiểm tra cấu hình trong `gateway.runtime.json` để xác định trạng thái của Service (`Mock` hay `Real`) và AuthMode (`Enforce` hay `Bypass`).
+4. **Security, Authentication, RBAC & Rate Limiting**:
+   - Kiểm tra JWT Token (`UseAuthentication`) và phân quyền người dùng (`UseAuthorization`) dựa trên metadata `[Authorize(Roles = "...")]` hoặc `[AllowAnonymous]`.
+   - Kiểm tra giới hạn tần suất gọi API qua Redis Distributed Rate Limiting (`[EnableRateLimiting]`).
+5. **Model Binding & Input Validation**:
+   - ASP.NET Core tự động bind query parameters, route values và request body vào DTO C#.
+   - Controller validate logic nghiệp vụ qua các helper (`ValidationHelpers`, `pagination.EnsureValid()`), ném `GatewayInputException` khi dữ liệu không hợp lệ.
+6. **Gateway Dispatcher Execution (`IGatewayDispatcher`)**:
+   - **Khi Service ở chế độ `Mock`**: Tự động tìm và đọc file dữ liệu seed mẫu từ thư mục `Seeds/{service}/{operation}.json`, kiểm tra tính hợp lệ qua Protobuf Parser, và bọc trong `ApiResponse<T>` chuẩn.
+   - **Khi Service ở chế độ `Real`**: Kiểm tra trạng thái Circuit Breaker từ Health Prober Daemon; nếu healthy sẽ gọi gRPC client sang Microservice downstream tương ứng và bọc kết quả trả về.
 
 ---
 
-### 👉 CÁCH 2: CONTROLLER SEED FIXTURES (DÀNH CHO BACKEND C#)
+### 2. Tại Sao Hệ Thống Thống Nhất Duy Nhất 1 Cách Mock?
 
-Thư mục `Seeds/` được tổ chức theo **từng nhóm tính năng nghiệp vụ (Feature-based)**:
+Trước đây có tài liệu nhắc đến 2 cách (tạo file declarative `*.mock.json` ở `Mocks/` hoặc viết Controller + `Seeds/`). Tuy nhiên, **thực tế kiến trúc của Gateway chỉ sử dụng và khuyến nghị DUY NHẤT một cách: Viết Controller Action + Tạo file Seed Fixture (`Seeds/`)**.
+
+Lý do bắt buộc phải tạo Controller Endpoint kết hợp Seed Fixture:
+1. **Đảm bảo đầy đủ các bước của Gateway**: Nếu chỉ tạo file JSON đứng riêng lẻ mà không có Controller, API sẽ không có DTO binding, không có C# validation, không thể khai báo các Attribute phân quyền (`[Authorize]`) và Rate Limit (`[EnableRateLimiting]`) theo chuẩn của hệ thống.
+2. **Chuyển đổi `Mock` $\rightarrow$ `Real` trong 0 giây (Zero-Code Switch)**: Controller chính là cầu nối gRPC client. Khi backend service thật hoàn thành, bạn chỉ cần đổi cấu hình `"Mode": "Real"` trong `gateway.runtime.json`, Controller sẽ tự động gọi gRPC mà **không cần viết lại hay sửa đổi bất kỳ dòng code Gateway nào**. Nếu mock không có Controller, khi chuyển sang `Real` request sẽ bị **404 Not Found**.
+3. **Cơ chế tự động ưu tiên của Gateway Middleware**: Trong code `MockEngineMiddleware.cs` (dòng 51):
+   ```csharp
+   if (effectiveMode == "Real" || context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>() != null)
+   {
+       await _next(context);
+       return;
+   }
+   ```
+   Hễ một route đã được định nghĩa Action trong C# Controller thì Gateway **ngay lập tức bỏ qua** file declarative mock để nhường quyền xử lý cho Controller và đọc dữ liệu từ `Seeds/`.
+
+---
+
+### 3. Quy Trình 3 Bước Tạo Mock API Chuẩn Tại Gateway
+
+Mọi endpoint mới cần mock đều tuân thủ đúng 3 bước sau:
+
 ```
-Seeds/
-├── auth/         # register.json, login.json, verify-otp.json, resend-otp.json
-├── users/        # profile.json (GET /api/v1/users/me)
-├── products/     # products.json, product.json (Catalog)
-├── cart/         # cart.json (Commerce)
-└── orders/       # orders.json, order.json (Commerce)
+[ Bước 1: Viết Action trong Controller ] ──► [ Bước 2: Tạo Seed JSON trong Seeds/ ] ──► [ Bước 3: Đặt Mode: Mock & Test ]
 ```
 
-#### Bước 1: Khai báo Endpoint trong Controller tương ứng
-Vào Controller (ví dụ `ProductsController.cs`):
+#### 👉 Bước 1: Khai báo Action trong Controller tương ứng
+Mở Controller tương ứng tại thư mục `src/Services/ApiGateway/Nexus.Gateway/Controllers/` (ví dụ `ProductsController.cs`, `CartController.cs`, `OrdersController.cs`...):
+
 ```csharp
-[HttpGet("catalog/products")]
-[AllowAnonymous]
-public Task<IResult> ListProducts()
+[ApiController]
+[Route("api/v1/catalog/products")]
+[BackendTag("catalog")]
+[EnableRateLimiting("api")]
+public sealed class ProductsController : ControllerBase
 {
-    return _dispatcher.DispatchAsync(
-        HttpContext,
-        "products",   // Tên thư mục hoặc service trong Seeds/
-        "products",   // Tên file JSON trong Seeds/ (không cần đuôi .json)
-        o => null!,   // Callback gRPC thật (truyền null khi đang làm mock)
-        null!,        // Parser Protobuf (truyền null khi chưa có proto)
-        successMessage: "Products retrieved successfully."
-    );
+    private readonly IGatewayDispatcher _dispatcher;
+    private readonly CatalogApi.CatalogApiClient _client;
+
+    public ProductsController(IGatewayDispatcher dispatcher, CatalogApi.CatalogApiClient client)
+    {
+        _dispatcher = dispatcher;
+        _client = client;
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<PagedData<ProductDto>>), StatusCodes.Status200OK)]
+    public Task<IResult> ListProducts([FromQuery] PaginationRequest pagination)
+    {
+        // 1. Tự động validate phân trang: Page >= 1, PageSize từ 1-100
+        pagination.EnsureValid();
+
+        // 2. Dispatcher tự động điều phối:
+        //    - Mode = Mock: đọc Seeds/catalog/products.json
+        //    - Mode = Real: gọi _client.ListProductsAsync(...)
+        return _dispatcher.DispatchPagedAsync(
+            HttpContext,
+            "catalog",                                                          // Tên service
+            "products",                                                         // Tên operation (tương ứng tên file seed)
+            pagination.Page,
+            pagination.PageSize,
+            o => _client.ListProductsAsync(new ListProductsRequest              // gRPC call khi ở Real mode
+            {
+                Page = pagination.Page,
+                PageSize = pagination.PageSize
+            }, o),
+            ProductPageResponse.Parser                                          // Protobuf Message Parser
+        );
+    }
 }
 ```
 
-#### Bước 2: Tạo file JSON dữ liệu mẫu trong `Seeds/{feature}/`
-Tạo file `Seeds/products/products.json`:
+> 💡 **Với API trả về một đối tượng đơn (Single Object) hoặc POST/PUT**:
+> ```csharp
+> [HttpPost]
+> [Authorize("seller")]
+> [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status201Created)]
+> public Task<IResult> CreateProduct([FromBody] CreateProductRequestDto body)
+> {
+>     ValidationHelpers.EnsureRequired(body.Name, "Name");
+> 
+>     return _dispatcher.DispatchAsync(
+>         HttpContext,
+>         "catalog",
+>         "product-create",
+>         o => _client.CreateProductAsync(new CreateProductRequest { Name = body.Name }, o),
+>         ProductResponse.Parser,
+>         successMessage: "Product created successfully.",
+>         successStatusCode: StatusCodes.Status201Created
+>     );
+> }
+> ```
+
+---
+
+#### 👉 Bước 2: Tạo file JSON dữ liệu mẫu trong `Seeds/`
+Tạo file dữ liệu mẫu theo đúng quy tắc đường dẫn:
+```
+src/Services/ApiGateway/Nexus.Gateway/Seeds/{tên_service}/{tên_operation}.json
+```
+*(Hoặc `src/Services/ApiGateway/Nexus.Gateway/Seeds/{tên_operation}/{tên_operation}.json`)*
+
+*Ví dụ:* Với `service: "catalog"`, `operation: "products"`, tạo file `src/Services/ApiGateway/Nexus.Gateway/Seeds/catalog/products.json`:
+
 ```json
 {
   "items": [
     {
-      "id": "prod-001",
-      "name": "Bàn phím cơ không dây",
+      "id": "22222222-2222-2222-2222-000000000001",
+      "name": "Bàn phím cơ không dây Nexus Pro",
       "price": 1250000,
+      "status": "Active"
+    },
+    {
+      "id": "22222222-2222-2222-2222-000000000002",
+      "name": "Chuột Gaming Silent Nexus X",
+      "price": 650000,
       "status": "Active"
     }
   ],
-  "total": 1
+  "total": 2
 }
 ```
 
-#### Bước 3: Đảm bảo Service đang ở chế độ Mock & Test
-Trong `gateway.runtime.json`, đảm bảo `"catalog": { "Mode": "Mock" }`.  
-Mở Swagger `http://localhost:8000/swagger` và thực thi API $\rightarrow$ Gateway tự động bọc dữ liệu vào `ApiResponse<T>` chuẩn kèm `traceId` và `timestamp`!
+---
+
+#### 👉 Bước 3: Đảm bảo Service đặt `Mode: "Mock"` và Test trên Swagger
+1. Kiểm tra cấu hình trong `src/Services/ApiGateway/Nexus.Gateway/gateway.runtime.json`:
+   ```json
+   "catalog": {
+     "Mode": "Mock",
+     "Address": "http://localhost:8002",
+     "TimeoutSeconds": 5
+   }
+   ```
+2. Mở trình duyệt truy cập: `http://localhost:8000/swagger`.
+3. Tìm đến endpoint vừa khai báo trong Controller $\rightarrow$ bấm **Try it out** $\rightarrow$ **Execute**.
+4. Gateway sẽ trả về response bọc trong vỏ bọc chuẩn `ApiResponse<T>`:
+   ```json
+   {
+     "success": true,
+     "statusCode": 200,
+     "message": "Products retrieved successfully.",
+     "data": {
+       "items": [
+         {
+           "id": "22222222-2222-2222-2222-000000000001",
+           "name": "Bàn phím cơ không dây Nexus Pro",
+           "price": 1250000,
+           "status": "Active"
+         }
+       ],
+       "pagination": {
+         "pageIndex": 1,
+         "pageSize": 20,
+         "totalCount": 2,
+         "totalPages": 1,
+         "hasPreviousPage": false,
+         "hasNextPage": false
+       }
+     },
+     "traceId": "0HNPGT7G285Q2",
+     "timestamp": "2026-10-24T14:30:00Z"
+   }
+   ```
+
+---
+
+### 4. Quy Chuẩn Response & Xử Lý Lỗi Hệ Thống
+
+Toàn bộ API qua Gateway bắt buộc phải tuân theo chuẩn định dạng response đồng nhất:
+
+#### Phản hồi thành công (`ApiResponse<T>`):
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Sentence case success message in 100% English.",
+  "data": { ... },
+  "traceId": "0HNPGT7G285Q2",
+  "timestamp": "2026-10-24T14:30:00Z"
+}
+```
+
+#### Phản hồi thất bại / Lỗi (`ApiErrorResponse` theo RFC 9110 ProblemDetails):
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errorCode": "VAL_INVALID_INPUT",
+  "detail": "Username, valid email, and password with at least 8 characters are required.",
+  "errors": {
+    "Email": ["Email address is invalid."]
+  },
+  "traceId": "0HNPGT7G285Q2",
+  "timestamp": "2026-10-24T14:30:00Z"
+}
+```
+
+> ⚠️ **Lưu ý quy tắc thông báo lỗi (Error Rules)**:
+> - **Ngôn ngữ**: 100% tiếng Anh (`English only`).
+> - **Quy cách**: Viết hoa duy nhất chữ cái đầu câu (`Sentence case`), ví dụ: `"Email address is required."`.
+> - **Mã lỗi**: Viết hoa phân cách gạch dưới (`SCREAMING_SNAKE_CASE`), ví dụ: `VAL_INVALID_INPUT`, `USER_NOT_FOUND`, `AUTH_UNAUTHORIZED`.
 
 ---
 
@@ -168,10 +325,6 @@ Khi service đang ở chế độ `Mock`, nhưng bạn muốn test thử 1 reque
   ```http
   X-Service-Mode-catalog: Real
   ```
-* Hoặc ép toàn bộ request dùng Mock:
-  ```http
-  X-Mock-Mode: true
-  ```
 Gateway sẽ ưu tiên Header của request cao nhất, giúp bạn test song song mà không ảnh hưởng người khác.
 
 ---
@@ -183,7 +336,7 @@ Khi phát triển giao diện Frontend, nhiều trang màn hình yêu cầu ph�
 $\rightarrow$ **Bypass Auth Mode** cho phép bạn gọi các API này hoàn toàn ẩn danh mà **không bị chặn mã lỗi 401 Unauthorized hay 403 Forbidden**!
 
 ### 2. Cách kích hoạt:
-Mở file `gateway.runtime.json`, sửa:
+Mở file `src/Services/ApiGateway/Nexus.Gateway/gateway.runtime.json`, sửa:
 ```json
 {
   "Gateway": {
@@ -283,9 +436,9 @@ Khi một service bị chết (ví dụ `catalog` bị sập quá 5 lần probe 
   ```json
   {
     "type": "https://tools.ietf.org/html/rfc9110#section-15.6.4",
-    "title": "Service Unavailable",
+    "title": "Downstream Service Unavailable",
     "status": 503,
-    "detail": "Service 'catalog' is currently unhealthy and unavailable.",
+    "detail": "Service 'catalog' is currently unhealthy or undergoing recovery.",
     "errorCode": "DOWNSTREAM_UNHEALTHY",
     "traceId": "0HNPH0O1RS5U4"
   }
