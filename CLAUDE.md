@@ -1,30 +1,30 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **root** (5960 symbols, 8926 relationships, 191 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **root** (6723 symbols, 9712 relationships, 184 execution flows).
 
-> Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
+> Index stale? Run `node .gitnexus/run.cjs analyze --index-only` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? Bootstrap with `npx`, `bunx`, or `pnpm dlx` — e.g. `bunx gitnexus@latest analyze` (npm 11 npx crash; #1939).
 
 ## Always Do
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
-- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `query({search_query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
+- **MUST run impact before editing.** Use `impact({target: "symbolName", direction: "upstream"})` or `node .gitnexus/run.cjs impact "symbolName" --direction upstream --repo .`; report callers, processes, and risk. Never substitute grep for graph analysis.
+- **MUST analyze graph changes before committing.** Use `detect_changes({scope: "all"})` (MCP) or `node .gitnexus/run.cjs detect-changes --scope all --repo .` (CLI fallback). `partial: true` or `truncated: true` is not a clean check — a zero means unseen, not unaffected; re-run it. For regression review: `detect_changes({scope: "compare", base_ref: "main"})` or `node .gitnexus/run.cjs detect-changes --scope compare --base-ref "main" --repo .`.
+- MUST warn on HIGH/CRITICAL `risk` pre-edit; never use `riskSharedAxes` to waive a HIGH/CRITICAL `risk` warning. Compare File/symbol: MCP File omits axes; Graph-RAG expands File.
+- **MUST treat `risk: UNKNOWN` as unresolved, not as low.** An empty caller set is not evidence the symbol is unused — it can also mean the callers are not resolvable by the index (plain-object property access, dynamic dispatch, cross-language calls). `impact` pairs `UNKNOWN` with a `riskNote` saying so. Confirm with a text search before treating the symbol as safe to change or delete; do not proceed on the strength of a zero.
+- **MUST use `query({search_query: "concept"})` for concepts/flows, `context({name: "symbolName"})` for a named symbol, or `impact` for blast radius, on read-only callers, dependencies, imports, or execution flow.** Graph first; text search only for empty/`UNKNOWN`/literals.
 - For security review, `explain({target: "fileOrSymbol"})` lists taint findings (source→sink flows; needs `analyze --pdg`).
 
 ## Never Do
 
-- NEVER edit a function, class, or method without first running `impact` on it.
-- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER edit a function, class, or method before MCP/CLI impact analysis.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis, and never read `UNKNOWN` as an all-clear — it means the walk could not answer, which is the one verdict that requires confirming by other means.
 - NEVER rename symbols with find-and-replace — use `rename` which understands the call graph.
-- NEVER commit changes without running `detect_changes()` to check affected scope.
+- NEVER commit before MCP/CLI graph change analysis.
 
 ## Resources
 
 | Resource | Use for |
-|----------|---------|
+| --- | --- |
 | `gitnexus://repo/root/context` | Codebase overview, check index freshness |
 | `gitnexus://repo/root/clusters` | All functional areas |
 | `gitnexus://repo/root/processes` | All execution flows |
@@ -33,13 +33,13 @@ This project is indexed by GitNexus as **root** (5960 symbols, 8926 relationship
 ## CLI
 
 | Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| --- | --- |
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
 
@@ -169,3 +169,35 @@ Một task của AI Agent chỉ được coi là hoàn tất khi:
 - **Code nghiệp vụ mới CHỈ được bắt đầu sau khi hoàn tất Track S** trong `docs/plans/SETUP_PHASE_PLAN.md` (proto SoT, secret, port, CI, image Postgres).
 - Mọi tài liệu khi sửa **phải có banner trạng thái** theo `docs/plans/DOC_UPDATE_PROTOCOL.md` (✅ CÓ / ⚠️ MỘT PHẦN / ❌ CHƯA CÓ + nguồn sự thật + ngày).
 - Không được coi `/health` là bằng chứng “service hoạt động”: nó không kiểm tra DB.
+
+---
+
+## 📝 NGUYÊN TẮC 8: QUY CHUẨN ĐÓNG PHIÊN, BÁO CÁO & LƯU TRỮ KẾ HOẠCH (.AGENTS/PLAN VÀ .AGENTS/HISTORY)
+
+> **BẮT BUỘC ĐỌC ĐẦU VÀ CUỐI MỖI PHIÊN LÀM VIỆC**: Quy tắc này áp dụng cho toàn bộ AI Coding Agents mỗi khi kết thúc một nhiệm vụ được giao, kết thúc phiên làm việc, hoặc khi có lệnh hoãn/tạm dừng.
+
+### 1. Quy chuẩn Lưu trữ Kế hoạch Chuẩn tại `.agents/plan/`
+- **Thời điểm ghi**: Khi một kế hoạch được chốt sau thảo luận dài, hoặc khi hoàn thành một chuỗi công việc được giao (không phải nháp ban đầu của Planner, mà là bản kế hoạch chuẩn cuối cùng làm nguồn sự thật).
+- **Mã Plan (ID)**: Bắt buộc chứa mốc thời gian tạo và mục tiêu giải quyết. Định dạng: `PLAN-YYYYMMDD-HHMM-[TEN_VAN_DE].md` (ví dụ: `PLAN-20261026-0200-API-GATEWAY-MOCK.md`).
+- **Nội dung bắt buộc trong file Plan**:
+  1. **Mã Plan (ID)** & Thời gian khởi tạo/chốt.
+  2. **Vấn đề cần giải quyết**: Mô tả vấn đề tổng thể mà người dùng đưa ra.
+  3. **Hướng giải quyết**: Kiến trúc và phương án kỹ thuật đã thống nhất.
+  4. **Danh mục Task & Checklist**: Chia nhỏ thành các task con rõ ràng, có trạng thái checklist `[x]` (đã xong) và `[ ]` (chưa xong).
+
+### 2. Quy chuẩn Báo cáo Nhật ký tại `.agents/history/`
+Mỗi lần kết thúc/hoãn phiên, bắt buộc tạo file nhật ký theo ngày: `.agents/history/YYYY-MM-DD_session_summary.md` gồm 5 phần:
+1. **Miêu tả tổng thể công việc**: Tóm tắt phạm vi công việc đã thực hiện trong phiên/prompt.
+2. **Phân tích & Nghiên cứu**: Lý do kỹ thuật, nguyên nhân gốc rễ, đối chiếu tài liệu và kiến trúc.
+3. **Liên kết Kế hoạch**: Bắt buộc trỏ tới Mã Plan (`PLAN-ID`) tương ứng trong `.agents/plan/` (dù đang làm dở hay đã hoàn thành).
+4. **Báo cáo Cá nhân từng Thành viên**:
+   - Ghi rõ: `Tên (Role/Chức vụ)`.
+   - Các vấn đề đã làm trong ngày/prompt.
+   - Vấn đề gặp phải & Cách giải quyết.
+   - Các vấn đề chưa làm xong & Việc cần làm tiếp theo.
+5. **Báo cáo Tổng thể Toàn Team**:
+   - Vấn đề tổng thể sếp giao cho team.
+   - Các vấn đề đã xử lý thành công.
+   - Các vấn đề gặp phải và cách giải quyết của team.
+   - Các phần việc/plan chưa xong, cần hoàn thành trong phiên kế tiếp.
+
