@@ -21,3 +21,28 @@ Dịch vụ `CheckHealService` chạy độc lập tại cổng `8009`, có nhi�
 
 Xem chi tiết bảng biến môi trường và file mẫu `.env` đầy đủ tại:
 👉 **[`src/Services/CheckHeal/docs/VPS_ENV_CONFIG_GUIDE.md`](../src/Services/CheckHeal/docs/VPS_ENV_CONFIG_GUIDE.md)**
+
+---
+
+## 🔐 Cấu Hình GitHub Secrets & Tokens Cho CI/CD Pipeline
+
+File GitHub Actions CI/CD đã được thiết lập tại `.github/workflows/ci-cd.yml` trong repo `CheckHealService`. Khi bạn push code lên GitHub, pipeline sẽ tự động chạy:
+1. **Job 1 (Test)**: Chạy `dotnet test CheckHeal.sln` kiểm thử 100% test cases.
+2. **Job 2 (Build & Push)**: Đóng gói Docker image đa kiến trúc (`linux/amd64`, `linux/arm64`) và push lên Docker Hub.
+3. **Job 3 (Deploy VPS)**: Kết nối SSH vào VPS để kéo image mới và restart container (chỉ chạy trên nhánh `main` khi đã cấu hình VPS secrets).
+
+### Hướng Dẫn Cài Đặt Secrets Trên GitHub:
+Vào GitHub Repository: `https://github.com/Nexus-Be/CheckHealService` -> **Settings** -> **Secrets and variables** -> **Actions** -> **New repository secret**:
+
+| Tên Secret | Bắt Buộc | Mô Tả |
+|:---|:---:|:---|
+| `DOCKER_HUB_USERNAME` | **Có** | Username tài khoản Docker Hub của bạn (ví dụ: `yuikiri`). |
+| `DOCKER_HUB_TOKEN` | **Có** | Personal Access Token (PAT) sinh từ Docker Hub (tại `hub.docker.com` -> Account Settings -> Personal Access Tokens -> Read & Write). |
+| `VPS_HOST` | Tùy chọn | IP Public của VPS (ví dụ: `103.xxx.xxx.xxx`). |
+| `VPS_USERNAME` | Tùy chọn | User SSH trên VPS (`ubuntu` hoặc `root`). |
+| `VPS_SSH_KEY` | Tùy chọn | Khóa Private Key SSH (`~/.ssh/id_rsa` hoặc `~/.ssh/id_ed25519`). |
+| `VPS_PORT` | Tùy chọn | Cổng SSH của VPS (mặc định: `22`). |
+| `VPS_WORK_DIR` | Tùy chọn | Đường dẫn thư mục chứa code trên VPS (ví dụ: `/home/ubuntu/Nexus-Be`). |
+
+> *Lưu ý: Nếu chưa cấu hình các biến `VPS_*`, pipeline vẫn chạy kiểm thử và push Docker Hub bình thường, bước Deploy VPS sẽ tự động được bỏ qua an toàn.*
+
