@@ -34,7 +34,7 @@ Trong kiến trúc Microservices phân tán, **RabbitMQ đóng vai trò là Tr�
 | **Cổng AMQP (Code kết nối)** | `5672` | Dành cho thư viện MassTransit trong C# |
 | **Cổng Management Web UI** | `15672` | Truy cập trình duyệt: `http://localhost:15672` |
 | **Tài khoản mặc định (User)** | `guest` | Cấu hình qua biến môi trường `RABBITMQ_USER` |
-| **Mật khẩu mặc định (Password)**| `MatkhaucuaTui123@` | Cấu hình qua biến môi trường `RABBITMQ_PASSWORD` |
+| **Mật khẩu mặc định (Password)**| `guest` | Cấu hình qua biến môi trường `RABBITMQ_PASSWORD` |
 | **Virtual Host (vhost)** | `/` | Virtual host mặc định của RabbitMQ |
 
 ### Khởi động nhanh bằng Docker:
@@ -47,7 +47,7 @@ docker compose -f docker-compose.infra.yml up -d rabbitmq
 
 ## 3. HƯỚNG DẪN SỬ DỤNG RABBITMQ MANAGEMENT WEB UI
 
-Mở trình duyệt truy cập: **`http://localhost:15672`**, đăng nhập bằng `guest` / `MatkhaucuaTui123@`.
+Mở trình duyệt truy cập: **`http://localhost:15672`**, đăng nhập bằng `guest` / `guest` (hoặc mật khẩu cấu hình trong `.env`).
 
 ### 3.1. Tab **Overview** (Tổng Quan Hoạt Động)
 * **Message Rates**: Biểu đồ thời gian thực hiển thị:

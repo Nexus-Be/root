@@ -26,41 +26,26 @@ Chạy `docker compose up -d` để dựng toàn bộ cả 9 services containers
 
 ## 2. BƯỚC 1: KHỞI ĐỘNG HẠ TẦNG TỐI THIỂU CẦN THIẾT
 
-Tùy theo nhu cầu công việc, bạn chọn 1 trong 2 cách sau:
+### Hiện trạng Cơ sở dữ liệu: Cloud-First (Neon PostgreSQL)
+Toàn bộ database của 8 microservices (`usermanagement_db`, `category_db`, `commerce_db`, `log_db`, `auction_db`, `fulfillment_db`, `notification_db`, `wallet_db`) đã được quản lý tập trung trên **Neon Cloud PostgreSQL**.
+- **Không cần chạy container PostgreSQL cục bộ**: Bạn không cần tốn RAM chạy container Postgres trên máy dev. Connection strings trong file cấu hình (`appsettings.json` hoặc `.env`) đã được cấu hình trỏ trực tiếp đến CSDL Neon Cloud tương ứng (hỗ trợ `sslmode=require`).
+- **Tiết kiệm tài nguyên tối đa**: Máy dev hoàn toàn không phải chịu tải của 8 container Postgres cục bộ.
 
-### Cách A: Siêu Nhẹ (Chỉ bật đúng Database của Service — Khuyên Dùng khi code CRUD/Logic)
-Mỗi thư mục service đều có sẵn file `docker-compose.yml` cục bộ.
+### Khi nào cần bật Docker hạ tầng?
+Chỉ khi tính năng bạn đang phát triển cần:
+1. **Bắn / Nhận Sự kiện bất đồng bộ qua RabbitMQ** (Integration Events, Saga Consumers).
+2. **Đọc / Ghi Cache qua Redis**.
+3. **Thu thập Trace qua OpenTelemetry / Grafana Tempo**.
 
-Ví dụ: Bạn đang code **`CatalogService`**:
-```bash
-# 1. Đi vào thư mục của service:
-cd src/Services/Catalog
-
-# 2. Chỉ khởi động đúng container database của Catalog (category_db tại port 5434):
-docker compose up -d catalog-db
-```
-
-Ví dụ: Bạn đang code **`UserService`**:
-```bash
-cd src/Services/User
-docker compose up -d user-db
-```
-
-*Lợi ích:* Chỉ tốn khoảng ~80MB RAM cho một container PostgreSQL nhỏ gọn!
-
----
-
-### Cách B: Hạ Tầng Dùng Chung Đầy Đủ (Khi cần test cả RabbitMQ & Redis Cache)
-Khi tính năng của bạn có bắn Sự kiện (Integration Event qua RabbitMQ) hoặc đọc/ghi Redis Cache:
+Lúc đó, bạn chỉ cần khởi động cụm hạ tầng nhẹ dùng chung (không chứa DB, chỉ tốn ~200MB RAM):
 ```bash
 # Từ thư mục gốc Nexus-Be:
 docker compose -f docker-compose.infra.yml up -d
 ```
-Lệnh này khởi động toàn bộ:
-- RabbitMQ (`5672`, Web UI `15672`)
-- Redis (`6379`)
-- Grafana Tempo Tracing (`4317`, `3000`)
-- 8 Databases PostgreSQL (`5433` - `5440`)
+Lệnh này khởi động:
+- **RabbitMQ**: Cổng AMQP `5672`, Web UI `15672` (tài khoản `guest`, mật khẩu mặc định `guest` hoặc `${RABBITMQ_PASSWORD}`).
+- **Redis**: Cổng `6379`.
+- **Grafana Tempo Tracing**: Cổng nhận OTLP `4317`, Web UI Grafana `3000`.
 
 ---
 
@@ -68,11 +53,11 @@ Lệnh này khởi động toàn bộ:
 
 1. **Mở Solution của Service:**
    - Mở file `.sln` của service (ví dụ `src/Services/Catalog/Catalog.sln` hoặc `src/Services/User/User.sln`) bằng Visual Studio, JetBrains Rider hoặc VS Code.
-2. **Kiểm tra file cấu hình môi trường (`appsettings.Development.json`):**
-   - Đảm bảo Connection String trỏ đúng vào cổng DB máy host (ví dụ `Catalog` dùng port `5434`):
+2. **Kiểm tra file cấu hình môi trường (`appsettings.Development.json` hoặc `.env`):**
+   - Connection String đã được cấu hình trỏ tới Neon Cloud (hoặc biến môi trường `ConnectionStrings__DefaultConnection`):
      ```json
      "ConnectionStrings": {
-       "DefaultConnection": "Host=localhost;Port=5434;Database=category_db;Username=postgres;Password=MatkhaucuaTui123@"
+       "DefaultConnection": "Host=ep-xxx.ap-southeast-1.aws.neon.tech;Database=category_db;Username=...;Password=...;SSL Mode=Require;Trust Server Certificate=true"
      }
      ```
    - RabbitMQ trỏ về `localhost:5672`:
@@ -81,7 +66,7 @@ Lệnh này khởi động toàn bộ:
        "Host": "localhost",
        "Port": 5672,
        "User": "guest",
-       "Password": "MatkhaucuaTui123@"
+       "Password": "guest"
      }
      ```
 3. **Áp dụng Database Migration (nếu có):**
@@ -160,20 +145,29 @@ Gateway sẽ lắng nghe tại cổng `http://localhost:8000`.
 ### Phương Pháp 2: Kiểm thử trực tiếp gRPC Service (Không cần qua Gateway)
 Khi bạn muốn test nhanh phương thức gRPC mà không cần bật Gateway:
 
-#### A. Dùng Postman (Hỗ trợ gRPC Native từ phiên bản v9+):
-1. Mở Postman $\rightarrow$ Chọn **New** $\rightarrow$ **gRPC Request**.
-2. Điền URL: `http://localhost:8002` (hoặc cổng service của bạn).
-3. Chọn file hợp đồng: Nhập file `src/Services/ApiGateway/Nexus.Gateway/Contracts/shop.proto`.
-4. Postman sẽ tự động liệt kê các RPC methods (ví dụ `GetProductById`, `ListProducts`...).
-5. Soạn thảo JSON request và bấm **Invoke** để nhận kết quả ngay.
+> ⚠️ **Lưu ý hiện trạng**: Các service đang có gRPC Server thật + Reflection bật sẵn gồm: **`UserService:8001`**, **`LogService:8004`**, **`WalletService:8008`**. (Catalog hiện đang chạy REST Mock tại cổng 8002).
 
-#### B. Dùng công cụ dòng lệnh `grpcurl`:
+#### A. Dùng Postman (Hỗ trợ Server Reflection):
+1. Mở Postman $\rightarrow$ Chọn **New** $\rightarrow$ **gRPC Request**.
+2. Điền URL: `http://localhost:8008` (Wallet) hoặc `http://localhost:8001` (User).
+3. Tại **Service definition**, chọn **Use Server reflection**. Postman sẽ tự động nạp danh sách RPC methods mà không cần bạn phải copy file `.proto` thủ công!
+4. Chọn method (ví dụ `WalletApi/GetWallet`), bấm **Use Example Message** để sinh JSON payload.
+5. Soạn thảo request và bấm **Invoke** để nhận kết quả ngay.
+
+#### B. Dùng giao diện Web UI trực quan bằng `grpcui`:
 ```bash
-# Liệt kê các service gRPC đang mở:
-grpcurl -plaintext localhost:8002 list
+# Biến gRPC thành giao diện web tương tác như Swagger:
+grpcui -plaintext localhost:8008
+```
+
+#### C. Dùng công cụ dòng lệnh `grpcurl`:
+```bash
+# Liệt kê các service gRPC đang mở trên cổng 8008:
+grpcurl -plaintext localhost:8008 list
 
 # Gọi một method cụ thể kèm payload:
-grpcurl -plaintext -d '{"id": "prod-001"}' localhost:8002 ShoppingCart.Contracts.V1.CatalogApi/GetProduct
+grpcurl -plaintext -d '{"userId": "01912345-6789-7abc-def0-123456789abc"}' \
+  localhost:8008 ShoppingCart.Contracts.V1.WalletApi/GetWallet
 ```
 
 ---
@@ -194,8 +188,8 @@ dotnet test src/Services/User/User.Tests/User.Tests.csproj --logger "console;ver
 ### Phương Pháp 4: Kiểm thử Sự Kiện Bất Đồng Bộ Qua RabbitMQ Management
 Khi service của bạn bắn sự kiện (Publish Event):
 1. Mở trình duyệt vào: `http://localhost:15672`.
-2. Đăng nhập: tài khoản `guest` / mật khẩu `MatkhaucuaTui123@`.
-3. Vào tab **Exchanges**: Bạn sẽ thấy MassTransit tự động tạo Exchange mang tên Event (ví dụ: `ShoppingCart.Contracts.V1:SendOtpEmailIntegrationEvent`).
+2. Đăng nhập: tài khoản `guest` / mật khẩu `guest` (hoặc mật khẩu cấu hình trong biến môi trường `RABBITMQ_PASSWORD`).
+3. Vào tab **Exchanges**: Bạn sẽ thấy MassTransit tự động tạo Exchange mang tên Event (ví dụ: `ShoppingCart.Contracts.V1:SendOtpEmailIntegrationEvent` hoặc `Log.Domain.Events:ILogEventOccurred`).
 4. Vào tab **Queues**: Bạn có thể xem số lượng tin nhắn đang chờ xử lý (`Ready`), số lượng tin nhắn đã nhận (`Unacked`).
 5. Bấm vào một hàng đợi $\rightarrow$ Cuộn xuống mục **Get messages** $\rightarrow$ Bấm **Get Message(s)** để xem nội dung JSON của sự kiện vừa được bắn ra!
 
@@ -205,25 +199,30 @@ Khi service của bạn bắn sự kiện (Publish Event):
 
 Khi bạn làm việc trên service nào, hãy tra cứu đúng cổng của service đó:
 
-| Service của bạn | Port Code App (`dotnet run`) | Container Database | Port DB Host | Tên Database Postgres |
+| Service của bạn | Port Code App (`dotnet run`) | Dịch vụ Hạ Tầng Phụ Trợ | Cổng Phụ Trợ | Tên Database PostgreSQL (Neon Cloud) |
 | :--- | :---: | :--- | :---: | :--- |
 | **ApiGateway** | **8000** | `nexus-shared-redis` | `6379` | *(Redis Key-Value)* |
-| **UserService** | **8001** | `nexus-user-db` | `5433` | `usermanagement_db` |
-| **CatalogService** | **8002** | `nexus-catalog-db` | `5434` | `category_db` |
-| **CommerceService** | **8003** | `nexus-commerce-db` | `5435` | `commerce_db` |
-| **LogService** | **8004** | `nexus-log-db` | `5436` | `log_db` |
-| **AuctionService** | **8005** | `nexus-auction-db` | `5437` | `auction_db` |
-| **FulfillmentService** | **8006** | `nexus-fulfillment-db` | `5438` | `fulfillment_db` |
-| **NotificationService** | **8007** | `nexus-notification-db` | `5439` | `notification_db` |
-| **WalletService** | **8008** | `nexus-wallet-db` | `5440` | `wallet_db` |
+| **UserService** | **8001** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `usermanagement_db` |
+| **CatalogService** | **8002** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `category_db` |
+| **CommerceService** | **8003** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `commerce_db` |
+| **LogService** | **8004** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `log_db` |
+| **AuctionService** | **8005** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `auction_db` |
+| **FulfillmentService** | **8006** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `fulfillment_db` |
+| **NotificationService** | **8007** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `notification_db` |
+| **WalletService** | **8008** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `wallet_db` |
+
+*Ghi chú hạ tầng dùng chung*:
+- **RabbitMQ**: AMQP `5672`, Management UI `15672`.
+- **Redis**: Port `6379`.
+- **Grafana Tempo**: OTLP gRPC `4317`, Grafana Explore `3000`.
 
 ---
 
 ## 7. XỬ LÝ CÁC SỰ CỐ THƯỜNG GẶP KHI CODE ĐỘC LẬP (TROUBLESHOOTING)
 
-1. **Lỗi `Connection refused (localhost:543x)` khi chạy service:**
-   - *Nguyên nhân:* Container database của service chưa được bật.
-   - *Khắc phục:* Chạy `docker ps` xem container có đang chạy không. Nếu chưa, gõ `docker compose up -d <tên-db>`.
+1. **Lỗi kết nối CSDL (Npgsql.PostgresException / Connection Timeout):**
+   - *Nguyên nhân:* Mạng internet bị gián đoạn hoặc chuỗi kết nối Neon Cloud thiếu cấu hình SSL mode.
+   - *Khắc phục:* Kiểm tra kết nối mạng và đảm bảo chuỗi kết nối chứa `SSL Mode=Require;Trust Server Certificate=true`.
 2. **Lỗi Gateway báo `503 SERVICE_UNAVAILABLE` hoặc `DOWNSTREAM_UNHEALTHY`:**
    - *Nguyên nhân:* Bạn đang để service ở mode `"Real"` trong `gateway.runtime.json`, nhưng chưa chạy ứng dụng Backend trên port tương ứng (ví dụ chưa chạy `localhost:8001`).
    - *Khắc phục:* Khởi động project backend của bạn trong IDE hoặc đổi tạm service đó thành `"Mock"` trong `gateway.runtime.json`.

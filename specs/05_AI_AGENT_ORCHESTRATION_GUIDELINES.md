@@ -198,6 +198,10 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
    - Đặc tả: mọi gRPC client và server phải đồng bộ tuyệt đối với `Contracts/shop.proto`; không tự ý đổi tag numbers hiện có.
    - **Hiện trạng (2026-10-24):** có **4 bản `shop.proto` với 3 nội dung khác nhau** (Gateway 66 dòng chỉ `UsersApi`; User 390 dòng/9 service/63 rpc; Log + Wallet 364 dòng/9 service/61 rpc). Bản được coi là canonical lại **thiếu nhất**. Xem `specs/04_SHARED_CONTRACTS_REGISTRY.md` §1 để biết bảng so sánh và `docs/plans/FIX_BACKLOG.md` mục `FIX-002` cho hướng sửa (proto canonical ở root + script đồng bộ + CI check hash).
    - Cho tới khi có nguồn sự thật: **không sửa `shop.proto` ở bất kỳ repo nào** nếu chưa chốt quyết định này.
+5. **CẤM TỰ Ý SỬA ĐỔI BIẾN MÔI TRƯỜNG, SECRET VÀ KEY BÍ MẬT (MANDATORY HUMAN-IN-THE-LOOP FOR SECRETS)**:
+   - **Tuyệt đối CẤM mọi AI Coding Agent tự ý sửa đổi, thay thế, xóa hoặc ghi đè các biến môi trường (`.env`, `.env.*`), Connection Strings, API Keys, JWT Secrets, chứng chỉ hoặc bất kỳ thông tin bí mật (credentials/secrets) nào trong toàn bộ hệ thống.**
+   - **Bắt buộc phải xin ý kiến và nhận được sự đồng ý rõ ràng (explicit approval) từ người dùng trước khi thực hiện bất kỳ thay đổi nào liên quan đến biến môi trường hoặc tài khoản bí mật.**
+   - Khi phát hiện cấu hình môi trường, connection string hoặc secret key có vấn đề hoặc cần cập nhật, Agent **CHỈ ĐƯỢC PHÉP báo cáo hiện trạng, đề xuất phương án và chờ người dùng xác nhận**, tuyệt đối không tự ý can thiệp.
 
 ---
 

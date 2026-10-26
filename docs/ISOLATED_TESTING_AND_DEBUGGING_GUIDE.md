@@ -17,7 +17,7 @@ Hệ thống Nexus cho phép bạn chia tách việc kiểm thử thành 3 trụ
 │                                                                                  │
 │   [Kiểm Thử gRPC Đồng Bộ]                  [Kiểm Thử Event Bất Đồng Bộ]          │
 │   Postman gRPC Request                     Postman HTTP REST Request             │
-│   (Server Reflection)                      (Basic Auth: guest/MatkhaucuaTui123@) │
+│   (Server Reflection)                      (Basic Auth: guest/guest hoặc $RABBITMQ_PASSWORD) │
 └───────────────┬──────────────────────────────────────────┬───────────────────────┘
                 │ HTTP/2 gRPC                              │ HTTP POST (Port 15672)
                 ▼                                          ▼
@@ -96,7 +96,35 @@ Bấm nút **Invoke**. Postman sẽ nhận kết quả trả về ngay lập t�
 
 ---
 
-### Tùy Chọn: Kiểm Thử Bằng Dòng Lệnh Với `grpcurl` (CLI)
+### Tùy Chọn 2: Biến gRPC Thành Giao Diện Web UI Như Swagger Bằng `grpcui`
+
+Nếu bạn quen dùng Swagger trên trình duyệt và muốn có giao diện web trực quan để điền form thay vì dùng Postman, công cụ **`grpcui`** là lựa chọn lý tưởng. Nhờ Server Reflection bật sẵn trong các service Nexus (`User.Api:8001`, `Log.Api:8004`, `Wallet.Api:8008`), `grpcui` sẽ tự động phân tích và render ra một trang Web UI tương tác hoàn chỉnh:
+
+1. **Cài đặt `grpcui` (chỉ làm 1 lần):**
+   ```bash
+   # Nếu máy đã cài Go:
+   go install github.com/fullstorydev/grpcui/cmd/grpcui@latest
+   # Hoặc qua Homebrew (macOS/Linux):
+   brew install grpcui
+   # Hoặc qua Scoop (Windows):
+   scoop install grpcui
+   ```
+2. **Khởi chạy giao diện Web:**
+   ```bash
+   # Mở Web UI kiểm thử WalletService:
+   grpcui -plaintext localhost:8008
+
+   # Mở Web UI kiểm thử UserService:
+   grpcui -plaintext localhost:8001
+
+   # Mở Web UI kiểm thử LogService:
+   grpcui -plaintext localhost:8004
+   ```
+3. `grpcui` sẽ tự động mở trình duyệt web: Bạn sẽ thấy danh sách Service, dropdown Methods, các ô text box để điền dữ liệu và nút bấm **Invoke** y hệt như Swagger!
+
+---
+
+### Tùy Chọn 3: Kiểm Thử Bằng Dòng Lệnh Với `grpcurl` (CLI)
 Nếu bạn thích dùng Terminal/Dòng lệnh:
 ```bash
 # 1. Liệt kê các service đang chạy qua Reflection:
@@ -116,8 +144,22 @@ grpcurl -plaintext -d '{"email": "buyer01@nexus.local", "password": "Password123
 
 Khi bạn viết một Consumer (ví dụ: `SendOtpEmailConsumer` gửi email OTP, hoặc `StockReservedConsumer` trừ ví tiền), làm thế nào để test hàm `Consume()` mà **không cần chạy các service khác**?
 
-### Phương Pháp Khuyên Dùng: Dùng Postman Bắn Event Qua RabbitMQ HTTP API
+Bạn có thể đưa Event giả lập vào thẳng RabbitMQ Broker theo 2 cách:
 
+### Cách 1: Bắn Event Trực Tiếp Trên RabbitMQ Management Web UI (Không Cần Bật Postman)
+1. Mở trình duyệt vào: **`http://localhost:15672`** (đăng nhập: `guest` / `guest`).
+2. Vào tab **Exchanges** $\rightarrow$ Bấm vào tên Exchange tương ứng với Event bạn muốn kích hoạt.
+3. Cuộn xuống mục **Publish message**:
+   - **Routing key**: để trống.
+   - **Headers**: Thêm dòng header:
+     - Name: `Content-Type`
+     - Value: `application/vnd.masstransit+json`
+   - **Payload**: Dán phần ruột JSON của message (xem mẫu payload chi tiết bên dưới).
+4. Bấm nút **Publish message**. Service tương ứng sẽ lập tức nhận được message và thực thi Consumer!
+
+---
+
+### Cách 2: Dùng Postman Bắn Event Qua RabbitMQ HTTP REST API
 RabbitMQ cung cấp sẵn bộ REST API trên cổng Management UI (`15672`). Bạn có thể dùng Postman gửi HTTP POST để publish một event giả lập vào thẳng Exchange của MassTransit.
 
 #### Cấu Hình Request Trong Postman:
@@ -126,7 +168,7 @@ RabbitMQ cung cấp sẵn bộ REST API trên cổng Management UI (`15672`). B�
 3. **Tab Authorization**:
    - Type: `Basic Auth`
    - Username: `guest`
-   - Password: `MatkhaucuaTui123@` (hoặc mật khẩu cấu hình trong `.env`)
+   - Password: `guest` (hoặc mật khẩu cấu hình trong biến môi trường `RABBITMQ_PASSWORD`)
 4. **Tab Headers**:
    - `Content-Type`: `application/json`
 
@@ -160,14 +202,14 @@ Trong MassTransit, tên Exchange mặc định chính là `Namespace:ContractNam
       "content_type": "application/vnd.masstransit+json"
     },
     "routing_key": "",
-    "payload": "{\"messageType\": [\"urn:message:Log.Domain.Events:ILogEventOccurred\"], \"message\": {\"serviceName\": \"OrderService\", \"eventType\": \"ORDER_PAYMENT_SUCCESS\", \"action\": \"PaymentSuccess\", \"logLevel\": \"Information\", \"entityName\": \"Orders\", \"entityId\": \"ORD-999\", \"payload\": \"{\\\"amount\\\": 250000}\"}}",
+    "payload": "{\"messageType\": [\"urn:message:Log.Domain.Events:ILogEventOccurred\"], \"message\": {\"serviceName\": \"OrderService\", \"eventType\": \"ORDER_PAYMENT_SUCCESS\", \"actorUserId\": \"01912345-6789-7abc-def0-123456789abc\", \"logLevel\": \"Information\", \"entityName\": \"Orders\", \"entityId\": \"ORD-999\", \"detailsJson\": \"{\\\"amount\\\": 250000}\"}}",
     "payload_encoding": "string"
   }
   ```
-- **Kết quả kiểm chứng**: `LogService` ghi 1 dòng log vào bảng `LogEntries` trong database `log_db`.
+- **Kết quả kiểm chứng**: `LogService` ghi 1 dòng log vào bảng `LogEntries` trong database `log_db`. Lưu ý: `DetailsJson` là chuỗi JSON chứa chi tiết sự kiện; `actorUserId` là định danh tài khoản thực hiện.
 
 #### 3. Test Khấu Trừ Ví Tiền Saga (`WalletService`)
-- **Exchange URL**: `http://localhost:15672/api/exchanges/%2f/Wallet.Application.Consumers:IStockReservedEvent/publish`
+- **Exchange URL**: `http://localhost:15672/api/exchanges/%2f/Wallet.Domain.Events:IStockReservedEvent/publish`
 - **Body (raw JSON)**:
   ```json
   {
@@ -175,10 +217,14 @@ Trong MassTransit, tên Exchange mặc định chính là `Namespace:ContractNam
       "content_type": "application/vnd.masstransit+json"
     },
     "routing_key": "",
-    "payload": "{\"messageType\": [\"urn:message:Wallet.Application.Consumers:IStockReservedEvent\"], \"message\": {\"orderId\": \"01912345-6789-7abc-def0-123456789abc\", \"userId\": \"buyer-user-id-01\", \"totalAmount\": 150000.00}}",
+    "payload": "{\"messageType\": [\"urn:message:Wallet.Domain.Events:IStockReservedEvent\"], \"message\": {\"orderId\": \"ORD-001\", \"reservationId\": \"RES-001\", \"userId\": \"01912345-6789-7abc-def0-123456789abc\", \"totalAmount\": \"150000.00\"}}",
     "payload_encoding": "string"
   }
   ```
+- **Lưu ý kỹ thuật cho Wallet Consumer**:
+  - Exchange chuẩn trong code là `Wallet.Domain.Events:IStockReservedEvent` (interface nằm ở `Wallet.Domain.Events`).
+  - `totalAmount` là chuỗi `string` (ví dụ `"150000.00"`), không phải số thực (number).
+  - `userId` bắt buộc phải là chuỗi định dạng **Guid hợp lệ** (`Guid.TryParse`) và nên tương ứng với một ví đã tồn tại trong database `wallet_db`.
 
 👉 **Mẹo Debug**: Trước khi bấm **Send** trên Postman, hãy đặt Breakpoint tại dòng đầu tiên của hàm `Consume(ConsumeContext<T> context)` trong IDE (Visual Studio / Rider). IDE sẽ lập tức dừng đúng vị trí để bạn kiểm tra từng biến!
 
@@ -224,6 +270,10 @@ Mọi phản hồi lỗi từ hệ thống Nexus đều chuẩn hóa theo RFC 91
 ---
 
 ### Tầng 2: Mở Grafana Tempo Định Vị Tên File & Số Dòng Code Bị Crash
+
+> **Trạng thái cấu hình Tracing thực tế (2026-10-24):**  
+> Hiện tại chỉ có **ApiGateway**, **Log.Api** và **Wallet.Api** đã được tích hợp OpenTelemetry SDK đầy đủ để đẩy Spans về Tempo. 6 services còn lại (`User`, `Catalog`, `Commerce`, `Auction`, `Fulfillment`, `Notification`) chưa cấu hình OpenTelemetry exporter. Đối với 6 service này, Grafana Tempo sẽ ghi nhận Span từ Gateway gọi sang, nhưng chưa thể hiện cây nội bộ chi tiết bên trong service cho đến khi hoàn tất cài đặt OTel SDK.
+
 Nếu API trả về `500 Internal Server Error` hoặc lỗi không rõ nguyên nhân:
 
 1. **Lấy mã `TraceId`**: Copy chuỗi `traceId` từ response JSON hoặc từ Response Header `X-Trace-Id`.

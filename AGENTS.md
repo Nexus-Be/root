@@ -127,6 +127,10 @@ Mỗi service (`User`, `Catalog`, `Commerce`, `Log`, `Auction`, `Fulfillment`, `
      + **Tên Role / Phân quyền**: Bắt buộc tuân thủ chuẩn quy định trong `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md` (ví dụ: `Buyer`, `Seller`, `Staff`, `Admin`, `SuperAdmin`, `Guest` — PascalCase, tuyệt đối không viết thường như `buyer`).
      + **Casing API JSON & DTO**: Bắt buộc tuân thủ quy chuẩn hệ thống (Gateway JSON `camelCase`, C# Model/DTO `PascalCase`, Database `snake_case`, Enum giá trị viết hoa `ACTIVE`, `SUCCESS`...).
      + **Tuyệt đối không sao chép máy móc casing hay form lỗi từ Excel vào code, seed data hay cấu hình**.
+6. **NGUYÊN TẮC BẢO MẬT & BẤT BIẾN BIẾN MÔI TRƯỜNG, SECRET, KEY (MANDATORY HUMAN-IN-THE-LOOP FOR SECRETS)**:
+   - **Tuyệt đối CẤM mọi AI Coding Agent tự ý sửa đổi, thay thế, xóa hoặc ghi đè các biến môi trường (`.env`, `.env.*`), Connection Strings, API Keys, JWT Secrets, chứng chỉ hoặc bất kỳ thông tin bí mật (credentials/secrets) nào trong toàn bộ hệ thống.**
+   - **Bắt buộc phải xin ý kiến và nhận được sự đồng ý rõ ràng (explicit approval) từ người dùng trước khi thực hiện bất kỳ thay đổi nào liên quan đến biến môi trường hoặc tài khoản bí mật.**
+   - Khi phát hiện cấu hình môi trường, connection string hoặc secret key có vấn đề hoặc cần cập nhật, Agent **CHỈ ĐƯỢC PHÉP báo cáo hiện trạng, đề xuất phương án và chờ người dùng xác nhận**, tuyệt đối không tự ý can thiệp.
 
 ---
 
