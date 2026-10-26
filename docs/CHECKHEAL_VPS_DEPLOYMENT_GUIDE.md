@@ -46,3 +46,19 @@ Vào GitHub Repository: `https://github.com/Nexus-Be/CheckHealService` -> **Sett
 
 > *Lưu ý: Nếu chưa cấu hình các biến `VPS_*`, pipeline vẫn chạy kiểm thử và push Docker Hub bình thường, bước Deploy VPS sẽ tự động được bỏ qua an toàn.*
 
+---
+
+## 🔐 3. Bảo Mật Xác Thực API (API Key Authentication)
+
+CheckHealService và ApiGateway sử dụng cơ chế xác thực **API Key** qua Header `X-Api-Key`:
+- **Khóa bảo mật**: `j-E<34$h_R}K2[Q1&Yo:SbM6({I?6M88[23!nQ3bJinj@P5:u8?JRw3RKnMRm93E0Q*H1D=)]S#,=ZcEa+KmKC`
+- **Tên biến môi trường (Docker / VPS)**: `CHECKHEAL_API_KEY`
+- Khi gọi từ Swagger UI: Nhấn nút **Authorize** màu xanh lá ở góc phải, điền mã key và nhấn **Authorize**.
+- Khi gọi qua curl / REST Client:
+  ```bash
+  curl -X GET "http://localhost:8009/api/v1/healthcheck/status" \
+    -H "X-Api-Key: j-E<34$h_R}K2[Q1&Yo:SbM6({I?6M88[23!nQ3bJinj@P5:u8?JRw3RKnMRm93E0Q*H1D=)]S#,=ZcEa+KmKC"
+  ```
+- ApiGateway tự động gắn Header `X-Api-Key` khi chuyển tiếp gọi sang CheckHealService. Mọi yêu cầu gọi vào ApiGateway trên các endpoint prober/healthcheck cũng bắt buộc phải truyền mã bảo mật này.
+
+

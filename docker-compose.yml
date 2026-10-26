@@ -55,7 +55,7 @@ services:
       - "${RABBITMQ_UI_PORT:-15672}:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
@@ -122,7 +122,7 @@ services:
     environment:
       POSTGRES_DB: usermanagement_db
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${USER_DB_PORT:-5433}:5432"
     volumes:
@@ -142,7 +142,7 @@ services:
     environment:
       POSTGRES_DB: category_db
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${CATALOG_DB_PORT:-5434}:5432"
     volumes:
@@ -162,7 +162,7 @@ services:
     environment:
       POSTGRES_DB: commerce_db
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${COMMERCE_DB_PORT:-5435}:5432"
     volumes:
@@ -182,7 +182,7 @@ services:
     environment:
       POSTGRES_DB: log_db
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${LOG_DB_PORT:-5436}:5432"
     volumes:
@@ -202,7 +202,7 @@ services:
     environment:
       POSTGRES_DB: auction_db
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${AUCTION_DB_PORT:-5437}:5432"
     volumes:
@@ -222,7 +222,7 @@ services:
     environment:
       POSTGRES_DB: fulfillment_db
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${FULFILLMENT_DB_PORT:-5438}:5432"
     volumes:
@@ -242,7 +242,7 @@ services:
     environment:
       POSTGRES_DB: notification_db
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${NOTIFICATION_DB_PORT:-5439}:5432"
     volumes:
@@ -262,7 +262,7 @@ services:
     environment:
       POSTGRES_DB: wallet_db
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${WALLET_DB_PORT:-5440}:5432"
     volumes:
@@ -302,6 +302,9 @@ services:
       - Gateway__Services__fulfillment__Address=${FULFILLMENT_SERVICE_URL:-http://fulfillment-service:8006}
       - Gateway__Services__notification__Address=${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}
       - Gateway__Services__wallet__Address=${WALLET_SERVICE_URL:-http://wallet-service:8008}
+      - Gateway__Services__healthcheck__Address=${HEALTHCHECK_SERVICE_URL:-http://checkheal-service:8009}
+      - Gateway__HealthProber__ApiKey=${CHECKHEAL_API_KEY:-j-E<34$h_R}K2[Q1&Yo:SbM6({I?6M88[23!nQ3bJinj@P5:u8?JRw3RKnMRm93E0Q*H1D=)]S#,=ZcEa+KmKC}
+      - CHECKHEAL_API_KEY=${CHECKHEAL_API_KEY:-j-E<34$h_R}K2[Q1&Yo:SbM6({I?6M88[23!nQ3bJinj@P5:u8?JRw3RKnMRm93E0Q*H1D=)]S#,=ZcEa+KmKC}
     depends_on:
       redis:
         condition: service_healthy
@@ -323,11 +326,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=Host=user-db;Port=5432;Database=usermanagement_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      - ConnectionStrings__DefaultConnection=${USER_CONNECTION_STRING:-Host=user-db;Port=5432;Database=usermanagement_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - Redis__ConnectionString=${REDIS_CONNECTION_STRING:-redis:6379}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
@@ -353,11 +356,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=Host=catalog-db;Port=5432;Database=category_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      - ConnectionStrings__DefaultConnection=${CATALOG_CONNECTION_STRING:-Host=catalog-db;Port=5432;Database=category_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
       catalog-db:
@@ -380,11 +383,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=Host=commerce-db;Port=5432;Database=commerce_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      - ConnectionStrings__DefaultConnection=${COMMERCE_CONNECTION_STRING:-Host=commerce-db;Port=5432;Database=commerce_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
       commerce-db:
@@ -407,11 +410,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=Host=log-db;Port=5432;Database=log_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      - ConnectionStrings__DefaultConnection=${LOG_CONNECTION_STRING:-Host=log-db;Port=5432;Database=log_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
       log-db:
@@ -434,11 +437,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=Host=auction-db;Port=5432;Database=auction_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      - ConnectionStrings__DefaultConnection=${AUCTION_CONNECTION_STRING:-Host=auction-db;Port=5432;Database=auction_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
       auction-db:
@@ -461,11 +464,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=Host=fulfillment-db;Port=5432;Database=fulfillment_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      - ConnectionStrings__DefaultConnection=${FULFILLMENT_CONNECTION_STRING:-Host=fulfillment-db;Port=5432;Database=fulfillment_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
       fulfillment-db:
@@ -488,11 +491,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=Host=notification-db;Port=5432;Database=notification_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      - ConnectionStrings__DefaultConnection=${NOTIFICATION_CONNECTION_STRING:-Host=notification-db;Port=5432;Database=notification_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - Smtp__Host=${SMTP_HOST:-smtp.gmail.com}
       - Smtp__Port=${SMTP_PORT:-587}
       - Smtp__UseSsl=${SMTP_USE_SSL:-false}
@@ -522,11 +525,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=Host=wallet-db;Port=5432;Database=wallet_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-MatkhaucuaTui123@}
+      - ConnectionStrings__DefaultConnection=${WALLET_CONNECTION_STRING:-Host=wallet-db;Port=5432;Database=wallet_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-MatkhaucuaTui123@}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
       wallet-db:
@@ -550,6 +553,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_URLS=http://+:8009
+      - CHECKHEAL_API_KEY=${CHECKHEAL_API_KEY:-j-E<34$h_R}K2[Q1&Yo:SbM6({I?6M88[23!nQ3bJinj@P5:u8?JRw3RKnMRm93E0Q*H1D=)]S#,=ZcEa+KmKC}
+      - CheckHeal__ApiKey=${CHECKHEAL_API_KEY:-j-E<34$h_R}K2[Q1&Yo:SbM6({I?6M88[23!nQ3bJinj@P5:u8?JRw3RKnMRm93E0Q*H1D=)]S#,=ZcEa+KmKC}
       - CheckHeal__CronIntervalSeconds=${CHECKHEAL_CRON_INTERVAL:-60}
       - CheckHeal__ProbeTimeoutSeconds=${CHECKHEAL_PROBE_TIMEOUT:-10}
       - CheckHeal__DefaultEnabled=${CHECKHEAL_DEFAULT_ENABLED:-false}
