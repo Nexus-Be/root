@@ -13,6 +13,9 @@ Chào mừng bạn đến với trung tâm tài liệu kỹ thuật toàn diện
 
 Tài liệu thực chiến giúp lập trình viên bắt tay vào làm việc ngay:
 
+* **[Hướng Dẫn Khởi Chạy Gateway Cho Frontend & Intern (FRONTEND_GATEWAY_MOCK_GUIDE.md)](FRONTEND_GATEWAY_MOCK_GUIDE.md)**  
+  👉 **DÀNH CHO FRONTEND DEV & INTERN (TIẾNG ANH):** Hướng dẫn chi tiết cách chỉ cần khởi chạy Gateway và Redis để test toàn bộ giao diện bằng Mock Data (Stateless) và bật Bypass Authentication, không cần chạy 8 microservices hay database.
+
 * **[Cẩm Nang Phát Triển & Kiểm Thử Độc Lập Từng Service (INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)](INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)**  
   👉 **BẮT BUỘC ĐỌC ĐỐI VỚI DEV:** Hướng dẫn cách một developer chỉ phụ trách 1 service có thể tự code, chạy database riêng và test độc lập với API Gateway mà **KHÔNG CẦN bật toàn bộ 9 services**, tiết kiệm RAM (< 2GB).
 
