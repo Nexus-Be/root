@@ -25,3 +25,6 @@
 [submodule "src/Services/Wallet"]
 	path = src/Services/Wallet
 	url = git@github.com:Nexus-Be/WalletService.git
+[submodule "src/Services/CheckHeal"]
+	path = src/Services/CheckHeal
+	url = git@github.com:Nexus-Be/CheckHealService.git

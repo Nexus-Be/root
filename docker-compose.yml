@@ -35,6 +35,7 @@
 #   - Fulfillment Service:  8006  -> 8006
 #   - Notification Service: 8007  -> 8007
 #   - Wallet Service:       8008  -> 8008
+#   - CheckHeal Service:    8009  -> 8009
 # =============================================================================
 
 name: nexus-be
@@ -535,6 +536,45 @@ services:
       tempo:
         condition: service_started
     restart: unless-stopped
+
+  # 3.10 CheckHeal Service (Keep-alive Neon/Render DB & Microservices Health - Port 8009)
+  checkheal-service:
+    build:
+      context: ./src/Services/CheckHeal
+      dockerfile: Dockerfile
+    container_name: nexus-checkheal-service
+    ports:
+      - "${CHECKHEAL_SERVICE_PORT:-8009}:8009"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:8009
+      - CheckHeal__CronIntervalSeconds=${CHECKHEAL_CRON_INTERVAL:-60}
+      - CheckHeal__ProbeTimeoutSeconds=${CHECKHEAL_PROBE_TIMEOUT:-10}
+      - CheckHeal__DefaultEnabled=${CHECKHEAL_DEFAULT_ENABLED:-false}
+      - CheckHeal__Services__users__Url=${USERS_SERVICE_URL:-http://user-service:8001/health}
+      - CheckHeal__Services__catalog__Url=${CATALOG_SERVICE_URL:-http://catalog-service:8002/health}
+      - CheckHeal__Services__commerce__Url=${COMMERCE_SERVICE_URL:-http://commerce-service:8003/health}
+      - CheckHeal__Services__log__Url=${LOG_SERVICE_URL:-http://log-service:8004/health}
+      - CheckHeal__Services__auction__Url=${AUCTION_SERVICE_URL:-http://auction-service:8005/health}
+      - CheckHeal__Services__fulfillment__Url=${FULFILLMENT_SERVICE_URL:-http://fulfillment-service:8006/health}
+      - CheckHeal__Services__notification__Url=${NOTIFICATION_SERVICE_URL:-http://notification-service:8007/health}
+      - CheckHeal__Services__wallet__Url=${WALLET_SERVICE_URL:-http://wallet-service:8008/health}
+      - CheckHeal__Databases__users__ConnectionString=${USERS_DB_CONNECTION:-}
+      - CheckHeal__Databases__catalog__ConnectionString=${CATALOG_DB_CONNECTION:-}
+      - CheckHeal__Databases__commerce__ConnectionString=${COMMERCE_DB_CONNECTION:-}
+      - CheckHeal__Databases__log__ConnectionString=${LOG_DB_CONNECTION:-}
+      - CheckHeal__Databases__auction__ConnectionString=${AUCTION_DB_CONNECTION:-}
+      - CheckHeal__Databases__fulfillment__ConnectionString=${FULFILLMENT_DB_CONNECTION:-}
+      - CheckHeal__Databases__notification__ConnectionString=${NOTIFICATION_DB_CONNECTION:-}
+      - CheckHeal__Databases__wallet__ConnectionString=${WALLET_DB_CONNECTION:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8009/health/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 
 # =============================================================================

@@ -21,6 +21,7 @@ Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ s
 | **FulfillmentService** | N/A | `8006` | PostgreSQL | `5438` | `fulfillment_db` | RabbitMQ: `5672` |
 | **NotificationService** | N/A | `8007` | PostgreSQL | `5439` | `notification_db` | RabbitMQ: `5672` |
 | **WalletService** | N/A | `8008` | PostgreSQL | `5440` | `wallet_db` | RabbitMQ: `5672` |
+| **CheckHealService** | `8009` | N/A | PostgreSQL Keep-Alive | N/A *(Client)* | Neon / Render | N/A |
 
 **Trạng thái bảng trên:** ✅ cổng trong `Dockerfile` (`EXPOSE` + `ASPNETCORE_URLS`) và `docker-compose.yml` khớp 8/8 service; ✅ connection string trong `appsettings*.json` khớp DB port/name 8/8. Cột "Cổng HTTP REST" ghi `N/A` là **đặc tả mục tiêu** — hiện mọi service đều mở `/health` qua HTTP và Catalog mở thêm REST mock (xem §1.1).
 
