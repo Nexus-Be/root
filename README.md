@@ -82,6 +82,7 @@ dotnet run --project Catalog.Api
 Toàn bộ tài liệu kỹ thuật được chuẩn hóa và lưu trữ tại thư mục **`docs/`**:
 
 ### 📘 Cẩm Nang Phát Triển (Developer Guides):
+- **[Hướng Dẫn Cầm Tay Chỉ Việc: Ghép Nối API & Tích Hợp Liên Microservice (SERVICE_INTEGRATION_GUIDE.md)](SERVICE_INTEGRATION_GUIDE.md)** *(Đọc khi ghép luồng Gateway - gRPC - RabbitMQ Event)*
 - **[Cẩm Nang Phát Triển & Kiểm Thử Độc Lập 1 Service (docs/INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)](docs/INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)** *(Đọc trước khi code service)*
 - **[Quy Chuẩn Kiến Trúc Clean Architecture 4 Tầng Cho Microservices (docs/CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)](docs/CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)**
 - **[Hướng Dẫn Tạo Mock API, Chuyển Đổi Runtime, Bypass Auth & Health Check (docs/GUIDE_MOCK_DATA_GATEWAY.md)](docs/GUIDE_MOCK_DATA_GATEWAY.md)**
