@@ -36,15 +36,19 @@ Vào GitHub Repository: `https://github.com/Nexus-Be/CheckHealService` -> **Sett
 
 | Tên Secret | Bắt Buộc | Mô Tả |
 |:---|:---:|:---|
-| `DOCKER_HUB_USERNAME` | **Có** | Username tài khoản Docker Hub của bạn (ví dụ: `yuikiri`). |
-| `DOCKER_HUB_TOKEN` | **Có** | Personal Access Token (PAT) sinh từ Docker Hub (tại `hub.docker.com` -> Account Settings -> Personal Access Tokens -> Read & Write). |
+| `DOCKERHUB_USERNAME` (hoặc `DOCKER_HUB_USERNAME`) | **Có** | Username tài khoản Docker Hub của bạn (ví dụ: `yuikiri`). |
+| `DOCKERHUB_TOKEN` (hoặc `DOCKER_HUB_TOKEN`) | **Có** | Personal Access Token (PAT) sinh từ Docker Hub (tại `hub.docker.com` -> Account Settings -> Personal Access Tokens -> Read & Write). |
 | `VPS_HOST` | Tùy chọn | IP Public của VPS (ví dụ: `103.xxx.xxx.xxx`). |
-| `VPS_USERNAME` | Tùy chọn | User SSH trên VPS (`ubuntu` hoặc `root`). |
-| `VPS_SSH_KEY` | Tùy chọn | Khóa Private Key SSH (`~/.ssh/id_rsa` hoặc `~/.ssh/id_ed25519`). |
+| `VPS_USERNAME` | Tùy chọn | User SSH trên VPS (ví dụ: `root` hoặc `ubuntu`). |
+| `VPS_PASSWORD` | Tùy chọn | **Mật khẩu SSH của VPS** (hỗ trợ triển khai nhanh qua User & Password). |
+| `VPS_SSH_KEY` | Tùy chọn | (Tùy chọn thay thế nếu dùng SSH Key) Khóa Private Key SSH (`~/.ssh/id_rsa`). |
 | `VPS_PORT` | Tùy chọn | Cổng SSH của VPS (mặc định: `22`). |
-| `VPS_WORK_DIR` | Tùy chọn | Đường dẫn thư mục chứa code trên VPS (ví dụ: `/home/ubuntu/Nexus-Be`). |
+| `VPS_WORK_DIR` | Tùy chọn | Đường dẫn thư mục chứa code trên VPS (mặc định: `~/Nexus-Be`). |
+| `RENDER_DEPLOY_HOOK_URL` | Tùy chọn | Webhook URL tự động kích hoạt deploy trên Render (nếu có dùng Render Web Service). |
 
-> *Lưu ý: Nếu chưa cấu hình các biến `VPS_*`, pipeline vẫn chạy kiểm thử và push Docker Hub bình thường, bước Deploy VPS sẽ tự động được bỏ qua an toàn.*
+> *Lưu ý:*
+> - CI/CD hỗ trợ đăng nhập VPS bằng **Mật khẩu (`VPS_PASSWORD`)** hoặc **Khóa SSH (`VPS_SSH_KEY`)**. Bạn chỉ cần điền 1 trong 2 cách!
+> - Nếu chưa cấu hình các biến `VPS_*`, pipeline vẫn chạy kiểm thử và push Docker Hub bình thường, bước Deploy VPS sẽ tự động được bỏ qua an toàn.
 
 ---
 
