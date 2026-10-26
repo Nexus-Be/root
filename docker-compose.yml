@@ -3,8 +3,8 @@
 # =============================================================================
 # Quy hoạch phân đoạn hệ thống:
 #   1. PHẦN 1: HẠ TẦNG DÙNG CHUNG (RabbitMQ, Redis Local, Tempo, Grafana)
-#   2. PHẦN 2: CƠ SỞ DỮ LIỆU POSTGRESQL (8 Databases độc lập cho 8 Services)
-#   3. PHẦN 3: CÁC DỊCH VỤ MICROSERVICES (.NET 8 - Gateway & 8 Services)
+#   2. PHẦN 2: CÁC DỊCH VỤ MICROSERVICES (.NET 8 - Gateway & 9 Services)
+#   * Toàn bộ CSDL PostgreSQL đã lưu trữ và vận hành trên Neon Cloud.
 #
 # BẢNG TỔNG HỢP CỔNG LOCALHOST (HOST PORT -> CONTAINER PORT):
 # -----------------------------------------------------------------------------
@@ -14,16 +14,6 @@
 #   - Redis Local:          6379  -> 6379
 #   - Grafana Web UI:       3000  -> 3000
 #   - Tempo Tracing:        3200 (UI/API) | 4317 (gRPC) | 4318 (HTTP)
-#
-# [Cơ Sở Dữ Liệu PostgreSQL 16]
-#   - user-db:              5433  -> 5432 (usermanagement_db)
-#   - catalog-db:           5434  -> 5432 (category_db)
-#   - commerce-db:          5435  -> 5432 (commerce_db)
-#   - log-db:               5436  -> 5432 (log_db)
-#   - auction-db:           5437  -> 5432 (auction_db)
-#   - fulfillment-db:       5438  -> 5432 (fulfillment_db)
-#   - notification-db:      5439  -> 5432 (notification_db)
-#   - wallet-db:            5440  -> 5432 (wallet_db)
 #
 # [Các Dịch Vụ Microservices]
 #   - Gateway API:          8000  -> 8000
@@ -112,175 +102,10 @@ services:
 
 
   # =========================================================================
-  # PHẦN 2: CƠ SỞ DỮ LIỆU POSTGRESQL (DATABASES)
+  # PHẦN 2: CÁC DỊCH VỤ ỨNG DỤNG (MICROSERVICES APPLICATIONS)
   # =========================================================================
 
-  # 2.1 Database cho User Service (Port 5433)
-  user-db:
-    image: postgres:16-alpine
-    container_name: nexus-user-db
-    environment:
-      POSTGRES_DB: usermanagement_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${USER_DB_PORT:-5433}:5432"
-    volumes:
-      - user_db_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d usermanagement_db"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-  # 2.2 Database cho Catalog Service (Port 5434)
-  catalog-db:
-    image: postgres:16-alpine
-    container_name: nexus-catalog-db
-    environment:
-      POSTGRES_DB: category_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${CATALOG_DB_PORT:-5434}:5432"
-    volumes:
-      - catalog_db_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d category_db"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-  # 2.3 Database cho Commerce Service (Port 5435)
-  commerce-db:
-    image: postgres:16-alpine
-    container_name: nexus-commerce-db
-    environment:
-      POSTGRES_DB: commerce_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${COMMERCE_DB_PORT:-5435}:5432"
-    volumes:
-      - commerce_db_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d commerce_db"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-  # 2.4 Database cho Log Service (Port 5436)
-  log-db:
-    image: postgres:16-alpine
-    container_name: nexus-log-db
-    environment:
-      POSTGRES_DB: log_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${LOG_DB_PORT:-5436}:5432"
-    volumes:
-      - log_db_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d log_db"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-  # 2.5 Database cho Auction Service (Port 5437)
-  auction-db:
-    image: postgres:16-alpine
-    container_name: nexus-auction-db
-    environment:
-      POSTGRES_DB: auction_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${AUCTION_DB_PORT:-5437}:5432"
-    volumes:
-      - auction_db_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d auction_db"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-  # 2.6 Database cho Fulfillment Service (Port 5438)
-  fulfillment-db:
-    image: postgres:16-alpine
-    container_name: nexus-fulfillment-db
-    environment:
-      POSTGRES_DB: fulfillment_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${FULFILLMENT_DB_PORT:-5438}:5432"
-    volumes:
-      - fulfillment_db_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d fulfillment_db"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-  # 2.7 Database cho Notification Service (Port 5439)
-  notification-db:
-    image: postgres:16-alpine
-    container_name: nexus-notification-db
-    environment:
-      POSTGRES_DB: notification_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${NOTIFICATION_DB_PORT:-5439}:5432"
-    volumes:
-      - notification_db_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d notification_db"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-  # 2.8 Database cho Wallet Service (Port 5440)
-  wallet-db:
-    image: postgres:16-alpine
-    container_name: nexus-wallet-db
-    environment:
-      POSTGRES_DB: wallet_db
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${WALLET_DB_PORT:-5440}:5432"
-    volumes:
-      - wallet_db_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d wallet_db"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-
-  # =========================================================================
-  # PHẦN 3: CÁC DỊCH VỤ ỨNG DỤNG (MICROSERVICES APPLICATIONS)
-  # =========================================================================
-
-  # 3.1 API Gateway (Điểm vào duy nhất - Port 8000)
+  # 2.1 API Gateway (Điểm vào duy nhất - Port 8000)
   gateway:
     build:
       context: ./src/Services/ApiGateway
@@ -315,7 +140,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 
-  # 3.2 User Service (Auth, OTP, Profile, Roles - Port 8001)
+  # 2.2 User Service (Auth, OTP, Profile, Roles - Port 8001)
   user-service:
     build:
       context: ./src/Services/User
@@ -327,7 +152,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${USER_CONNECTION_STRING:-Host=user-db;Port=5432;Database=usermanagement_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
+      - ConnectionStrings__DefaultConnection=${USER_CONNECTION_STRING}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -335,8 +160,6 @@ services:
       - Redis__ConnectionString=${REDIS_CONNECTION_STRING:-redis:6379}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      user-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       redis:
@@ -345,7 +168,7 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  # 3.3 Catalog Service (Sản phẩm, danh mục, kho ảo seller - Port 8002)
+  # 2.3 Catalog Service (Sản phẩm, danh mục, kho ảo seller - Port 8002)
   catalog-service:
     build:
       context: ./src/Services/Catalog
@@ -357,22 +180,20 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${CATALOG_CONNECTION_STRING:-Host=catalog-db;Port=5432;Database=category_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
+      - ConnectionStrings__DefaultConnection=${CATALOG_CONNECTION_STRING}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
       - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      catalog-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
 
-  # 3.4 Commerce Service (Giỏ hàng, Đơn hàng, Checkout Saga - Port 8003)
+  # 2.4 Commerce Service (Giỏ hàng, Đơn hàng, Checkout Saga - Port 8003)
   commerce-service:
     build:
       context: ./src/Services/Commerce
@@ -384,22 +205,20 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${COMMERCE_CONNECTION_STRING:-Host=commerce-db;Port=5432;Database=commerce_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
+      - ConnectionStrings__DefaultConnection=${COMMERCE_CONNECTION_STRING}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
       - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      commerce-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
 
-  # 3.5 Log Service (Audit Log tập trung - Port 8004)
+  # 2.5 Log Service (Audit Log tập trung - Port 8004)
   log-service:
     build:
       context: ./src/Services/Log
@@ -411,22 +230,20 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${LOG_CONNECTION_STRING:-Host=log-db;Port=5432;Database=log_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
+      - ConnectionStrings__DefaultConnection=${LOG_CONNECTION_STRING}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
       - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      log-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
 
-  # 3.6 Auction Service (Đấu giá, đặt giá bid - Port 8005)
+  # 2.6 Auction Service (Đấu giá, đặt giá bid - Port 8005)
   auction-service:
     build:
       context: ./src/Services/Auction
@@ -438,22 +255,20 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${AUCTION_CONNECTION_STRING:-Host=auction-db;Port=5432;Database=auction_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
+      - ConnectionStrings__DefaultConnection=${AUCTION_CONNECTION_STRING}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
       - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      auction-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
 
-  # 3.7 Fulfillment Service (Kho vật lý, Tính phí ship, Vận đơn - Port 8006)
+  # 2.7 Fulfillment Service (Kho vật lý, Tính phí ship, Vận đơn - Port 8006)
   fulfillment-service:
     build:
       context: ./src/Services/Fulfillment
@@ -465,22 +280,20 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${FULFILLMENT_CONNECTION_STRING:-Host=fulfillment-db;Port=5432;Database=fulfillment_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
+      - ConnectionStrings__DefaultConnection=${FULFILLMENT_CONNECTION_STRING}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
       - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      fulfillment-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
 
-  # 3.8 Notification Service (Thông báo, Cài đặt tùy chọn nhận tin - Port 8007)
+  # 2.8 Notification Service (Thông báo, Cài đặt tùy chọn nhận tin - Port 8007)
   notification-service:
     build:
       context: ./src/Services/Notification
@@ -492,7 +305,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${NOTIFICATION_CONNECTION_STRING:-Host=notification-db;Port=5432;Database=notification_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
+      - ConnectionStrings__DefaultConnection=${NOTIFICATION_CONNECTION_STRING}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -506,15 +319,13 @@ services:
       - Smtp__Password=${SMTP_PASSWORD:-}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      notification-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
 
-  # 3.9 Wallet Service (Ví điện tử, nạp, rút, chuyển tiền - Port 8008)
+  # 2.9 Wallet Service (Ví điện tử, nạp, rút, chuyển tiền - Port 8008)
   wallet-service:
     build:
       context: ./src/Services/Wallet
@@ -526,22 +337,20 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${WALLET_CONNECTION_STRING:-Host=wallet-db;Port=5432;Database=wallet_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
+      - ConnectionStrings__DefaultConnection=${WALLET_CONNECTION_STRING}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
       - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      wallet-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
 
-  # 3.10 CheckHeal Service (Keep-alive Neon/Render DB & Microservices Health - Port 8009)
+  # 2.10 CheckHeal Service (Keep-alive Neon/Render DB & Microservices Health - Port 8009)
   checkheal-service:
     build:
       context: ./src/Services/CheckHeal
@@ -595,19 +404,3 @@ volumes:
     name: nexus-be_redis_data
   tempo_data:
     name: nexus-be_tempo_data
-  user_db_data:
-    name: nexus-be_user_db_data
-  catalog_db_data:
-    name: nexus-be_catalog_db_data
-  commerce_db_data:
-    name: nexus-be_commerce_db_data
-  log_db_data:
-    name: nexus-be_log_db_data
-  auction_db_data:
-    name: nexus-be_auction_db_data
-  fulfillment_db_data:
-    name: nexus-be_fulfillment_db_data
-  notification_db_data:
-    name: nexus-be_notification_db_data
-  wallet_db_data:
-    name: nexus-be_wallet_db_data
