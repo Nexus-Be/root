@@ -120,6 +120,13 @@ Mỗi service (`User`, `Catalog`, `Commerce`, `Log`, `Auction`, `Fulfillment`, `
 2. **CÔ LẬP TUYỆT ĐỐI DATABASE (DATABASE-PER-SERVICE)**: Không query trực tiếp DB của service khác.
 3. **CẤU HÌNH PORT LÀ BẤT BIẾN**: Dải port HTTP/gRPC `8000`-`8008` và DB `5433`-`5440` là cố định.
 4. **HỢP ĐỒNG PROTOBUF DUY NHẤT**: Mọi service phải tuân thủ hợp đồng Protobuf gốc trong `Contracts/shop.proto`.
+5. **NGUYÊN TẮC ĐỐI SOÁT TÀI LIỆU EXCEL (CHỈ TIN THÔNG TIN, KHÔNG TIN ĐỊNH DẠNG/CẤU TRÚC)**:
+   - **Tuyệt đối KHÔNG tin tưởng định dạng hoặc cấu trúc form trong file Excel**: File Excel có thể chứa lỗi định dạng, casing tùy tiện hoặc không nhất quán do người soạn thảo (ví dụ: trong file viết `snake_case`, hoặc viết tên role dạng chữ thường `buyer` thay vì PascalCase `Buyer`...).
+   - **Chỉ tin thông tin và ý đồ nghiệp vụ (Semantic Information)**: Trích xuất ý nghĩa trường dữ liệu, quan hệ logic, các bước trong luồng quy trình và điều kiện nghiệp vụ.
+   - **Mọi cấu trúc, casing và giá trị enum/role BẮT BUỘC phải quy chuẩn lại theo Code & System Specs**:
+     + **Tên Role / Phân quyền**: Bắt buộc tuân thủ chuẩn quy định trong `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md` (ví dụ: `Buyer`, `Seller`, `Staff`, `Admin`, `SuperAdmin`, `Guest` — PascalCase, tuyệt đối không viết thường như `buyer`).
+     + **Casing API JSON & DTO**: Bắt buộc tuân thủ quy chuẩn hệ thống (Gateway JSON `camelCase`, C# Model/DTO `PascalCase`, Database `snake_case`, Enum giá trị viết hoa `ACTIVE`, `SUCCESS`...).
+     + **Tuyệt đối không sao chép máy móc casing hay form lỗi từ Excel vào code, seed data hay cấu hình**.
 
 ---
 
