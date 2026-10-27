@@ -376,14 +376,14 @@ services:
       - CheckHeal__Services__fulfillment__Url=${FULFILLMENT_SERVICE_URL:-http://fulfillment-service:8006/health}
       - CheckHeal__Services__notification__Url=${NOTIFICATION_SERVICE_URL:-http://notification-service:8007/health}
       - CheckHeal__Services__wallet__Url=${WALLET_SERVICE_URL:-http://wallet-service:8008/health}
-      - CheckHeal__Databases__users__ConnectionString=${USERS_DB_CONNECTION:-}
-      - CheckHeal__Databases__catalog__ConnectionString=${CATALOG_DB_CONNECTION:-}
-      - CheckHeal__Databases__commerce__ConnectionString=${COMMERCE_DB_CONNECTION:-}
-      - CheckHeal__Databases__log__ConnectionString=${LOG_DB_CONNECTION:-}
-      - CheckHeal__Databases__auction__ConnectionString=${AUCTION_DB_CONNECTION:-}
-      - CheckHeal__Databases__fulfillment__ConnectionString=${FULFILLMENT_DB_CONNECTION:-}
-      - CheckHeal__Databases__notification__ConnectionString=${NOTIFICATION_DB_CONNECTION:-}
-      - CheckHeal__Databases__wallet__ConnectionString=${WALLET_DB_CONNECTION:-}
+      - CheckHeal__Databases__users__ConnectionString=${USERS_DB_CONNECTION:-${USER_CONNECTION_STRING:-}}
+      - CheckHeal__Databases__catalog__ConnectionString=${CATALOG_DB_CONNECTION:-${CATALOG_CONNECTION_STRING:-}}
+      - CheckHeal__Databases__commerce__ConnectionString=${COMMERCE_DB_CONNECTION:-${COMMERCE_CONNECTION_STRING:-}}
+      - CheckHeal__Databases__log__ConnectionString=${LOG_DB_CONNECTION:-${LOG_CONNECTION_STRING:-}}
+      - CheckHeal__Databases__auction__ConnectionString=${AUCTION_DB_CONNECTION:-${AUCTION_CONNECTION_STRING:-}}
+      - CheckHeal__Databases__fulfillment__ConnectionString=${FULFILLMENT_DB_CONNECTION:-${FULFILLMENT_CONNECTION_STRING:-}}
+      - CheckHeal__Databases__notification__ConnectionString=${NOTIFICATION_DB_CONNECTION:-${NOTIFICATION_CONNECTION_STRING:-}}
+      - CheckHeal__Databases__wallet__ConnectionString=${WALLET_DB_CONNECTION:-${WALLET_CONNECTION_STRING:-}}
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8009/health/live || exit 1"]
