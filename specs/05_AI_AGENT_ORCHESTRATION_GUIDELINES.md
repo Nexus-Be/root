@@ -1,8 +1,8 @@
 # 05 — CHỈ DẪN VẬN HÀNH DÀNH CHO AI CODING AGENTS (AI AGENT ORCHESTRATION GUIDELINES)
 
-> **Trạng thái triển khai (2026-10-24):** ⚠️ Tài liệu này là **bản sao thứ ba** của cùng một bộ luật (đã có `AGENTS.md` và `CLAUDE.md` ở root, md5 giống hệt nhau). Nội dung 6 nguyên tắc dưới đây **trùng khớp** `AGENTS.md` — khi có sai lệch, **`AGENTS.md` là canonical**, tài liệu này chỉ giữ vai trò **ma trận đọc file** (Mục 3).
-> **Nguồn sự thật:** `AGENTS.md` (luật) + code (hiện trạng).
-> **Cập nhật lần cuối:** 2026-10-24.
+> **Trạng thái triển khai (2026-10-27):** ⚠️ Tài liệu này là **bản sao thứ ba** của cùng một bộ luật (đã có `AGENTS.md` và `CLAUDE.md` ở root, md5 giống hệt nhau). Nội dung 6 nguyên tắc dưới đây **trùng khớp** `AGENTS.md` — khi có sai lệch, **`AGENTS.md` là canonical**, tài liệu này giữ vai trò **ma trận đọc file** (Mục 3).
+> **Nguồn sự thật:** `AGENTS.md` (luật) + code (hiện trạng `PLAN-20261027-1400-GLOBAL-RESTFUL-PIVOT-AND-GATEWAY-DECOUPLING.md`).
+> **Cập nhật lần cuối:** 2026-10-27 — Chuyển dịch toàn diện sang 100% RESTful HTTP/JSON, loại bỏ hoàn toàn gRPC.
 
 Tài liệu này là **Bộ Quy Chuẩn Tối Thượng (Supreme Guidelines)** dành cho các AI Coding Agents (Claude, Cursor, Copilot, DeepSeek Harness, Windsurf, Aider...) và lập trình viên khi hoạt động trong toàn bộ hệ sinh thái Microservices **Nexus**. Bộ quy chuẩn này được thiết kế để giải quyết triệt để vấn đề **mất ngữ cảnh (context loss) khi chuyển phiên/chuyển máy** và **loại bỏ hoàn toàn ảo giác (zero hallucination)**.
 
@@ -73,11 +73,11 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 1 | `AGENTS.md` | Rào chắn agent riêng của Gateway và quy chuẩn thông báo lỗi. |
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Bounded Context của Gateway: Reverse proxy, port `8000`, 0 DB. |
 | 3 | `specs/01_ARCHITECTURAL_BLUEPRINT.md` | Pipeline 6 bước, Circuit Breaker, Health Prober, Redis Rate Limiting. |
-| 4 | `specs/02_GATEWAY_CONTROLLERS_ROUTING.md` | Danh mục 15 Controllers, quy tắc viết Controller Action siêu mỏng. |
+| 4 | `specs/02_GATEWAY_CONTROLLERS_ROUTING.md` | Danh mục Controllers, quy tắc viết Action siêu mỏng gọi ForwardAsync. |
 | 5 | `specs/03_GATEWAY_STATE_SECURITY.md` | Phân giải Mode (`Mock` vs `Real`), AuthMode (`Enforce` vs `Bypass`). |
 | 6 | `specs/04_MOCK_ENGINE_SEED_DATA.md` | Cấu trúc dữ liệu Seed Fixtures trong `Seeds/`. |
 | 7 | `MOCK_GUIDE.md` & `DEV_GUIDE.md` | Hướng dẫn phát triển Controller Action và tạo Seed Fixture chuẩn. |
-| 8 | `Nexus.Gateway/Contracts/shop.proto` | Nguồn sự thật duy nhất cho hợp đồng Protobuf v3. |
+| 8 | `Nexus.Gateway/Dtos/` | Nguồn sự thật hợp đồng C# DTOs cho các backend microservices. |
 | 9 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Checklist nghiệm thu: `dotnet test ApiGateway.sln -c Release`. |
 
 ---
@@ -88,8 +88,8 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Quản lý định danh, JWT, Port `8001`, DB `5433` (`usermanagement_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | 4 tầng Clean Architecture, No-Repository pattern over EF Core. |
-| 4 | `specs/02_API_GRPC_CONTRACTS.md` | Hợp đồng gRPC `UsersApi`: Register, Login, VerifyOtp, GetProfile... |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện RabbitMQ: `UserRegisteredEvent`, `UserVerifiedEvent`... |
+| 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Register, Login, VerifyOtp, Profile... |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện RabbitMQ: `SendOtpEmailIntegrationEvent`... |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Users`, `Roles`, `Permissions`, `SellerRegistrations`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 
@@ -99,9 +99,9 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | Thứ tự | File Cần Đọc | Mục Đích & Ngữ Cảnh Nắm Bắt |
 |:---:|:---|:---|
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
-| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Danh mục, sản phẩm, kho ảo, Port `8002`, DB `5434` (`category_db`). |
+| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Danh mục, sản phẩm, kho ảo, Port `8002`, DB `5434` (`catalog_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, DbContext trực tiếp trong Application. |
-| 4 | `specs/02_API_GRPC_CONTRACTS.md` | Hợp đồng gRPC `CatalogApi`: Categories, Products, Seller Inventory. |
+| 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Categories, Products, Seller Inventory. |
 | 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện Saga: `StockReservedEvent`, `StockReleasedEvent`. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Categories`, `Products`, `Inventories`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
@@ -114,7 +114,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Giỏ hàng, đơn hàng, Saga Orchestrator, Port `8003`, DB `5435` (`commerce_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Cấu trúc Clean Architecture, MassTransit State Machine. |
-| 4 | `specs/02_API_GRPC_CONTRACTS.md` | Hợp đồng gRPC `CommerceApi`: Carts, Orders, Checkout. |
+| 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Carts, Orders, Checkout. |
 | 5 | `specs/03_EVENT_MESSAGING.md` | Điều phối Checkout Saga: `OrderCreatedEvent`, `OrderCancelledEvent`. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Carts`, `CartItems`, `Orders`, `OrderItems`, `OrderSagaState`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
@@ -127,7 +127,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Append-only logs, Port `8004`, DB `5436` (`log_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, xử lý Batching log hiệu năng cao. |
-| 4 | `specs/02_API_GRPC_CONTRACTS.md` | Hợp đồng gRPC `LogApi`: Ghi log, truy vấn nhật ký, quản trị Event Types. |
+| 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Ghi log, truy vấn nhật ký, quản trị Event Types. |
 | 5 | `specs/03_EVENT_MESSAGING.md` | Lắng nghe toàn bộ integration events từ RabbitMQ để ghi audit trail. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `LogEntries` (chỉ INSERT/SELECT, cấm UPDATE/DELETE). |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
@@ -140,7 +140,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Đấu giá, bước giá, chốt phiên, Port `8005`, DB `5437` (`auction_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, đồng quy cao trong đặt giá (bidding concurrency). |
-| 4 | `specs/02_API_GRPC_CONTRACTS.md` | Hợp đồng gRPC `AuctionApi`: CreateAuction, PlaceBid, CloseAuction. |
+| 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: CreateAuction, PlaceBid, CloseAuction. |
 | 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện: `AuctionCreatedEvent`, `BidPlacedEvent`, `AuctionWonEvent`. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Auctions`, `Bids`, `AuctionWinners`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
@@ -153,7 +153,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Kho vật lý, vận đơn, cước phí ship, Port `8006`, DB `5438` (`fulfillment_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, mô hình quản lý kho bãi vật lý. |
-| 4 | `specs/02_API_GRPC_CONTRACTS.md` | Hợp đồng gRPC `FulfillmentApi`: CalculateShipping, CreateShipment, Track. |
+| 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: CalculateShipping, CreateShipment, Track. |
 | 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện: `ShipmentCreatedEvent`, `PackageDeliveredEvent`. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Warehouses`, `Shipments`, `TrackingMilestones`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
@@ -164,12 +164,12 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | Thứ tự | File Cần Đọc | Mục Đích & Ngữ Cảnh Nắm Bắt |
 |:---:|:---|:---|
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
-| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Thông báo in-app, email SMTP, Port `8007`, DB `5439` (`notification_db`). |
+| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Thông báo in-app, email SMTP/OTP, Port `8007`, DB `5439` (`notification_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, mẫu gửi thông báo đa kênh. |
-| 4 | `specs/02_API_GRPC_CONTRACTS.md` | Hợp đồng gRPC `NotificationApi`: SendNotification, ListUserNotifications. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Lắng nghe event từ toàn hệ thống để phát sinh thông báo tương ứng. |
+| 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: `NotificationsController`, `EmailController`. |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Lắng nghe event từ User (`SendOtpEmailIntegrationEvent`) và hệ thống. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Notifications`, `NotificationPreferences`. |
-| 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
+| 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test: `dotnet test Notification.sln -c Release`. |
 
 ---
 
@@ -179,7 +179,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Số dư, ví tiền, không số dư âm, Port `8008`, DB `5440` (`wallet_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, tính toàn vẹn giao dịch tài chính ACID. |
-| 4 | `specs/02_API_GRPC_CONTRACTS.md` | Hợp đồng gRPC `WalletApi`: GetBalance, Deposit, Withdraw, Deduct. |
+| 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: GetBalance, Deposit, Withdraw, Transfer. |
 | 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện Saga: `PaymentCompletedEvent`, `PaymentFailedEvent`. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Wallets`, `Transactions`, `BankAccounts`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
@@ -194,9 +194,9 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
    - Mỗi microservice chỉ truy cập cơ sở dữ liệu riêng của mình. Không query chéo database của service khác.
 3. **CẤU HÌNH CỔNG MẠNG VÀ DATABASE LÀ BẤT BIẾN**:
    - Dải port `8000`-`8008` và port database `5433`-`5440` là cố định. Cấm tự ý đổi port trong code hay config.
-4. **CHUẨN HÓA GIAO TIẾP DOWNSTREAM BẰNG RESTFUL HTTP/JSON**:
-   - Hệ thống chuyển đổi toàn bộ giao tiếp đồng bộ giữa ApiGateway và các Backend Microservices sang **RESTful API (JSON over HTTP)** qua `GatewayBaseController.ForwardAsync` và `HttpBackendCaller`.
-   - Loại bỏ phụ thuộc vào biên dịch Protobuf `shop.proto`, tránh drift hợp đồng giữa các service repo và tăng tốc độ phát triển. DTOs được quản lý kiểu strongly-typed tại từng service.
+4. **CHUẨN HÓA GIAO TIẾP ĐỒNG BỘ 100% BẰNG RESTFUL HTTP/JSON (CẤM SỬ DỤNG gRPC)**:
+   - Hệ thống chuyển đổi toàn diện giao tiếp đồng bộ giữa ApiGateway và các Backend Microservices sang **RESTful API (JSON over HTTP)** qua `GatewayBaseController.ForwardAsync` và `RestDownstreamDispatcher`.
+   - Bãi bỏ và loại bỏ hoàn toàn các tệp Protobuf `shop.proto`. DTOs được quản lý kiểu strongly-typed tại từng service (`Dtos/`).
 5. **CẤM TỰ Ý SỬA ĐỔI BIẾN MÔI TRƯỜNG, SECRET VÀ KEY BÍ MẬT (MANDATORY HUMAN-IN-THE-LOOP FOR SECRETS)**:
    - **Tuyệt đối CẤM mọi AI Coding Agent tự ý sửa đổi, thay thế, xóa hoặc ghi đè các biến môi trường (`.env`, `.env.*`), Connection Strings, API Keys, JWT Secrets, chứng chỉ hoặc bất kỳ thông tin bí mật (credentials/secrets) nào trong toàn bộ hệ thống.**
    - **Bắt buộc phải xin ý kiến và nhận được sự đồng ý rõ ràng (explicit approval) từ người dùng trước khi thực hiện bất kỳ thay đổi nào liên quan đến biến môi trường hoặc tài khoản bí mật.**

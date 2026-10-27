@@ -3,7 +3,8 @@
 
 > **Trạng thái tài liệu:** Đã phê duyệt (Approved) & Có hiệu lực trên toàn hệ thống  
 > **Áp dụng cho:** ApiGateway và toàn bộ 8 Microservices (`UserService`, `CatalogService`, `CommerceService`, `LogService`, `AuctionService`, `FulfillmentService`, `NotificationService`, `WalletService`)  
-> **Nguồn lưu trữ trung tâm:** `docs/adr/ADR.md` (Thư mục gốc của repository)
+> **Nguồn lưu trữ trung tâm:** `docs/adr/ADR.md` (Thư mục gốc của repository)  
+> **Cập nhật kiến trúc chiến lược:** 2026-10-27 — Chuyển dịch toàn diện sang 100% RESTful HTTP/JSON cho giao tiếp đồng bộ, loại bỏ hoàn toàn gRPC.
 
 ---
 
@@ -16,10 +17,10 @@
 | **ADR 03** | Ranh giới miền nghiệp vụ (DDD Bounded Contexts) & Database-Per-Service | `Approved` |
 | **ADR 04** | Cấu trúc mã nguồn Clean Architecture 4 tầng chuẩn mực cho Microservices | `Approved` |
 | **ADR 05** | Nguyên tắc No-Repository Pattern bọc ngoài Entity Framework Core 8 | `Approved` |
-| **ADR 06** | Hai trục giao tiếp liên service: gRPC (Đồng bộ) & RabbitMQ (Bất đồng bộ) | `Approved` |
-| **ADR 07** | Đơn nguồn sự thật (Single Source of Truth) cho Hợp đồng gRPC Protobuf | `Approved` |
+| **ADR 06** | Hai trục giao tiếp liên service: RESTful HTTP/JSON (Đồng bộ) & RabbitMQ (Bất đồng bộ) — CẤM gRPC | `Approved` |
+| **ADR 07** | Chuẩn hóa hợp đồng dữ liệu RESTful DTOs & Đóng gói JSON — Thay thế Protobuf | `Approved` |
 | **ADR 08** | Điều phối giao dịch phân tán bằng Saga State Machine & Transactional Outbox | `Approved` |
-| **ADR 09** | Kiến trúc 3 khối cho API Gateway & Bộ điều phối Mock/Real thông minh | `Approved` |
+| **ADR 09** | Kiến trúc 3 khối cho API Gateway & Bộ điều phối Mock/Real thông minh (REST Downstream) | `Approved` |
 | **ADR 10** | Hai trục trạng thái Gateway: Service Mode (Mock/Real) vs Auth Mode (Standard/Bypass) | `Approved` |
 | **ADR 11** | Chiến lược bảo mật JWT Bearer & Ma trận phân quyền vai trò RBAC 5 cấp bậc | `Approved` |
 | **ADR 12** | Giới hạn tần suất gọi phân tán (Distributed Rate Limiting) bằng Redis với Fail-Open | `Approved` |
@@ -36,11 +37,11 @@
 ### ADR 01: Nền tảng công nghệ cốt lõi: .NET 8 (C# 12) toàn hệ sinh thái
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Hệ thống Nexus là sàn thương mại điện tử kết hợp đấu giá trực tuyến quy mô lớn, đòi hỏi thông lượng cao, độ trễ thấp và khả năng scale linh hoạt. Cần một nền tảng công nghệ đồng nhất cho cả Gateway và 8 Microservices để tối ưu hóa chi phí phát triển, chia sẻ mã nguồn hợp đồng (Protobuf/Contracts) và tối đa hóa hiệu năng runtime.
+Hệ thống Nexus là sàn thương mại điện tử kết hợp đấu giá trực tuyến quy mô lớn, đòi hỏi thông lượng cao, độ trễ thấp và khả năng scale linh hoạt. Cần một nền tảng công nghệ đồng nhất cho cả Gateway và 8 Microservices để tối ưu hóa chi phí phát triển, chia sẻ mã nguồn hợp đồng và tối đa hóa hiệu năng runtime.
 
 #### 2. Quyết định kiến trúc (Decision)
 - Toàn bộ Gateway và các microservices sử dụng thống nhất **.NET 8 LTS** với ngôn ngữ **C# 12**.
-- Tận dụng các tính năng mới nhất của .NET 8: Native gRPC client/server, System.Text.Json source generation, TimeProvider, Minimal APIs & Controller actions kết hợp, OpenTelemetry native instrumentation.
+- Tận dụng các tính năng mới nhất của .NET 8: Tối ưu hóa I/O với Kestrel HTTP/1.1 & HTTP/2 pooling, System.Text.Json source generation, TimeProvider, ASP.NET Core MVC & Minimal APIs, OpenTelemetry native instrumentation.
 
 #### 3. Hệ quả (Consequences)
 - **Tích cực:** Tối ưu hóa hiệu năng I/O; đội ngũ kỹ thuật chỉ cần làm chủ một stack duy nhất; dễ dàng chia sẻ contracts và tooling CI/CD.
@@ -59,7 +60,7 @@ Nếu để Client (Web Next.js / Mobile App) gọi trực tiếp vào từng mi
 #### 2. Quyết định kiến trúc (Decision)
 - Xây dựng **1 Edge API Gateway duy nhất** (`ApiGateway` - HTTP Port `8000`) làm cổng tiếp nhận duy nhất cho toàn bộ lưu lượng ngoại vi từ Client.
 - Gateway là **Thin Edge Reverse Proxy**:
-  - Chỉ đảm nhận các trách nhiệm hạ tầng: Định tuyến (Routing), Chuyển đổi giao thức (HTTP REST sang gRPC), Xác thực JWT, Kiểm tra quyền RBAC, Rate Limiting phân tán, Điều phối Mock/Real.
+  - Chỉ đảm nhận các trách nhiệm hạ tầng: Định tuyến (Routing), Chuyển tiếp REST downstream sang các backend microservices, Xác thực JWT, Kiểm tra quyền RBAC, Rate Limiting phân tán, Điều phối Mock/Real.
   - **Tuyệt đối KHÔNG chứa cơ sở dữ liệu nghiệp vụ**, không lưu trữ in-memory stateful data của các service khác.
 - Phía sau Gateway là **8 Backend Microservices độc lập**: `UserService` (8001), `CatalogService` (8002), `CommerceService` (8003), `LogService` (8004), `AuctionService` (8005), `FulfillmentService` (8006), `NotificationService` (8007), `WalletService` (8008).
 
@@ -76,15 +77,15 @@ Các hệ thống microservices thường gặp thất bại lớn nếu dùng c
 
 #### 2. Quyết định kiến trúc (Decision)
 - Áp dụng triệt để nguyên tắc **Domain-Driven Design (DDD) Bounded Contexts** và **Database-Per-Service**:
-  - Mỗi microservice sở hữu cơ sở dữ liệu **PostgreSQL vật lý riêng biệt** trên các port mạng riêng biệt (`5433` đến `5440`, mật khẩu mặc định `MatkhaucuaTui123@`).
+  - Mỗi microservice sở hữu cơ sở dữ liệu **PostgreSQL vật lý riêng biệt** trên Neon Cloud hoặc port riêng biệt (`5433` đến `5440`).
   - **CẤM TUYỆT ĐỐI:** Truy cập trực tiếp vào DB của service khác (cấm cross-database query, cấm tạo foreign key trỏ sang DB khác).
-  - Mọi trao đổi hoặc tra cứu dữ liệu liên service bắt buộc phải qua **gRPC Query** (đồng bộ) hoặc **Domain Event qua RabbitMQ** (bất đồng bộ).
+  - Mọi trao đổi hoặc tra cứu dữ liệu liên service bắt buộc phải qua **RESTful API Query** (đồng bộ) hoặc **Domain Event qua RabbitMQ** (bất đồng bộ).
 
 #### 3. Phân bổ Database vật lý:
-| Service | Bounded Context | Tên DB | Port DB |
+| Service | Bounded Context | Tên DB | Port DB Local |
 |:---|:---|:---|:---:|
 | `UserService` | Identity & Access Management | `usermanagement_db` | `5433` |
-| `CatalogService` | Product & Inventory Catalog | `category_db` | `5434` |
+| `CatalogService` | Product & Inventory Catalog | `catalog_db` | `5434` |
 | `CommerceService` | Shopping Cart & Order Lifecycle | `commerce_db` | `5435` |
 | `LogService` | Centralized Logging & System Auditing | `log_db` | `5436` |
 | `AuctionService` | Real-time Bidding & Auction Room | `auction_db` | `5437` |
@@ -105,8 +106,8 @@ Mỗi microservice trong `src/Services/{ServiceName}/` được tổ chức thà
 [ ServiceName.sln ]
 ├── 1. ServiceName.Domain           (Entities, Value Objects, Domain Events, Enums)
 ├── 2. ServiceName.Application      (Commands, Queries, DTOs, Validators, Interfaces)
-├── 3. ServiceName.Infrastructure   (DbContext, EF Core Configurations, MassTransit Consumers, Repositories nội bộ)
-└── 4. ServiceName.Api              (gRPC Services, Endpoints, DI Configuration, Middlewares)
+├── 3. ServiceName.Infrastructure   (DbContext, EF Core Configurations, MassTransit Consumers)
+└── 4. ServiceName.Api              (RESTful Controllers, Endpoints, DI Configuration, Middlewares)
 ```
 - **Quy tắc phụ thuộc bất biến (Dependency Inversion Principle):**
   - `Domain` độc lập 100%, không tham chiếu bất kỳ project nào khác.
@@ -120,10 +121,7 @@ Mỗi microservice trong `src/Services/{ServiceName}/` được tổ chức thà
 ### ADR 05: Nguyên tắc No-Repository Pattern bọc ngoài Entity Framework Core 8
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Một anti-pattern rất phổ biến trong cộng đồng .NET là viết thêm một lớp `GenericRepository<T>` và `IUnitOfWork` bọc ngoài Entity Framework Core. Điều này dẫn đến:
-- Che khuất và làm mất các tính năng mạnh mẽ của EF Core: `IQueryable`, `AsNoTracking()`, `Include()`, Linq projection, batch updates.
-- Tạo ra hàng chục file wrapper vô nghĩa chỉ làm nhiệm vụ chuyển tiếp `_dbSet.AddAsync()` hay `_dbSet.FindAsync()`.
-- Bản thân `DbContext` đã chính là một **Unit of Work** và `DbSet<T>` đã chính là một **Repository** hoàn chỉnh.
+Một anti-pattern rất phổ biến trong cộng đồng .NET là viết thêm một lớp `GenericRepository<T>` và `IUnitOfWork` bọc ngoài Entity Framework Core. Điều này dẫn đến che khuất các tính năng mạnh mẽ của EF Core (`IQueryable`, `AsNoTracking()`, `Include()`) và tạo ra hàng chục file wrapper vô nghĩa.
 
 #### 2. Quyết định kiến trúc (Decision)
 - **CẤM TUYỆT ĐỐI:** Tạo các lớp `GenericRepository<T>`, `IRepository<T>`, `IUnitOfWork` bọc ngoài EF Core.
@@ -132,71 +130,74 @@ Một anti-pattern rất phổ biến trong cộng đồng .NET là viết thêm
 
 ---
 
-### ADR 06: Hai trục giao tiếp liên service: gRPC (Đồng bộ) & RabbitMQ (Bất đồng bộ)
+### ADR 06: Hai trục giao tiếp liên service: RESTful HTTP/JSON (Đồng bộ) & RabbitMQ (Bất đồng bộ) — CẤM gRPC
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Cần ranh giới kỹ thuật rõ ràng để các lập trình viên và AI agents không lạm dụng giao tiếp đồng bộ (gây cascading failure) hoặc lạm dụng giao tiếp bất đồng bộ (gây phức tạp không cần thiết cho các tác vụ truy vấn tức thì).
+Việc sử dụng gRPC trước đây gây ra rào cản nghiêm trọng trong quá trình phát triển phân tán: 5/9 microservices không có gRPC server, file `shop.proto` bị lệch hash/drift, việc sinh mã phức tạp và khó khăn khi debug bằng cURL/Postman thông thường. Cần một tiêu chuẩn giao tiếp đơn giản, chuẩn mực, phổ quát và dễ dàng kiểm thử độc lập.
 
 #### 2. Quyết định kiến trúc (Decision)
 Phân định dứt khoát 2 kênh giao tiếp:
-1. **Giao tiếp Đồng bộ (Synchronous Query/Command) qua gRPC (Protobuf v3 - HTTP/2)**:
-   - Dành cho:
-     - Gateway gọi xuống Backend Services để lấy dữ liệu hiển thị (ví dụ: `ListProducts`, `GetCart`, `GetProfile`).
-     - Tác vụ cần xác nhận kết quả tức thì trong mạng nội bộ với độ trễ cực thấp (< 5ms).
+1. **Giao tiếp Đồng bộ (Synchronous Query/Command) qua RESTful HTTP/JSON**:
+   - **BẮT BUỘC 100%**: Toàn bộ giao tiếp đồng bộ từ ApiGateway xuống Microservices và giữa các Microservices với nhau sử dụng chuẩn **RESTful Web API** (JSON qua HTTP/1.1 hoặc HTTP/2).
+   - **CẤM TUYỆT ĐỐI**: Triển khai hoặc sử dụng gRPC Server/Client cho các dịch vụ đồng bộ trong toàn bộ hệ thống.
+   - Định dạng dữ liệu: JSON chuẩn `camelCase`, phân trang qua query parameters, phản hồi bọc thống nhất trong `ApiResponse<T>`.
 2. **Giao tiếp Bất đồng bộ (Asynchronous Event-Driven) qua RabbitMQ & MassTransit 8.3.0**:
    - Dành cho:
-     - Các sự kiện trạng thái thay đổi (Domain Events): `OrderSubmittedEvent`, `StockReservedEvent`, `PaymentCompletedEvent`.
+     - Các sự kiện trạng thái thay đổi (Domain Events): `OrderSubmittedEvent`, `SendOtpEmailIntegrationEvent`, v.v.
      - Kích hoạt các luồng xử lý phi tập trung không chặn người dùng (gửi email thông báo, ghi log hệ thống).
-     - Điều phối quy trình nghiệp vụ phức tạp liên service qua Saga State Machine.
+     - Điều phối quy trình nghiệp vụ phức tạp liên service qua Saga State Machine & Transactional Outbox.
 
 ---
 
-### ADR 07: Đơn nguồn sự thật (Single Source of Truth) cho Hợp đồng gRPC Protobuf
+### ADR 07: Chuẩn hóa hợp đồng dữ liệu RESTful DTOs & Đóng gói JSON — Thay thế Protobuf
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Khi nhiều service giao tiếp qua gRPC, việc mỗi service tự chỉnh sửa file `.proto` riêng lẻ sẽ dẫn đến sai lệch kiểu dữ liệu, gãy contract nhị phân và lỗi runtime tại môi trường Production.
+Tệp Protobuf nhị phân cũ gây phụ thuộc chéo giữa các service, khó duy trì tính tương thích ngược và thường xuyên bị out-of-sync khi nhiều team cùng làm việc.
 
 #### 2. Quyết định kiến trúc (Decision)
-- Toàn bộ định nghĩa gRPC cho 8 Microservices được lưu trữ tại **Đơn nguồn sự thật duy nhất (Single Source of Truth)**:
-  `src/Services/ApiGateway/Nexus.Gateway/Contracts/shop.proto`
-- **Quy tắc tiến hóa hợp đồng an toàn (Contract Evolution):**
-  - Mọi thay đổi về RPC hoặc Message bắt buộc phải bắt đầu từ file `shop.proto` này.
-  - Sau khi cập nhật, file được copy/đồng bộ sang thư mục `Contracts/` của service backend đích.
-  - **CẤM TUYỆT ĐỐI:** Thay đổi hoặc xóa bỏ số thứ tự trường (Field Tag Number) đã có trong `.proto`. Chỉ thêm trường mới với field tag tăng dần hoặc đánh dấu `[deprecated = true]`.
+- **Loại bỏ hoàn toàn các tệp Protobuf (`*.proto`)**: Toàn bộ các file `shop.proto` bị xóa bỏ khỏi Gateway và các microservices.
+- **Nguồn sự thật hợp đồng RESTful DTOs**:
+  - Tại Gateway: `src/Services/ApiGateway/Nexus.Gateway/Dtos/{Service}/`
+  - Tại Microservice: `src/Services/{Service}/{Service}.Application/DTOs/` hoặc `Api/Controllers/`
+- **Quy chuẩn Casing & Kiểu Dữ Liệu**:
+  - JSON API: `camelCase`.
+  - C# DTO: `PascalCase`.
+  - Enums: Serialize dạng chuỗi (`JsonStringEnumConverter`) hoặc số nguyên tương ứng.
+  - Mọi phản hồi thành công bọc trong `ApiResponse<T>`, phản hồi danh sách bọc trong `ApiResponse<PagedData<T>>`, lỗi bọc trong `ApiErrorResponse` chuẩn RFC 9110.
 
 ---
 
 ### ADR 08: Điều phối giao dịch phân tán bằng Saga State Machine & Transactional Outbox
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Một quy trình nghiệp vụ như **Đặt hàng (Checkout)** đòi hỏi sự tham gia của 4 service: `CommerceService` (tạo đơn) $\rightarrow$ `CatalogService` (giữ kho) $\rightarrow$ `WalletService` (trừ tiền) $\rightarrow$ `FulfillmentService` (tạo vận đơn). Vì mỗi service dùng một DB riêng biệt, không thể dùng ACID transaction thông thường hay 2-Phase Commit (2PC).
+Quy trình nghiệp vụ Checkout đòi hỏi sự tham gia của 4 service: `CommerceService` (tạo đơn) $\rightarrow$ `CatalogService` (giữ kho) $\rightarrow$ `WalletService` (trừ tiền) $\rightarrow$ `FulfillmentService` (tạo vận đơn). Vì mỗi service dùng một DB riêng biệt, không thể dùng ACID transaction thông thường.
 
 #### 2. Quyết định kiến trúc (Decision)
 1. **Saga State Machine với Giao dịch bù trừ (Compensating Transactions):**
    - Áp dụng **Commerce Saga State Machine** quản lý vòng đời đơn hàng: `PENDING` $\rightarrow$ `STOCK_RESERVED` $\rightarrow$ `PAID` $\rightarrow$ `COMPLETED`.
-   - Nếu bất kỳ bước nào thất bại, hệ thống tự động kích hoạt sự kiện bù trừ:
-     - *Ví dụ:* Trừ tiền ví thất bại (`PaymentFailedEvent`) $\rightarrow$ `CatalogService` lắng nghe và tự động **nhả kho ảo đã giữ** (`ReleaseStock`) $\rightarrow$ `CommerceService` chuyển trạng thái đơn sang `CANCELLED`.
+   - Nếu bất kỳ bước nào thất bại, hệ thống tự động kích hoạt sự kiện bù trừ (`ReleaseStock`, `PaymentFailedEvent`, `CANCELLED`).
 2. **Transactional Outbox & Inbox Pattern (MassTransit):**
    - Mọi service khi lưu dữ liệu DB phải ghi event vào bảng `OutboxMessage` trong cùng một Local Transaction.
    - Background worker tự động đọc Outbox và phát lên RabbitMQ $\rightarrow$ Đảm bảo không bao giờ mất message (At-least-once delivery).
-   - Phía Consumer sử dụng bảng `InboxMessage` dựa trên `MessageId` để đảm bảo tính Idempotent (chống xử lý trùng lặp 2 lần).
+   - Phía Consumer sử dụng bảng `InboxMessage` dựa trên `MessageId` để đảm bảo tính Idempotent.
 
 ---
 
-### ADR 09: Kiến trúc 3 khối cho API Gateway & Bộ điều phối Mock/Real thông minh
+### ADR 09: Kiến trúc 3 khối cho API Gateway & Bộ điều phối Mock/Real thông minh (REST Downstream)
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Trong quá trình phát triển, các team frontend và backend thường phát triển song song. Nếu Gateway phụ thuộc cứng vào việc backend phải chạy thì frontend sẽ bị nghẽn (block). Gateway cần khả năng phục vụ độc lập dữ liệu Mock mà không cần sửa code controller khi backend sẵn sàng.
+Trong quá trình phát triển, các team frontend và backend thường phát triển song song. Gateway cần khả năng phục vụ độc lập dữ liệu Mock mà không cần sửa code controller khi backend sẵn sàng.
 
 #### 2. Quyết định kiến trúc (Decision)
 Gateway được thiết kế theo **mô hình 3 khối phân tách hoàn toàn (3-Tier Decoupling)**:
 1. **Khối Đầu Vào (Input - Controllers):**
-   - Các controller RESTful chuẩn mực (`[ApiController]`), nhận Request DTOs và gọi điều phối.
+   - Các controller RESTful chuẩn mực (`[ApiController]`), kế thừa `GatewayBaseController`.
+   - Dùng các helper `ForwardAsync`, `ForwardPagedAsync`, `ForwardNoContentAsync` để ủy quyền điều phối.
    - **Tuyệt đối không chứa logic `if (mode == "Mock")`**.
 2. **Khối Điều Phối Trung Tâm (Dispatching Core - GatewayDispatcher):**
    - `ModeEvaluator`: Tự động nhận diện Service Mode (`Mock` hay `Real`) từ cấu hình hoặc request header.
-   - **Nếu Mode = Mock:** `MockDataMapper` nạp file fixture JSON tương ứng trong `Seeds/{service}/{operation}.json`, kiểm tra tính hợp lệ cú pháp qua Protobuf MessageParser của gRPC, và trả về dữ liệu mẫu.
-   - **Nếu Mode = Real:** `GrpcServiceCaller` tự động forward token JWT, Idempotency-Key và TraceId xuống gRPC client để gọi backend thật.
+   - **Nếu Mode = Mock:** `MockDataMapper` nạp file fixture JSON tương ứng trong `Seeds/{service}/{operation}.json`, trả về dữ liệu mẫu trong trường `data`.
+   - **Nếu Mode = Real:** `HttpBackendCaller` tự động chuyển tiếp request HTTP REST downstream (`HttpClient`) xuống địa chỉ backend tương ứng (port `8001`-`8008`), chuyển tiếp kèm token JWT, Idempotency-Key và TraceId.
 3. **Khối Đầu Ra (Output - ApiResponseFactory):**
    - Đóng gói dữ liệu thành envelope chuẩn `ApiResponse<T>` hoặc `ApiResponse<PagedData<T>>`.
 
@@ -205,9 +206,7 @@ Gateway được thiết kế theo **mô hình 3 khối phân tách hoàn toàn 
 ### ADR 10: Hai trục trạng thái Gateway: Service Mode vs Auth Mode
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Frontend cần 2 khả năng thử nghiệm độc lập:
-- Muốn test API của 1 service cụ thể bằng mock data trong khi các service khác đang chạy thật.
-- Muốn test nhanh giao diện UI mà không cần đăng nhập tạo token.
+Frontend cần khả năng test API bằng mock data độc lập trong khi backend khác chạy thật, đồng thời muốn test giao diện UI mà không cần đăng nhập tạo token.
 
 #### 2. Quyết định kiến trúc (Decision)
 Tách biệt Gateway thành **2 trục trạng thái độc lập hoàn toàn**:
@@ -228,8 +227,8 @@ Tách biệt Gateway thành **2 trục trạng thái độc lập hoàn toàn**:
 Hệ thống cần quản lý chặt chẽ ranh giới bảo mật giữa người dùng vãng lai, khách mua hàng, người bán hàng, nhân viên vận hành và quản trị viên.
 
 #### 2. Quyết định kiến trúc (Decision)
-- **Token Format:** JWT Bearer Token chuẩn RFC 7519, ký HMAC-SHA256 hoặc RSA-256 bởi `UserService`.
-- **Chuyển tiếp danh tính (Identity Propagation):** Gateway sau khi xác thực token sẽ forward nguyên vẹn header `Authorization: Bearer <token>` vào gRPC Metadata xuống backend.
+- **Token Format:** JWT Bearer Token chuẩn RFC 7519, ký HMAC-SHA256 bởi `UserService`.
+- **Chuyển tiếp danh tính (Identity Propagation):** Gateway sau khi xác thực token sẽ forward nguyên vẹn header `Authorization: Bearer <token>` cùng các HTTP headers định danh (`x-user-id`, `x-user-roles`, `x-user-email`) sang HTTP REST request downstream xuống backend.
 - **Ma trận phân quyền RBAC 5 cấp bậc có tính kế thừa:**
   1. `anonymous` (Cấp 0): Khách vãng lai, chỉ được xem danh mục, sản phẩm, đăng ký, đăng nhập.
   2. `buyer` / `authenticated` (Cấp 1): Khách hàng đăng nhập, quản lý giỏ hàng, đặt hàng, ví tiền, đấu giá.
@@ -243,63 +242,64 @@ Hệ thống cần quản lý chặt chẽ ranh giới bảo mật giữa ngư�
 ### ADR 12: Giới hạn tần suất gọi phân tán (Distributed Rate Limiting) bằng Redis với Fail-Open
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Các API public của Gateway dễ bị tấn công brute-force mật khẩu hoặc spam request làm quá tải backend microservices. Việc giới hạn tần suất trên bộ nhớ cục bộ của 1 instance Gateway sẽ không có tác dụng khi scale nhiều instance Gateway.
+Cần bảo vệ toàn bộ cụm Microservices khỏi tấn công từ chối dịch vụ (DoS), brute-force đăng nhập và spam đặt hàng, đồng thời không làm nghẽn môi trường lập trình local khi Redis chưa bật.
 
 #### 2. Quyết định kiến trúc (Decision)
-- Áp dụng **Distributed Sliding Window Rate Limiting** sử dụng Redis (`RedisRateLimitMiddleware`).
-- Khóa Redis được định danh theo: `{prefix}:rate:{service}:{identity}:{window_bucket}` với `identity` ưu tiên `UserId` (từ token sub claim) hoặc IP kết nối.
-- **Chính sách Fail-Open linh hoạt:**
-  - Trong môi trường `Development`: Nếu Redis chưa khởi động hoặc gặp sự cố kết nối, Gateway tự động cho request đi qua (Fail-Open) kèm log cảnh báo, không làm gián đoạn lập trình viên.
-  - Trong môi trường `Production`: Áp dụng chính sách Fail-Closed an toàn, trả về HTTP `503 Service Unavailable` nếu hệ thống kiểm soát lưu lượng bị ngắt quãng.
+- Áp dụng **Sliding Window Rate Limiting** bằng Redis tại Gateway (`StackExchange.Redis`).
+- Phân chia hạn ngạch (Rate Limit Quotas):
+  - `Default API`: 100 requests / phút / IP.
+  - `Auth / Login / Register / OTP`: 10 requests / phút / IP.
+  - `Order / Checkout`: 20 requests / phút / User ID.
+- **Chính sách Fail-Open an toàn cho Developer:**
+  - Nếu Redis offline hoặc mất kết nối trong môi trường `Development`, Gateway ghi nhận cảnh báo `LogWarning` và tự động cho request đi qua (không chặn 500/503), giúp quá trình lập trình diễn ra mượt mà.
 
 ---
 
 ### ADR 13: Quy chuẩn đóng gói phản hồi (Unified Response Envelope) & Zero-Validation Controller
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Trước đây, Controller phải viết nhiều dòng kiểm tra thủ công (`if (!pagination.IsValid) return Bad(...)`), gây phình to mã nguồn và khiến cấu trúc JSON trả về giữa thành công và thất bại không đồng nhất.
+Frontend cần cấu trúc JSON đồng nhất 100% trên toàn bộ các endpoints để xây dựng Interceptor xử lý lỗi và trích xuất dữ liệu tự động, tránh việc mỗi endpoint trả một kiểu dữ liệu khác nhau.
 
 #### 2. Quyết định kiến trúc (Decision)
-1. **Quy chuẩn Response Envelope thống nhất:**
-   - Mọi API thành công trả về cấu trúc:
-     ```json
-     {
-       "success": true,
-       "statusCode": 200,
-       "message": "Thông báo thành công",
-       "data": { ... },
-       "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-...",
-       "timestamp": "2026-10-16T12:00:00Z"
-     }
-     ```
-   - Mọi API thất bại tuân theo chuẩn IETF RFC 9110 / ProblemDetails:
-     ```json
-     {
-       "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-       "title": "One or more validation errors occurred.",
-       "status": 400,
-       "errorCode": "VAL_INVALID_INPUT",
-       "detail": "Mô tả lỗi chi tiết",
-       "errors": { "Field": ["Thông báo lỗi"] },
-       "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-...",
-       "timestamp": "2026-10-16T12:00:00Z"
-     }
-     ```
-2. **Zero-Validation Controller & Centralized Exception Handling:**
-   - Controller **hoàn toàn không chứa `try-catch`** và **không tự tạo response `.Error(...)` thủ công**.
-   - Kiểm tra input được chuẩn hóa qua các helper tự động ném `GatewayInputException`:
-     - `pagination.EnsureValid();`
-     - `ValidationHelpers.EnsureGuid(id, "Field");`
-     - `ValidationHelpers.EnsureRequired(text, "Field");`
-     - `MoneyPrecision.EnsurePositive(price, "Field");`
-   - `GatewayExceptionHandler` trung tâm tự động bắt `GatewayInputException`, `RpcException`, `TimeoutException` và map sang mã HTTP cùng envelope lỗi chuẩn xác.
+- **Chuẩn phản hồi thành công:**
+  ```json
+  {
+    "success": true,
+    "statusCode": 200,
+    "message": "Operation completed successfully.",
+    "data": { ... },
+    "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+  }
+  ```
+- **Chuẩn phản hồi danh sách phân trang:**
+  ```json
+  {
+    "success": true,
+    "statusCode": 200,
+    "message": "Data retrieved successfully.",
+    "data": {
+      "items": [ ... ],
+      "pageIndex": 1,
+      "pageSize": 20,
+      "totalCount": 100,
+      "totalPages": 5,
+      "hasPreviousPage": false,
+      "hasNextPage": true
+    },
+    "traceId": "..."
+  }
+  ```
+- **Chuẩn phản hồi lỗi (RFC 9110 / ProblemDetails):**
+  - Toàn bộ thông báo lỗi viết bằng **100% Tiếng Anh, Sentence case**.
+  - Mã lỗi viết dạng **SCREAMING_SNAKE_CASE** (ví dụ: `EMAIL_ALREADY_EXISTS`, `INVALID_CREDENTIALS`).
+  - `GatewayExceptionHandler` trung tâm tự động bắt `GatewayInputException`, `HttpRequestException`, `TimeoutException` và map sang mã HTTP cùng envelope lỗi chuẩn xác.
 
 ---
 
 ### ADR 14: Giám sát phân tán (Distributed Tracing & Observability) với OpenTelemetry W3C
 
 #### 1. Ngữ cảnh & Vấn đề (Context)
-Trong hệ thống phân tán gồm 1 Gateway và 8 Microservices giao tiếp chéo qua cả gRPC và RabbitMQ, việc truy tìm nguyên nhân gốc rễ (Root Cause) khi một request bị chậm hoặc lỗi là cực kỳ khó khăn nếu không có mã truy vết xuyên suốt.
+Trong hệ thống phân tán gồm 1 Gateway và 8 Microservices giao tiếp qua RESTful HTTP và RabbitMQ, việc truy tìm nguyên nhân gốc rễ (Root Cause) khi một request bị chậm hoặc lỗi là cực kỳ khó khăn nếu không có mã truy vết xuyên suốt.
 
 #### 2. Quyết định kiến trúc (Decision)
 - Sử dụng chuẩn **W3C TraceContext** và **OpenTelemetry (OTel)**.
@@ -307,9 +307,9 @@ Trong hệ thống phân tán gồm 1 Gateway và 8 Microservices giao tiếp ch
 - `TraceId` này được gắn vào:
   - Header phản hồi HTTP `X-Trace-Id` gửi về cho Client.
   - Trường `traceId` trong JSON body của cả phản hồi Success và Error.
-  - Header gRPC Metadata chuyển tiếp xuống tất cả các microservices backend.
+  - Header HTTP downstream `X-Trace-Id` và `traceparent` chuyển tiếp xuống các microservices backend.
   - Header của các message Event bắn lên RabbitMQ.
-- Cho phép tra cứu một giao dịch từ Frontend $\rightarrow$ Gateway $\rightarrow$ Backend gRPC $\rightarrow$ RabbitMQ Consumer trên các hệ thống giám sát tập trung (Jaeger, Prometheus, Grafana).
+- Cho phép tra cứu một giao dịch từ Frontend $\rightarrow$ Gateway $\rightarrow$ Backend REST $\rightarrow$ RabbitMQ Consumer trên các hệ thống giám sát tập trung (Jaeger, Prometheus, Grafana).
 
 ---
 

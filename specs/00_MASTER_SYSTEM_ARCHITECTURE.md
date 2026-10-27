@@ -1,7 +1,7 @@
 # 00 — KIẾN TRÚC TỔNG THỂ HỆ THỐNG (MASTER SYSTEM ARCHITECTURE)
 
-> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuyển đổi chuẩn giao tiếp downstream giữa ApiGateway và các Microservices sang **RESTful (JSON over HTTP)**; giao tiếp bất đồng bộ qua **RabbitMQ MassTransit 8.3.0**.
-> **Nguồn sự thật:** code và cấu hình Gateway/Microservices (`PLAN-20261027-0300-GATEWAY-REST-DOWNSTREAM-MIGRATION.md`).
+> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuyển dịch toàn diện chuẩn giao tiếp đồng bộ liên service và từ ApiGateway sang **100% RESTful (JSON over HTTP)**; **CẤM TUYỆT ĐỐI gRPC**. Giao tiếp bất đồng bộ qua **RabbitMQ MassTransit 8.3.0**.
+> **Nguồn sự thật:** code và cấu hình Gateway/Microservices (`PLAN-20261027-1400-GLOBAL-RESTFUL-PIVOT-AND-GATEWAY-DECOUPLING.md`).
 > **Cập nhật lần cuối:** 2026-10-27.
 
 Tài liệu này cung cấp sơ đồ kiến trúc mức cao (System Architecture), ranh giới miền (Domain-Driven Design Bounded Contexts) và nguyên lý vận hành cốt lõi của hệ sinh thái Microservices **Nexus**.
@@ -18,7 +18,7 @@ Tài liệu này cung cấp sơ đồ kiến trúc mức cao (System Architectur
        │       ApiGateway       │ ──(RateLimit Cache)──▶ [ Redis : 6379 ]
        └────────────────────────┘
                    │
-                   ├── (RESTful HTTP/JSON Downstream - Synchronous Query/Command)
+                   ├── (RESTful HTTP/JSON Downstream - Synchronous Query/Command — CẤM gRPC)
                    ▼
   ┌───────────────┬─┴─────────────┬───────────────┬───────────────┐
   ▼               ▼               ▼               ▼               ▼
@@ -48,9 +48,9 @@ UserService    CatalogService  CommerceService  LogService     AuctionService ..
    - Gateway là cổng vào duy nhất cho mọi Client, chịu trách nhiệm xác thực JWT, phân quyền RBAC, Rate Limiting và chuyển tiếp REST downstream sang các backend microservices qua HTTP/JSON.
    - Gateway **KHÔNG** chứa database nghiệp vụ, không chứa in-memory DB hay logic tính toán phức tạp.
 
-3. **Hai Trục Giao Tiếp Song Song**:
-   - **Đồng bộ (Synchronous Query/Command)**: Dùng **RESTful HTTP/JSON** cho các tác vụ cần kết quả tức thì (xác thực token, kiểm tra số dư, đọc chi tiết sản phẩm).
-   - **Bất đồng bộ (Asynchronous Event-Driven)**: Dùng **RabbitMQ + MassTransit 8.3.0** cho các sự kiện trạng thái thay đổi (`OrderCreated`, `InventoryReserved`, `PaymentCompleted`, `LogRecorded`).
+3. **Hai Trục Giao Tiếp Song Song (CẤM SỬ DỤNG gRPC)**:
+   - **Đồng bộ (Synchronous Query/Command)**: Dùng **RESTful HTTP/JSON** cho các tác vụ cần kết quả tức thì (xác thực token, kiểm tra số dư, đọc chi tiết sản phẩm). Bãi bỏ hoàn toàn Protobuf và gRPC.
+   - **Bất đồng bộ (Asynchronous Event-Driven)**: Dùng **RabbitMQ + MassTransit 8.3.0** cho các sự kiện trạng thái thay đổi (`OrderCreated`, `InventoryReserved`, `PaymentCompleted`, `LogRecorded`, `SendOtpEmailIntegrationEvent`).
 
 4. **Quản Lý Giao Dịch Phân Tán Bằng Saga State Machine**:
    - Không sử dụng Distributed Transaction / 2-Phase Commit (2PC).
@@ -67,6 +67,6 @@ UserService    CatalogService  CommerceService  LogService     AuctionService ..
 | **Ordering & Commerce** | `CommerceService` | Quản lý giỏ hàng tạm thời, tạo đơn hàng checkout, theo dõi trạng thái vòng đời đơn hàng. | Carts, CartItems, Orders, OrderLines. |
 | **Online Bidding & Auction** | `AuctionService` | Phòng đấu giá trực tuyến, bước giá, quy tắc đặt giá, thời gian đếm ngược, xác định người thắng. | Auctions, Bids, AuctionParticipants. |
 | **Physical Fulfillment & Logistics**| `FulfillmentService` | Kho vật lý lưu trữ thực tế, quản lý vận đơn, tính cước vận chuyển, theo dõi hành trình giao nhận. | Warehouses, PhysicalStock, Shipments, Carriers. |
-| **Customer Notifications** | `NotificationService` | Đa kênh thông báo (In-app, Push, Email), lưu lịch sử thông báo, cấu hình tùy chọn người dùng. | Notifications, NotificationPreferences. |
+| **Customer Notifications** | `NotificationService` | Đa kênh thông báo (In-app, Push, Email), lưu lịch sử thông báo, cấu hình tùy chọn người dùng, gửi email OTP. | Notifications, NotificationPreferences. |
 | **Centralized Logging & System Auditing** | `LogService` | Thu thập nhật ký tập trung và lưu vết bất biến mọi thay đổi trong hệ thống. | Logs, LogEventTypes. |
 | **Digital Wallet & Payments** | `WalletService` | Tài khoản ví điện tử khách hàng, nạp tiền, rút tiền về tài khoản ngân hàng, chuyển tiền nội bộ. | Wallets, WalletTransactions, BankAccounts. |

@@ -1,19 +1,19 @@
 # 02 — MA TRẬN GIAO TIẾP & ĐIỀU PHỐI SAGA (INTER-SERVICE COMMUNICATION)
 
-> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuyển đổi chuẩn giao tiếp đồng bộ Gateway $\rightarrow$ Backend sang **RESTful (JSON over HTTP)** qua `IHttpClientFactory` và `GatewayBaseController.ForwardAsync`. Giao tiếp sự kiện phân tán vẫn sử dụng **RabbitMQ MassTransit 8.3.0**.
-> **Nguồn sự thật:** code 9 repo (`PLAN-20261027-0300-GATEWAY-REST-DOWNSTREAM-MIGRATION.md`).
+> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuyển dịch toàn diện sang **100% RESTful (JSON over HTTP)** cho toàn bộ giao tiếp đồng bộ từ Gateway $\rightarrow$ Backend Microservices và giữa các Microservices với nhau. **CẤM TUYỆT ĐỐI gRPC**. Giao tiếp sự kiện phân tán sử dụng **RabbitMQ MassTransit 8.3.0**.
+> **Nguồn sự thật:** code 9 repo (`PLAN-20261027-1400-GLOBAL-RESTFUL-PIVOT-AND-GATEWAY-DECOUPLING.md`).
 > **Cập nhật lần cuối:** 2026-10-27.
 
-Tài liệu này xác định ranh giới giữa giao tiếp **đồng bộ (RESTful HTTP/JSON)** và **bất đồng bộ (RabbitMQ MassTransit)**, đồng thời mô tả chi tiết luồng giao dịch phân tán **Checkout Saga**.
+Tài liệu này xác định ranh giới giữa giao tiếp **đồng bộ (RESTful HTTP/JSON)** và **bất đồng bộ (RabbitMQ MassTransit)**, đồng thời mô tả chi tiết ma trận gọi liên service và luồng giao dịch phân tán **Checkout Saga**.
 
 ---
 
 ## 1. NGUYÊN TẮC LỰA CHỌN GIAO TIẾP
 
-| Tiêu Chí | Giao Tiếp Đồng Bộ (RESTful HTTP/JSON) | Giao Tiếp Bất Đồng Bộ (RabbitMQ) |
+| Tiêu Chí | Giao Tiếp Đồng Bộ (RESTful HTTP/JSON) — DUY NHẤT | Giao Tiếp Bất Đồng Bộ (RabbitMQ) |
 |:---|:---|:---|
 | **Mục đích** | Truy vấn dữ liệu tức thì (Query) hoặc Command cần xác nhận ngay lập tức từ 1 service. | Thông báo trạng thái thay đổi (Event) hoặc kích hoạt quy trình phức tạp qua nhiều service (Saga). |
-| **Giao thức** | HTTP/1.1 hoặc HTTP/2 (Keep-Alive Pooling) trên nền chuẩn JSON (`camelCase`). | AMQP 0-9-1 qua thư viện **MassTransit 8.3.0**. |
+| **Giao thức** | HTTP/1.1 hoặc HTTP/2 (Keep-Alive Pooling) trên nền chuẩn JSON (`camelCase`). **CẤM gRPC**. | AMQP 0-9-1 qua thư viện **MassTransit 8.3.0**. |
 | **Tính phụ thuộc** | Tight coupling tại thời điểm gọi (Caller đợi Callee phản hồi hoặc timeout). | Decoupled (Publisher phát event và tiếp tục, Subscribers nhận xử lý độc lập). |
 | **Độ trễ** | Rất thấp (< 5-10ms trong mạng nội bộ Docker/VPS). | Bất đồng bộ (vài chục ms qua hàng đợi). |
 | **Độ bền dữ liệu** | Phụ thuộc availability của callee (xử lý qua timeout / retry / circuit breaker). | Bền vững (Durable Queues, Message Persistence, Outbox/Inbox Pattern). |
@@ -24,11 +24,12 @@ Tài liệu này xác định ranh giới giữa giao tiếp **đồng bộ (RES
 
 | Nguồn Gọi (Caller) | Đích Đến (Callee) | Giao Thức | Tên Phương Thức / Route | Mục Đích Nghiệp Vụ | Trạng thái triển khai |
 |:---|:---|:---:|:---|:---|:---|
-| **ApiGateway** | `UserService` | REST | `/api/v1/auth/*`, `/api/v1/users/*` | Quản lý người dùng, đăng ký, đăng nhập và hồ sơ | ✅ Gateway hỗ trợ Mock/Real qua `ForwardAsync` |
+| **ApiGateway** | `UserService` | REST | `/api/v1/auth/*`, `/api/v1/users/*`, `/api/v1/admin/users/*` | Quản lý người dùng, đăng ký, đăng nhập và hồ sơ | ✅ Gateway hỗ trợ Mock/Real qua `ForwardAsync` |
 | **ApiGateway** | `CatalogService` | REST | `/api/v1/products/*`, `/api/v1/categories/*`, `/api/v1/inventory/*` | Truy vấn và cập nhật danh mục, sản phẩm, tồn kho | ✅ Catalog có 13 REST Controllers, Gateway hỗ trợ `ForwardAsync` |
 | **ApiGateway** | `CommerceService` | REST | `/api/v1/cart/*`, `/api/v1/orders/*` | Thao tác giỏ hàng và đặt hàng | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
 | **ApiGateway** | `AuctionService` | REST | `/api/v1/auctions/*` | Tham gia và tạo phòng đấu giá | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
 | **ApiGateway** | `FulfillmentService`| REST | `/api/v1/shipments/*` | Tra cước và vận đơn | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
+| **ApiGateway** | `NotificationService`| REST | `/api/v1/notifications/*`, `/api/v1/notifications/email/*` | Quản lý thông báo người dùng, gửi email OTP/alert | ✅ Notification có `NotificationsController` & `EmailController`, Gateway hỗ trợ `ForwardAsync` |
 | **ApiGateway** | `LogService` | REST | `/api/v1/logs/*`, `/api/v1/log/batch` | Ghi log, truy vấn nhật ký hệ thống | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
 | **ApiGateway** | `WalletService` | REST | `/api/v1/wallet/*` | Tra cứu số dư, nạp, rút và giao dịch ví | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
 | **CommerceService**| RabbitMQ | Event | `OrderSubmittedEvent` | Bắn tin nhắn đơn hàng mới được tạo | ❌ 0 publisher, 0 consumer |
