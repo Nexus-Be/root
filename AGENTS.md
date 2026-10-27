@@ -118,8 +118,15 @@ Mỗi service (`User`, `Catalog`, `Commerce`, `Log`, `Auction`, `Fulfillment`, `
 
 1. **CẤM DÙNG REPOSITORY PATTERN BỌC NGOÀI EF CORE**: Sử dụng trực tiếp `DbContext` và `DbSet<T>` trong Application Layer.
 2. **CÔ LẬP TUYỆT ĐỐI DATABASE (DATABASE-PER-SERVICE)**: Không query trực tiếp DB của service khác.
-3. **CẤU HÌNH PORT LÀ BẤT BIẾN**: Dải port HTTP/gRPC `8000`-`8008` và DB `5433`-`5440` là cố định.
-4. **HỢP ĐỒNG PROTOBUF DUY NHẤT**: Mọi service phải tuân thủ hợp đồng Protobuf gốc trong `Contracts/shop.proto`.
+3. **CẤU HÌNH PORT LÀ BẤT BIẾN**: Dải port HTTP/REST `8000`-`8008` và DB `5433`-`5440` là cố định.
+4. **QUY TẮC BẤT BIẾN: CẤM SỬ DỤNG gRPC CHO GIAO TIẾP ĐỒNG BỘ — 100% SỬ DỤNG RESTFUL HTTP/JSON**:
+   - **Tuyệt đối KHÔNG sử dụng gRPC cho các dịch vụ giao tiếp đồng bộ**: Loại bỏ và cấm sử dụng gRPC giữa ApiGateway và các Microservices backend, cũng như giữa các Microservices nội bộ với nhau. Toàn bộ giao tiếp đồng bộ chuyển dịch hoàn toàn sang chuẩn **RESTful HTTP/JSON**.
+   - **Chuẩn hóa RESTful API**:
+     + Đường dẫn API: `/api/v1/{resource}`.
+     + Phương thức HTTP chuẩn RFC 9110 (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`).
+     + Dữ liệu trả về bọc chuẩn `ApiResponse<T>`, `ApiResponse<PagedData<T>>` hoặc `204 NoContent`.
+     + Toàn bộ mã lỗi định dạng `SCREAMING_SNAKE_CASE` và câu thông báo tiếng Anh chuẩn Sentence case theo Nguyên tắc 5.
+   - **Giao tiếp bất đồng bộ**: Tiếp tục sử dụng RabbitMQ qua MassTransit (Event-driven / Outbox Pattern / Saga).
 5. **NGUYÊN TẮC ĐỐI SOÁT TÀI LIỆU EXCEL (CHỈ TIN THÔNG TIN, KHÔNG TIN ĐỊNH DẠNG/CẤU TRÚC)**:
    - **Tuyệt đối KHÔNG tin tưởng định dạng hoặc cấu trúc form trong file Excel**: File Excel có thể chứa lỗi định dạng, casing tùy tiện hoặc không nhất quán do người soạn thảo (ví dụ: trong file viết `snake_case`, hoặc viết tên role dạng chữ thường `buyer` thay vì PascalCase `Buyer`...).
    - **Chỉ tin thông tin và ý đồ nghiệp vụ (Semantic Information)**: Trích xuất ý nghĩa trường dữ liệu, quan hệ logic, các bước trong luồng quy trình và điều kiện nghiệp vụ.
