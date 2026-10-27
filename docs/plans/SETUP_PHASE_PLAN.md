@@ -26,7 +26,7 @@ Toàn bộ Wave 0 của backlog cũ trộn hai loại này, nên khi thi hành s
 | Hạng mục | Kết quả | Bằng chứng |
 |---|---|---|
 | Cú pháp compose | ✅ 12/12 file hợp lệ | `docker compose -f <file> config -q` → 0 lỗi (root, infra, `src/Infrastructure`, 9 repo) |
-| Dải port published | ✅ khớp `specs/01` | DB `5433–5440`, service `8000–8008`, Rabbit `5672/15672`, Redis `6379`, OTLP `4317/4318`, Tempo UI `3200`, Grafana `3000` |
+| Dải port published | ✅ khớp `specs/01` | DB `5433–5440`, service `8080` (Gateway) & `8001–8008`, Rabbit `5672/15672`, Redis `6379`, OTLP `4317/4318`, Tempo UI `3200`, Grafana `3000` |
 | Dockerfile | ✅ 9/9 có `EXPOSE` + `ASPNETCORE_URLS` đúng port spec | vd `Auction`: `EXPOSE 8005`, `ENV ASPNETCORE_URLS=http://+:8005` |
 | Định tuyến trong container | ✅ compose override đúng DNS nội bộ | Gateway: `Gateway__Services__catalog__Address=http://catalog-service:8002`; service: `Host=catalog-db;Port=5432` |
 | DB / Rabbit / Redis | ✅ 10 healthcheck | 8 DB + `rabbitmq` + `redis` |

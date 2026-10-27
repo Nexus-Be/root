@@ -2,6 +2,8 @@
 ## (NEXUS EDGE API GATEWAY ARCHITECTURE & FOLDERS REFERENCE)
 
 > **Mục tiêu tài liệu**: Cung cấp bức tranh toàn cảnh về kiến trúc **Edge API Gateway (.NET 8 LTS, C# 12)**, giải thích chi tiết chức năng của **15 thư mục mã nguồn** bên trong `Nexus.Gateway`, cùng danh mục toàn bộ các tính năng cốt lõi đang vận hành trong Gateway.
+>
+> ⚠️ **Quy chuẩn chiến lược (ADR 06 & Nguyên tắc 4)**: Toàn bộ giao tiếp đồng bộ liên microservices đã chuẩn hóa sang **100% RESTful HTTP/JSON** (CẤM TUYỆT ĐỐI gRPC). Khi ở chế độ `Real`, Gateway chuyển tiếp request HTTP REST trực tiếp (`ForwardAsync`) sang các microservices (`8001`-`8008`). Các thư mục gRPC (`Contracts/`, `GrpcServiceCaller.cs`) là thành phần di sản đang được chuyển dịch sang REST HTTP Client.
 
 ---
 
@@ -27,7 +29,7 @@ API Gateway là **vành đai phòng thủ và điểm tiếp nhận duy nhất (
 │  [9. RFC 9110 / RFC 7807 Centralized ProblemDetails]  │
 └───────┬──────────────────────────────────┬─────────────┘
         │ (Mode = Real)                    │ (Mode = Mock)
-        ▼ (HTTP/2 gRPC, Ports 8001-8008)   ▼
+        ▼ (HTTP REST, Ports 8001-8008)     ▼
 ┌────────────────────────────────┐   ┌─────────────────────────────┐
 │    8 BACKEND MICROSERVICES     │   │ STATIC SEED FIXTURES        │
 │  (Users, Catalog, Commerce...) │   │ (Seeds/{feature}/*.json)    │

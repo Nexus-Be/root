@@ -53,7 +53,7 @@ As a frontend developer on the Nexus project:
                ▼                          ▼
       ┌─────────────────┐       ┌───────────────────┐
       │  Seeds/*.json   │       │ Real Backends     │
-      │ (Instant mock   │       │ (gRPC Services    │
+      │ (Instant mock   │       │ (REST Services    │
       │  responses)     │       │  & Cloud DBs)     │
       └─────────────────┘       └───────────────────┘
 ```
@@ -71,7 +71,7 @@ When running the Gateway independently for frontend testing, only a minimal set 
 | Service | Container Name | Port | Required for Frontend Mock? | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **API Gateway** | `nexus-apigateway` | `8080` | **Mandatory** | The primary HTTP entry point and mock server. Exposes Swagger at `/swagger`. |
-| **Redis** | `nexus-shared-redis` | `6379` | **Recommended** | High-speed cache used for distributed rate limiting. *(Note: in development mode, Gateway fails-open if Redis is absent, but running Redis prevents rate-limit warnings).* |
+| **Redis** | `nexus-shared-redis` | `6379` | **Recommended** | High-speed cache used for distributed rate limiting and User OTP/Cache (capped at 500MB). *(Note: in development mode, Gateway fails-open if Redis is absent, but running Redis prevents rate-limit warnings).* |
 | **Tempo** | `nexus-shared-tempo` | `3200`, `4317` | Optional | Distributed tracing backend. |
 | **RabbitMQ** | `nexus-shared-rabbitmq` | `5672` | **Not Needed** | Message broker for backend async event buses. Gateway does not need it. |
 | **PostgreSQL** | — | — | **Not Needed** | Database storage. All real databases are hosted remotely on Neon Cloud; in Mock mode, no database connection is touched at all. |
@@ -84,12 +84,12 @@ The Gateway provides two independent switches designed specifically for frontend
 
 ### Switch 1: Mock Mode vs. Real Mode (Stateless vs. Stateful)
 
-This switch determines whether an API endpoint returns **stateless mock fixture data** or calls the **real backend microservice via gRPC**.
+This switch determines whether an API endpoint returns **stateless mock fixture data** or calls the **real backend microservice via RESTful HTTP**.
 
 | Setting Value | Mode | Description |
 | :--- | :--- | :--- |
 | `"Mock"` | **Stateless Mock (Default for FE)** | Gateway reads realistic JSON fixture files from `src/Services/ApiGateway/Nexus.Gateway/Seeds/{service}/{operation}.json`. It returns standard `ApiResponse<T>` envelopes immediately without calling any backend. |
-| `"Real"` | **Stateful Backend** | Gateway forwards the request to the corresponding microservice via gRPC. Requires the backend service to be running. |
+| `"Real"` | **Stateful Backend** | Gateway forwards the request to the corresponding microservice via HTTP REST. Requires the backend service to be running. |
 
 Each service has its own independent switch:
 - `users`: User profiles, registration, OTP.

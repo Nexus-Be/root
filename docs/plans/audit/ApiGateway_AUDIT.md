@@ -2,7 +2,7 @@
 
 - **Branch:** `mock` · **Commit:** `efb840d` · **Dirty:** 0 (trước audit) → 2 (`AGENTS.md`, `CLAUDE.md` do re-index)
 - **Quy mô:** 98 file `.cs` / 7.468 LOC · `Nexus.Gateway` 79 file (5.456 LOC) + `Nexus.Gateway.Tests` 19 file (2.012 LOC)
-- **Port:** HTTP `8000` (khớp `specs/01_SERVICE_CATALOG_PORT_MAP.md`) · **DB:** không có (đúng bounded context)
+- **Port:** HTTP `8080` (khớp `specs/01_SERVICE_CATALOG_PORT_MAP.md`, đổi từ 8000 tránh xung đột Portainer) · **DB:** không có (đúng bounded context)
 - **Index:** 150 file / 1.252 symbol / 2.601 edge / **100 execution flow**
 
 ## 1. Kết luận nhanh (TL;DR)

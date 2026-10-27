@@ -19,11 +19,11 @@ Tài liệu thực chiến giúp lập trình viên bắt tay vào làm việc n
 * **[Cẩm Nang Phát Triển & Kiểm Thử Độc Lập Từng Service (INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)](INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)**  
   👉 **BẮT BUỘC ĐỌC ĐỐI VỚI DEV:** Hướng dẫn cách một developer chỉ phụ trách 1 service có thể tự code, chạy database riêng và test độc lập với API Gateway mà **KHÔNG CẦN bật toàn bộ 9 services**, tiết kiệm RAM (< 2GB).
 
-* **[Cẩm Nang Kiểm Thử Độc Lập gRPC, Event Bus & Chẩn Đoán Lỗi (ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)](ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)**  
-  👉 **HƯỚNG DẪN TEST POSTMAN & DEBUG:** Chi tiết cách dùng Postman gRPC Request (Server Reflection) test từng Function, Postman HTTP REST test từng Event Consumer qua RabbitMQ Management API, và quy trình 3 tầng chẩn đoán lỗi chuyên sâu bằng Grafana Tempo & Dead-Letter Queues.
+* **[Cẩm Nang Kiểm Thử Độc Lập RESTful API, Event Bus & Chẩn Đoán Lỗi (ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)](ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)**  
+  👉 **HƯỚNG DẪN TEST REST, SWAGGER, EVENT BUS & DEBUG:** Chi tiết cách kiểm thử độc lập từng Endpoint RESTful HTTP/JSON qua Swagger UI/Postman/cURL tại cổng 8001-8008, kiểm thử từng Event Consumer qua RabbitMQ Management API, và quy trình 3 tầng chẩn đoán lỗi chuyên sâu bằng Grafana Tempo & Dead-Letter Queues.
 
 * **[Quy Chuẩn Kiến Trúc Clean Architecture 4 Tầng Cho Microservices (CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)](CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)**  
-  👉 Hướng dẫn cấu trúc thư mục 4 tầng (`*.Domain`, `*.Application`, `*.Infrastructure`, `*.Api`): phần nào làm cái nào, Entity viết ở đâu, DbContext cấu hình thế nào, gRPC Server viết ở đâu, và quy tắc thông báo lỗi 100% tiếng Anh.
+  👉 Hướng dẫn cấu trúc thư mục 4 tầng (`*.Domain`, `*.Application`, `*.Infrastructure`, `*.Api`): phần nào làm cái nào, Entity viết ở đâu, DbContext cấu hình thế nào, RESTful Controllers/Minimal APIs viết ở đâu, và quy tắc thông báo lỗi 100% tiếng Anh.
 
 * **[Hướng Dẫn Tạo Mock API, Chuyển Đổi Runtime, Bypass Auth & Health Check (GUIDE_MOCK_DATA_GATEWAY.md)](GUIDE_MOCK_DATA_GATEWAY.md)**  
   👉 Hướng dẫn quy trình 3 bước tạo Mock API chuẩn duy nhất (Controller Action + Seeds/ Fixture), kiến trúc pipeline 6 bước, cách chuyển `Mock` $\leftrightarrow$ `Real`, bật Bypass Auth để test không cần token, và sử dụng Health Prober.
@@ -72,7 +72,7 @@ Bộ tài liệu chuyên sâu về từng thành phần hạ tầng trong thư m
 ## 3. QUYẾT ĐỊNH KIẾN TRÚC & ĐẶC TẢ HỆ THỐNG (SYSTEM ARCHITECTURE & ADRS)
 
 * **[Hệ Thống 15 Quyết Định Kiến Trúc Toàn Hệ Thống (docs/adr/ADR.md)](adr/ADR.md)**  
-  👉 Các quyết định kiến trúc bất biến đã được phê duyệt: .NET 8, Clean Architecture, No-Repository, gRPC, RabbitMQ MassTransit, Checkout Saga, Dual-mode Gateway, Zero-validation Controller, Redis Rate Limit...
+  👉 Các quyết định kiến trúc bất biến đã được phê duyệt: .NET 8, Clean Architecture, No-Repository, RESTful HTTP/JSON (CẤM gRPC), RabbitMQ MassTransit, Checkout Saga, Dual-mode Gateway, Zero-validation Controller, Redis Rate Limit...
 
 * **[Kiến Trúc Health Prober & Chiến Lược Quản Lý Log Tập Trung (HEALTH_AND_LOGGING_ARCHITECTURE.md)](HEALTH_AND_LOGGING_ARCHITECTURE.md)**  
   👉 Nguyên lý Prober Daemon, State Machine của Health Check, Circuit Breaker Fast-Fail (503), Docker Self-Healing, và chiến lược gom log tập trung về `LogService`.

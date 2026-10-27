@@ -26,10 +26,16 @@ services:
       retries: 5
       start_period: 60s
 
-  # 2. Redis (Local Cache & Rate Limiting)
+  # 2. Redis In-Memory Store (Shared cho API Gateway Rate Limit & User Service OTP/Cache - Cổng 6379, 500MB)
   redis:
     image: redis:7-alpine
     container_name: nexus-shared-redis
+    command: ["redis-server", "--maxmemory", "460mb", "--maxmemory-policy", "allkeys-lru"]
+    mem_limit: 500m
+    deploy:
+      resources:
+        limits:
+          memory: 500M
     ports:
       - "${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
@@ -42,7 +48,7 @@ services:
     volumes:
       - redis_data:/data
 
-  # 3. Tempo (Distributed Tracing Backend)
+  # 4. Tempo (Distributed Tracing Backend)
   tempo:
     image: grafana/tempo:2.4.1
     container_name: nexus-shared-tempo
@@ -56,7 +62,7 @@ services:
       - "${TEMPO_PORT_UI:-3200}:3200"
     restart: unless-stopped
 
-  # 4. Grafana (Dashboard trực quan hóa)
+  # 5. Grafana (Dashboard trực quan hóa)
   grafana:
     image: grafana/grafana:10.4.2
     container_name: nexus-shared-grafana

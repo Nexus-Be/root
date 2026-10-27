@@ -76,7 +76,7 @@
   "facts": {
     "ApiGateway": {
       "expected": {
-        "http": "8000",
+        "http": "8080",
         "grpc": null,
         "db_engine": "Redis",
         "db_port": "6379",
@@ -85,14 +85,14 @@
       "sources": {
         "dockerfile": {
           "expose": [
-            "8000"
+            "8080"
           ],
           "urls": [
-            "8000"
+            "8080"
           ]
         },
         "launchSettings": [
-          "8000"
+          "8080"
         ]
       }
     },

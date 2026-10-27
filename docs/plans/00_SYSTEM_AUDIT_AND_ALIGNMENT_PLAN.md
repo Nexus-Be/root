@@ -217,7 +217,7 @@ bash .tools/audit/run-all.sh --root .            # phải exit 0 khi sạch
 node .gitnexus/run.cjs status                    # phải "fresh"
 
 # Trace end-to-end (Phase 4, sau khi sửa P0) — 1 request mẫu
-curl -s -H "x-trace-id: audit-$(date +%s)" http://localhost:8000/health
+curl -s -H "x-trace-id: audit-$(date +%s)" http://localhost:8080/health
 # mở Grafana → Tempo, tìm trace đó → phải thấy gateway + service + (nếu có) DB span
 ```
 

@@ -17,7 +17,7 @@ Hai vấn đề bí mật: khoá ký JWT thật bị commit vào `appsettings.js
 | `docker-compose.yml` (root) | **21 service**: `rabbitmq, redis, tempo, grafana` + 8 DB (`user-db`…`wallet-db`) + `gateway` + 8 `*-service` | ✅ Đủ |
 | Healthcheck | **10** (`8 DB + rabbitmq + redis`) | ✅ DB/broker có gate |
 | `docker-compose.infra.yml` | 12 service (4 hạ tầng + 8 DB) | ⚠️ **Định nghĩa 8 DB lặp lại ở 2 file** → sửa 1 chỗ là lệch chỗ kia |
-| Port mapping | khớp `specs/01` (`8000–8008`, `5433–5440`, `5672/15672`, `6379`, `4317/4318`) | ✅ gate `port` 0 lỗi |
+| Port mapping | khớp `specs/01` (Gateway `8080`, services `8001–8008`, `5433–5440`, `5672/15672`, `6379`, `4317/4318`) | ✅ gate `port` 0 lỗi |
 
 ## 2. Dockerfile
 

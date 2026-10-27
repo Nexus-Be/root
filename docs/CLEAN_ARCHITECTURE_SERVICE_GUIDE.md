@@ -20,7 +20,7 @@ Mỗi Microservice được cấu trúc thành một Solution `.sln` độc lậ
          Phụ thuộc vào App    │           │    Phụ thuộc vào App
      ┌────────────────────────┴───┐   ┌───┴────────────────────────┐
      │     *.Infrastructure       │   │           *.Api            │
-     │ (EF Core, RabbitMQ, Redis) │   │ (gRPC Server, DI, Program) │
+     │ (EF Core, RabbitMQ, Redis) │   │ (RESTful Controllers, DI)  │
      └────────────────────────────┘   └────────────────────────────┘
 ```
 
@@ -127,28 +127,29 @@ Mỗi Microservice được cấu trúc thành một Solution `.sln` độc lậ
 
 ### 2.4. TẦNG API (`{Service}.Api`) — ĐẦU MỐI GIAO TIẾP & MIDDLEWARE TOÀN CỤC
 
-* **Bản chất**: Điểm khởi động ứng dụng (Entry Point), tiếp nhận các cuộc gọi gRPC từ API Gateway hoặc các Service khác, trang bị Middleware toàn cục.
+* **Bản chất**: Điểm khởi động ứng dụng (Entry Point), tiếp nhận các cuộc gọi RESTful HTTP/JSON từ API Gateway hoặc kiểm thử độc lập từ Swagger/Postman/cURL, trang bị Middleware toàn cục (CẤM TUYỆT ĐỐI gRPC theo Nguyên tắc 4 & ADR 06).
 * **Cấu trúc thư mục**:
   ```
   {Service}.Api/
+  ├── Controllers/                                   # RESTful API Controllers (hoặc Endpoints/)
+  │   ├── AuthController.cs
+  │   └── UsersController.cs
   ├── Middleware/                                    # MIDDLEWARE TOÀN CỤC CỦA SERVICE
   │   └── GlobalExceptionHandlerMiddleware.cs        # Bắt mọi lỗi ngoại lệ, format RFC 9110 ProblemDetails
-  ├── Services/                                      # Triển khai gRPC Services kế thừa từ Base Class do Protobuf sinh ra
-  │   └── UsersGrpcService.cs
-  ├── Contracts/                                     # Chứa file shop.proto đồng bộ từ Gateway
   ├── appsettings.json                               # Cấu hình ConnectionString, RabbitMQ, Redis, Logging
-  └── Program.cs                                     # Khởi động ứng dụng, nạp DI, app.UseGlobalExceptionHandler()
+  ├── appsettings.Development.json
+  └── Program.cs                                     # Khởi động Kestrel, nạp DI, MapControllers, Swagger UI
   ```
 * **Quy chuẩn lập trình bắt buộc**:
-  - **Global Exception Middleware**: Mỗi service bắt buộc phải có `GlobalExceptionHandlerMiddleware` tại tầng Api để bắt mọi ngoại lệ未 xử lý, ghi log chi tiết kèm `TraceId` và trả về JSON chuẩn RFC 9110 ProblemDetails cho client.
+  - **Global Exception Middleware**: Mỗi service bắt buộc phải có `GlobalExceptionHandlerMiddleware` tại tầng Api để bắt mọi ngoại lệ chưa xử lý, ghi log chi tiết kèm `TraceId` và trả về JSON chuẩn RFC 9110 ProblemDetails cho client.
   - **Cực kỳ mỏng (Thin Presentation Layer)**:
-    - `*GrpcService` chỉ làm nhiệm vụ:
-      1. Nhận gRPC request $\rightarrow$ Map sang Application DTO.
-      2. Gọi Application Service xử lý nghiệp vụ.
-      3. Nhận kết quả $\rightarrow$ Map sang gRPC Protobuf Response và trả về.
-    - Tuyệt đối **không viết logic nghiệp vụ hay truy vấn SQL trong gRPC Service**.
-  - **Bảo mật danh tính qua gRPC Metadata**:
-    - Trích xuất thông tin người dùng được Gateway chuyển tiếp qua HTTP/2 Headers: `x-user-id`, `x-user-roles`, `x-user-email`.
+    - `Controller / Endpoint Action` chỉ làm nhiệm vụ:
+      1. Nhận HTTP request (Route params, Query, JSON Body) $\rightarrow$ Map sang Application DTO / Command / Query.
+      2. Gọi Application Service / MediatR Handler xử lý nghiệp vụ.
+      3. Nhận kết quả $\rightarrow$ Bọc trong `ApiResponse<T>`, `ApiResponse<PagedData<T>>` hoặc `204 NoContent` và trả về.
+    - Tuyệt đối **không viết logic nghiệp vụ hay truy vấn SQL trong Controller/Endpoint**.
+  - **Bảo mật danh tính qua HTTP Headers (Identity Propagation)**:
+    - Trích xuất thông tin người dùng được Gateway chuyển tiếp qua HTTP Headers: `x-user-id`, `x-user-roles`, `x-user-email`.
 
 ---
 
@@ -184,5 +185,5 @@ Mọi Exception, Validation Error và Response Error trong toàn bộ các Micro
 | **Interface DbContext / Services** | `*.Application` | Trừu tượng hóa việc lưu trữ và dịch vụ bên thứ ba để đảo ngược phụ thuộc (DIP). |
 | **EF Core DbContext & Configurations** | `*.Infrastructure` | Triển khai chi tiết cách ánh xạ Entity xuống PostgreSQL. |
 | **MassTransit Consumer** | `*.Infrastructure` | Nhận sự kiện từ RabbitMQ và ủy thác cho Application Command xử lý. |
-| **gRPC Server Implementation** | `*.Api` | Tiếp nhận RPC call từ Gateway và chuyển tiếp vào MediatR. |
-| **Program.cs & Cấu hình Kestrel** | `*.Api` | Khởi động container và thiết lập cổng mạng HTTP/2. |
+| **RESTful Controllers / Endpoints** | `*.Api` | Tiếp nhận HTTP REST request từ Gateway / Client và chuyển tiếp vào Application Service / MediatR. |
+| **Program.cs & Cấu hình Kestrel** | `*.Api` | Khởi động container, cấu hình Swagger UI và thiết lập cổng mạng HTTP REST (8001-8008). |

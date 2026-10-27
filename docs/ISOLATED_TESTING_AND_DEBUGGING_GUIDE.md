@@ -1,32 +1,36 @@
-# CẨM NANG KIỂM THỬ ĐỘC LẬP gRPC, EVENT BUS & CHẨN ĐOÁN LỖI TOÀN HỆ THỐNG
-## (ISOLATED TESTING & DISTRIBUTED DEBUGGING GUIDE)
+# CẨM NANG KIỂM THỬ ĐỘC LẬP RESTFUL API, EVENT BUS & CHẨN ĐOÁN LỖI TOÀN HỆ THỐNG
+## (ISOLATED RESTFUL API TESTING, EVENT BUS & DISTRIBUTED DEBUGGING GUIDE)
 
-> **Mục tiêu tài liệu**: Cung cấp cẩm nang thực hành chi tiết cho lập trình viên để **kiểm thử độc lập từng Function gRPC và từng Event Consumer/Publisher bất đồng bộ** bằng Postman và grpcurl mà **không cần thông qua API Gateway**, đồng thời hướng dẫn quy trình 3 bước sử dụng **Grafana Tempo & RabbitMQ Dead-Letter Queues** để định vị chính xác file `.cs` và dòng code bị lỗi khi có sự cố xảy ra.
+> **Mục tiêu tài liệu**: Cung cấp cẩm nang thực hành chi tiết cho lập trình viên để **kiểm thử độc lập từng Endpoint RESTful HTTP/JSON và từng Event Consumer/Publisher bất đồng bộ** bằng Swagger UI, Postman và cURL mà **không cần thông qua API Gateway**, đồng thời hướng dẫn quy trình 3 bước sử dụng **Grafana Tempo & RabbitMQ Dead-Letter Queues** để định vị chính xác file `.cs` và dòng code bị lỗi khi có sự cố xảy ra.
 
 ---
 
 ## 1. BỨC TRANH TỔNG QUAN VỀ KIỂM THỬ ĐỘC LẬP
 
-Trong hệ thống Microservices, khi lập trình viên vừa code xong một Function tại một Service (ví dụ: `UserService` hoặc `WalletService`), việc phải bật toàn bộ 9 services cùng API Gateway để test qua Swagger REST là rất cồng kềnh, tốn RAM và khó đặt breakpoint debug.
+Trong hệ thống Microservices Nexus, khi lập trình viên vừa code xong một tính năng hoặc Endpoint tại một Service (ví dụ: `UserService` hoặc `WalletService`), việc phải bật toàn bộ 9 services cùng API Gateway để kiểm thử qua giao diện là rất cồng kềnh, tốn RAM và khó đặt breakpoint debug.
 
-Hệ thống Nexus cho phép bạn chia tách việc kiểm thử thành 3 trụ cột độc lập:
+Tuân thủ **Nguyên tắc 4** và **ADR 06**, toàn bộ hệ thống Nexus đã chuẩn hóa hai trục giao tiếp tách biệt:
+1. **Trục Đồng Bộ (Synchronous)**: **100% RESTful HTTP/JSON** (CẤM TUYỆT ĐỐI gRPC). Mỗi microservice backend sở hữu dải cổng riêng (`8001`-`8008`) và có thể tiếp nhận trực tiếp các request HTTP REST từ Swagger UI, Postman hoặc cURL.
+2. **Trục Bất Đồng Bộ (Asynchronous)**: **100% Event-driven qua RabbitMQ** (MassTransit) kết hợp Outbox Pattern và Dead-Letter Queues (`*_error`).
+
+Hệ thống cho phép bạn chia tách việc kiểm thử thành 3 trụ cột độc lập:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                             POSTMAN / DÒNG LỆNH (CLI)                            │
+│                      POSTMAN / cURL / SWAGGER UI / DÒNG LỆNH                     │
 │                                                                                  │
-│   [Kiểm Thử gRPC Đồng Bộ]                  [Kiểm Thử Event Bất Đồng Bộ]          │
-│   Postman gRPC Request                     Postman HTTP REST Request             │
-│   (Server Reflection)                      (Basic Auth: guest/guest hoặc $RABBITMQ_PASSWORD) │
+│   [Kiểm Thử RESTful API Đồng Bộ]           [Kiểm Thử Event Bất Đồng Bộ]          │
+│   HTTP GET/POST/PUT/PATCH/DELETE           Postman HTTP REST Request             │
+│   (Swagger UI / cURL / Postman)            (Basic Auth: guest/guest hoặc $RABBITMQ_PASSWORD) │
 └───────────────┬──────────────────────────────────────────┬───────────────────────┘
-                │ HTTP/2 gRPC                              │ HTTP POST (Port 15672)
+                │ HTTP/1.1 REST (JSON)                     │ HTTP POST (Port 15672)
                 ▼                                          ▼
 ┌───────────────────────────────┐          ┌───────────────────────────────────────┐
 │     MICROSERVICE BACKEND      │          │        RABBITMQ MANAGEMENT API        │
-│   Port: 8001, 8004, 8008...   │          │  POST /api/exchanges/%2f/{name}/publish│
+│   Port: 8001, 8002, 8008...   │          │  POST /api/exchanges/%2f/{name}/publish│
 │                               │          └───────────────────┬───────────────────┘
-│   - MapGrpcService            │                              │ AMQP Routing
-│   - MapGrpcReflectionService  │                              ▼
+│   - Minimal API / Controller  │                              │ AMQP Routing
+│   - Swagger UI (/swagger)     │                              ▼
 │   - MassTransit Consumers     │◄─────────────────── RabbitMQ Exchange / Queue
 └───────────────┬───────────────┘                     (Kích hoạt độc lập Consumer)
                 │ OTLP Traces (gRPC 4317)
@@ -39,110 +43,109 @@ Hệ thống Nexus cho phép bạn chia tách việc kiểm thử thành 3 trụ
 
 ---
 
-## 2. PHẦN 1: KIỂM THỬ RIÊNG LẺ gRPC FUNCTION BẰNG POSTMAN
+## 2. PHẦN 1: KIỂM THỬ RIÊNG LẺ RESTFUL ENDPOINT CỦA BACKEND MICROSERVICE (ĐỒNG BỘ - CẤM gRPC)
 
-Các backend microservices chạy giao thức gRPC trên HTTP/2. Nhờ gói thư viện **`Grpc.AspNetCore.Server.Reflection`**, bạn không cần phải copy hay import file `shop.proto` thủ công vào Postman. Postman sẽ tự động truy vấn Server và sinh ra danh sách hàm cùng mẫu payload JSON.
+Mỗi backend microservice trong Nexus là một ứng dụng Web API độc lập chạy máy chủ Kestrel. Khi khởi chạy độc lập (qua `dotnet run` hoặc Visual Studio / Rider / Docker), service sẽ lắng nghe tại cổng HTTP đã được quy hoạch cố định và tích hợp sẵn **Swagger UI** (trong môi trường `Development`).
 
-### Bảng Cổng gRPC Các Backend Services
+### Bảng Cổng RESTful API & Swagger UI Trực Tiếp Các Backend Services
 
-> **Trạng thái triển khai (2026-10-24): ❌ Không đạt — chỉ 3/8 service thật sự có gRPC server.** Chỉ các service đánh dấu ✅ mới có `MapGrpcService<…>()` + `MapGrpcReflectionService()`, nên chỉ chúng mới test được bằng Postman reflection. 5 service còn lại **chưa có gRPC** (chỉ `MapGet("/health")`) — bước “Postman tự truy vấn Server” bên dưới sẽ **thất bại** với chúng.
-> **Nguồn sự thật:** `Program.cs` từng service + `*.Api/Services/*GrpcService.cs`.
-
-| Service | Cổng HTTP/gRPC | Service Name trong Protobuf | gRPC server |
+| Service | Cổng REST Trực Tiếp | Swagger UI Endpoint | Đường Dẫn API Tiêu Biểu |
 | :--- | :---: | :--- | :--- |
-| **User Service** | `localhost:8001` | `ShoppingCart.Contracts.V1.UsersApi` | ✅ có (`User.Api/Program.cs:64`), reflection bật ở Development |
-| **Catalog Service** | `localhost:8002` | `ShoppingCart.Contracts.V1.CatalogApi` | ❌ **không có** — chỉ REST mock (`api/v1/catalog/*`) |
-| **Commerce Service**| `localhost:8003` | `ShoppingCart.Contracts.V1.CommerceApi` | ❌ **không có** — chỉ `/health` |
-| **Log Service** | `localhost:8004` | `ShoppingCart.Contracts.V1.LogApi` | ✅ có (`Log.Api/Program.cs:47`), reflection bật ở Development |
-| **Auction Service** | `localhost:8005` | `ShoppingCart.Contracts.V1.AuctionApi` | ❌ **không có** — chỉ `/health` |
-| **Fulfillment Service** | `localhost:8006` | `ShoppingCart.Contracts.V1.FulfillmentApi` | ❌ **không có** — chỉ `/health` |
-| **Notification Service**| `localhost:8007` | `ShoppingCart.Contracts.V1.NotificationApi` | ❌ **không có** — chỉ `/health` |
-| **Wallet Service** | `localhost:8008` | `ShoppingCart.Contracts.V1.WalletApi` | ✅ có (`Wallet.Api/Program.cs:47`), reflection bật ở Development |
+| **API Gateway** | `localhost:8080` | `http://localhost:8080/swagger` | `/api/v1/*` (Reverse Proxy & Điều phối) |
+| **User Service** | `localhost:8001` | `http://localhost:8001/swagger` | `/api/v1/auth/*`, `/api/v1/users/*` |
+| **Catalog Service** | `localhost:8002` | `http://localhost:8002/swagger` | `/api/v1/products/*`, `/api/v1/categories/*` |
+| **Commerce Service**| `localhost:8003` | `http://localhost:8003/swagger` | `/api/v1/cart/*`, `/api/v1/orders/*` |
+| **Log Service** | `localhost:8004` | `http://localhost:8004/swagger` | `/api/v1/logs/*` |
+| **Auction Service** | `localhost:8005` | `http://localhost:8005/swagger` | `/api/v1/auctions/*`, `/api/v1/bids/*` |
+| **Fulfillment Service** | `localhost:8006` | `http://localhost:8006/swagger` | `/api/v1/shipments/*`, `/api/v1/inventory/*` |
+| **Notification Service**| `localhost:8007` | `http://localhost:8007/swagger` | `/api/v1/notifications/*` |
+| **Wallet Service** | `localhost:8008` | `http://localhost:8008/swagger` | `/api/v1/wallets/*`, `/api/v1/transactions/*` |
 
-> ⚠️ Cả 8 service đều có `GET /health` (trả `{"status":"Healthy","service":"…"}`), nhưng **`/health` không phản ánh DB**: khi Postgres chết, `/health` vẫn trả 200 (bằng chứng: `docs/plans/SETUP_PHASE_PLAN.md` §2.4). Không dùng `/health` để kết luận service “chạy được”.
-
----
-
-### Các Bước Thực Hiện Trên Postman (Từng Bước)
-
-#### Bước 1: Tạo gRPC Request trong Postman
-1. Mở ứng dụng **Postman**.
-2. Bấm nút **New** (ở góc trên bên trái) $\rightarrow$ Chọn **gRPC Request**.
-
-#### Bước 2: Kết nối Server Reflection
-1. Tại ô nhập địa chỉ Server URL, điền URL của service cần test (ví dụ: `http://localhost:8001` cho UserService).
-2. Tại mục **Service definition**, chọn **Use Server reflection**.
-3. Postman sẽ tự động kết nối tới endpoint Reflection và tải về danh sách các Service cùng Methods.
-
-#### Bước 3: Chọn Function & Tự Động Sinh Payload
-1. Nhấp vào ô chọn Method $\rightarrow$ Chọn method bạn muốn kiểm thử (ví dụ: `UsersApi/Login` hoặc `UsersApi/Register`).
-2. Tại tab **Message**, bấm nút **Use Example Message** (hoặc **Generate Example Message**). Postman sẽ tự động điền sẵn khung JSON đúng 100% với schema Protobuf.
-3. Chỉnh sửa dữ liệu đầu vào, ví dụ:
-   ```json
-   {
-     "email": "buyer01@nexus.local",
-     "password": "Password123!"
-   }
-   ```
-
-#### Bước 4: Giả lập Metadata Header (User Context / RBAC)
-Khi một request đi qua Gateway, Gateway sẽ gắn các Header định danh vào gRPC Metadata. Khi test trực tiếp gRPC, bạn có thể truyền thẳng các header này tại tab **Metadata**:
-- `x-user-id`: `01912345-6789-7abc-def0-123456789abc`
-- `x-user-roles`: `Admin` (hoặc `Buyer`, `Seller`)
-- `x-user-email`: `admin@nexus.local`
-
-#### Bước 5: Bấm "Invoke" & Xem Kết Quả
-Bấm nút **Invoke**. Postman sẽ nhận kết quả trả về ngay lập tức với Response Time tính bằng mili-giây.
+> ⚠️ Cả 8 service đều có `GET /health` (trả `{"status":"Healthy","service":"…"}`), nhưng **`/health` không kiểm tra trạng thái kết nối Database**: khi Postgres chết, `/health` vẫn trả 200. Vì vậy, luôn kiểm thử các API nghiệp vụ có thao tác DB thực tế để xác nhận service hoạt động chính xác.
 
 ---
 
-### Tùy Chọn 2: Biến gRPC Thành Giao Diện Web UI Như Swagger Bằng `grpcui`
+### Các Bước Kiểm Thử RESTful Endpoint Độc Lập
 
-Nếu bạn quen dùng Swagger trên trình duyệt và muốn có giao diện web trực quan để điền form thay vì dùng Postman, công cụ **`grpcui`** là lựa chọn lý tưởng. Nhờ Server Reflection bật sẵn trong các service Nexus (`User.Api:8001`, `Log.Api:8004`, `Wallet.Api:8008`), `grpcui` sẽ tự động phân tích và render ra một trang Web UI tương tác hoàn chỉnh:
-
-1. **Cài đặt `grpcui` (chỉ làm 1 lần):**
+#### Cách 1: Sử Dụng Swagger UI Trực Tiếp Của Service (Trực Quan Nhất)
+1. Khởi chạy duy nhất service bạn cần làm việc (ví dụ `UserService`):
    ```bash
-   # Nếu máy đã cài Go:
-   go install github.com/fullstorydev/grpcui/cmd/grpcui@latest
-   # Hoặc qua Homebrew (macOS/Linux):
-   brew install grpcui
-   # Hoặc qua Scoop (Windows):
-   scoop install grpcui
+   cd src/Services/User/User.Api
+   dotnet run
    ```
-2. **Khởi chạy giao diện Web:**
-   ```bash
-   # Mở Web UI kiểm thử WalletService:
-   grpcui -plaintext localhost:8008
+2. Mở trình duyệt truy cập: **`http://localhost:8001/swagger`**.
+3. Chọn API cần test (ví dụ `POST /api/v1/auth/register`) $\rightarrow$ Bấm **Try it out**.
+4. Điền Request Body JSON và bấm **Execute**.
+5. Đặt Breakpoint trong code C# Controller/Handler để dừng và debug trực tiếp.
 
-   # Mở Web UI kiểm thử UserService:
-   grpcui -plaintext localhost:8001
+#### Cách 2: Sử Dụng Postman Hoặc File `.http`
+1. Mở Postman, tạo một HTTP Request thông thường (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`).
+2. Điền URL trực tiếp tới backend: ví dụ `http://localhost:8001/api/v1/auth/login`.
+3. Điền Body định dạng `raw` JSON.
 
-   # Mở Web UI kiểm thử LogService:
-   grpcui -plaintext localhost:8004
-   ```
-3. `grpcui` sẽ tự động mở trình duyệt web: Bạn sẽ thấy danh sách Service, dropdown Methods, các ô text box để điền dữ liệu và nút bấm **Invoke** y hệt như Swagger!
-
----
-
-### Tùy Chọn 3: Kiểm Thử Bằng Dòng Lệnh Với `grpcurl` (CLI)
-Nếu bạn thích dùng Terminal/Dòng lệnh:
+#### Cách 3: Kiểm Thử Bằng Dòng Lệnh Với `curl` (CLI)
 ```bash
-# 1. Liệt kê các service đang chạy qua Reflection:
-grpcurl -plaintext localhost:8001 list
+# 1. Kiểm tra health check:
+curl -i http://localhost:8001/health
 
-# 2. Liệt kê các hàm trong UsersApi:
-grpcurl -plaintext localhost:8001 list ShoppingCart.Contracts.V1.UsersApi
+# 2. Gọi API đăng ký tài khoản (User Service):
+curl -i -X POST http://localhost:8001/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "buyer01@nexus.local",
+    "password": "Password123!",
+    "fullName": "Nguyen Van A",
+    "role": "Buyer"
+  }'
 
-# 3. Gọi trực tiếp hàm gRPC với payload JSON:
-grpcurl -plaintext -d '{"email": "buyer01@nexus.local", "password": "Password123!"}' \
-  localhost:8001 ShoppingCart.Contracts.V1.UsersApi/Login
+# 3. Lấy thông tin sản phẩm (Catalog Service):
+curl -i http://localhost:8002/api/v1/products/01912345-6789-7abc-def0-123456789abc
 ```
 
 ---
 
-## 3. PHẦN 2: KIỂM THỬ RIÊNG LẺ EVENT CONSUMER (BẤT ĐỒNG BỘ)
+### Giả Lập Header Danh Tính Người Dùng (Identity Propagation / RBAC)
 
-Khi bạn viết một Consumer (ví dụ: `SendOtpEmailConsumer` gửi email OTP, hoặc `StockReservedConsumer` trừ ví tiền), làm thế nào để test hàm `Consume()` mà **không cần chạy các service khác**?
+Khi request đi qua API Gateway, Gateway sẽ xác thực JWT token và tự động gắn các Header định danh vào request chuyển tiếp sang backend microservice:
+- `x-user-id`: Mã UUID của người dùng (`01912345-6789-7abc-def0-123456789abc`)
+- `x-user-roles`: Quyền hạn (`Buyer`, `Seller`, `Staff`, `Admin`, `SuperAdmin`)
+- `x-user-email`: Email của người dùng (`buyer01@nexus.local`)
+
+Khi bạn **kiểm thử độc lập trực tiếp tại backend microservice (không qua Gateway)**, bạn chỉ cần truyền các header này trong Swagger UI, Postman Headers hoặc cURL:
+
+```bash
+curl -i -X GET http://localhost:8008/api/v1/wallets/my-balance \
+  -H "x-user-id: 01912345-6789-7abc-def0-123456789abc" \
+  -H "x-user-roles: Buyer" \
+  -H "x-user-email: buyer01@nexus.local"
+```
+Hành động này giúp bạn kiểm tra phân quyền RBAC và logic nghiệp vụ theo từng User mà không cần phải thực hiện bước đăng nhập lấy JWT token từ Gateway!
+
+---
+
+### Quy Chuẩn Cấu Trúc Dữ Liệu Trả Về (Response Standards)
+
+1. **Phản hồi thành công (Success)**: Bọc trong vỏ chuẩn `ApiResponse<T>`:
+   ```json
+   {
+     "success": true,
+     "data": {
+       "id": "01912345-6789-7abc-def0-123456789abc",
+       "email": "buyer01@nexus.local"
+     },
+     "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+     "timestamp": "2026-10-27T14:50:00Z"
+   }
+   ```
+2. **Phản hồi danh sách phân trang (Paged Data)**: Bọc trong `ApiResponse<PagedData<T>>`.
+3. **Phản hồi không nội dung (No Content)**: Trả về mã HTTP `204 NoContent` (không có body).
+4. **Phản hồi lỗi (Error)**: Tuân thủ chuẩn RFC 9110 / ProblemDetails (xem chi tiết tại Phần 4).
+
+---
+
+## 3. PHẦN 2: KIỂM THỬ RIÊNG LẺ EVENT CONSUMER (BẤT ĐỒNG BỘ QUA RABBITMQ)
+
+Khi bạn viết một Consumer (ví dụ: `SendOtpEmailConsumer` gửi email OTP, hoặc `StockReservedConsumer` xử lý trừ tiền ví), làm thế nào để test hàm `Consume()` mà **không cần chạy các service khác**?
 
 Bạn có thể đưa Event giả lập vào thẳng RabbitMQ Broker theo 2 cách:
 
@@ -223,26 +226,27 @@ Trong MassTransit, tên Exchange mặc định chính là `Namespace:ContractNam
   ```
 - **Lưu ý kỹ thuật cho Wallet Consumer**:
   - Exchange chuẩn trong code là `Wallet.Domain.Events:IStockReservedEvent` (interface nằm ở `Wallet.Domain.Events`).
-  - `totalAmount` là chuỗi `string` (ví dụ `"150000.00"`), không phải số thực (number).
-  - `userId` bắt buộc phải là chuỗi định dạng **Guid hợp lệ** (`Guid.TryParse`) và nên tương ứng với một ví đã tồn tại trong database `wallet_db`.
+  - `totalAmount` là chuỗi `string` (ví dụ `"150000.00"`), không phải số thực.
+  - `userId` bắt buộc phải là chuỗi định dạng **Guid hợp lệ** (`Guid.TryParse`) và tương ứng với một ví đã tồn tại trong database `wallet_db`.
 
-👉 **Mẹo Debug**: Trước khi bấm **Send** trên Postman, hãy đặt Breakpoint tại dòng đầu tiên của hàm `Consume(ConsumeContext<T> context)` trong IDE (Visual Studio / Rider). IDE sẽ lập tức dừng đúng vị trí để bạn kiểm tra từng biến!
+👉 **Mẹo Debug**: Trước khi bấm **Send** trên Postman hoặc **Publish** trên RabbitMQ UI, hãy đặt Breakpoint tại dòng đầu tiên của hàm `Consume(ConsumeContext<T> context)` trong IDE (Visual Studio / Rider). IDE sẽ lập tức dừng đúng vị trí để bạn kiểm tra từng biến!
 
 ---
 
-## 4. PHẦN 3: KIỂM THỬ KẾT HỢP (FUNCTION VỪA gRPC VỪA PHÁT TÁN EVENT)
+## 4. PHẦN 3: KIỂM THỬ KẾT HỢP (RESTFUL API ĐỒNG BỘ + PHÁT TÁN EVENT BẤT ĐỒNG BỘ)
 
-Nhiều Function nghiệp vụ có tính chất kết hợp: Client gọi gRPC vào $\rightarrow$ Service ghi nhận vào Database $\rightarrow$ Đồng thời bắn Event lên RabbitMQ (ví dụ: `UsersApi/Register` vừa lưu User vừa bắn Event gửi mail).
+Nhiều tính năng nghiệp vụ có tính chất kết hợp: Client gửi HTTP POST/PUT vào RESTful API $\rightarrow$ Service ghi nhận vào Database $\rightarrow$ Đồng thời bắn Event lên RabbitMQ (ví dụ: `POST /api/v1/auth/register` vừa lưu User vừa bắn Event gửi email OTP).
 
 ### Quy Trình Kiểm Thử 2 Mắt Xích:
-1. **Bước 1 (Kích hoạt gRPC)**: Mở Postman gRPC Request gọi `UsersApi/Register`.
-   - Postman nhận Response: `200 OK` hoặc `{ "userId": "..." }`.
-2. **Bước 2 (Kiểm tra Event được bắn ra)**:
+1. **Bước 1 (Kích hoạt RESTful API)**:
+   - Gửi request `POST http://localhost:8001/api/v1/auth/register` qua Swagger UI, Postman hoặc cURL.
+   - Nhận Response `200 OK` hoặc `201 Created` kèm payload JSON.
+2. **Bước 2 (Kiểm tra Event được bắn ra trên RabbitMQ Broker)**:
    - Mở trình duyệt vào RabbitMQ Management: `http://localhost:15672/#/queues`.
    - Tìm queue nhận (ví dụ: `send-otp-email`). Bạn sẽ thấy:
      - Biểu đồ **Message rates** nhảy lên `1 msg/s`.
-     - Nếu `NotificationService` đang chạy, message sẽ được consume ngay lập tức.
-     - Nếu `NotificationService` chưa bật, message sẽ nằm chờ ở trạng thái `Ready: 1`.
+     - Nếu `NotificationService` đang chạy, message sẽ được consume ngay lập tức (`Unacked: 0`, `Ready: 0`).
+     - Nếu `NotificationService` chưa bật, message sẽ nằm chờ an toàn trong hàng đợi ở trạng thái `Ready: 1`.
 
 ---
 
@@ -260,19 +264,16 @@ Mọi phản hồi lỗi từ hệ thống Nexus đều chuẩn hóa theo RFC 91
   "errorCode": "VAL_INVALID_INPUT",
   "detail": "Email is already registered in the system.",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "timestamp": "2026-10-24T12:00:00Z"
+  "timestamp": "2026-10-27T14:50:00Z"
 }
 ```
-- `errorCode`: Cho biết danh mục lỗi nghiệp vụ (ví dụ: `VAL_INVALID_INPUT`, `USER_NOT_FOUND`, `INSUFFICIENT_BALANCE`, `DOWNSTREAM_UNHEALTHY`).
-- `detail`: Lý do người dùng bị từ chối bằng tiếng Anh chuẩn.
-- `traceId`: Chìa khóa vàng để chuyển sang Tầng 2.
+- `errorCode`: Cho biết danh mục lỗi nghiệp vụ viết hoa theo `SCREAMING_SNAKE_CASE` (ví dụ: `VAL_INVALID_INPUT`, `USER_NOT_FOUND`, `INSUFFICIENT_BALANCE`, `DOWNSTREAM_UNHEALTHY`).
+- `detail`: Lý do bị từ chối bằng 100% tiếng Anh Sentence case theo đúng **Nguyên tắc 5**.
+- `traceId`: Chìa khóa định danh duy nhất để tra cứu xuyên suốt hệ thống tại Tầng 2.
 
 ---
 
 ### Tầng 2: Mở Grafana Tempo Định Vị Tên File & Số Dòng Code Bị Crash
-
-> **Trạng thái cấu hình Tracing thực tế (2026-10-24):**  
-> Hiện tại chỉ có **ApiGateway**, **Log.Api** và **Wallet.Api** đã được tích hợp OpenTelemetry SDK đầy đủ để đẩy Spans về Tempo. 6 services còn lại (`User`, `Catalog`, `Commerce`, `Auction`, `Fulfillment`, `Notification`) chưa cấu hình OpenTelemetry exporter. Đối với 6 service này, Grafana Tempo sẽ ghi nhận Span từ Gateway gọi sang, nhưng chưa thể hiện cây nội bộ chi tiết bên trong service cho đến khi hoàn tất cài đặt OTel SDK.
 
 Nếu API trả về `500 Internal Server Error` hoặc lỗi không rõ nguyên nhân:
 
@@ -280,7 +281,7 @@ Nếu API trả về `500 Internal Server Error` hoặc lỗi không rõ nguyên
 2. **Mở Grafana Tempo**: Truy cập `http://localhost:3000/explore` (đã bật sẵn Anonymous Admin, không cần mật khẩu).
 3. **Tra cứu Trace**: Đảm bảo datasource chọn **Tempo**, dán mã `TraceId` vào ô tìm kiếm và bấm **Run query**.
 4. **Đọc biểu đồ Waterfall**:
-   - Toàn bộ cây thực thi từ Gateway $\rightarrow$ gRPC $\rightarrow$ EF Core SQL $\rightarrow$ MassTransit Publish/Consume sẽ hiện ra.
+   - Toàn bộ cây thực thi từ Gateway $\rightarrow$ HTTP REST call $\rightarrow$ EF Core SQL $\rightarrow$ MassTransit Publish/Consume sẽ hiện ra.
    - Thanh Span nào bị crash hoặc ném Exception sẽ **chuyển sang màu ĐỎ RỰC**.
 5. **Xem chi tiết lỗi**: Bấm chuột vào thanh màu đỏ đó. Bảng thông số bên phải sẽ hiển thị:
    - `exception.type`: Loại Exception (ví dụ: `Npgsql.PostgresException`, `NullReferenceException`).
@@ -291,7 +292,7 @@ Nếu API trả về `500 Internal Server Error` hoặc lỗi không rõ nguyên
 ---
 
 ### Tầng 3: Chẩn Đoán Lỗi Event Bất Đồng Bộ Qua Dead-Letter Queue (`*_error`)
-Nếu luồng gRPC đã xong nhưng tác vụ ngầm bị thất bại (ví dụ: Worker gửi mail bị sai mật khẩu SMTP, hoặc worker ghi log bị đầy ổ cứng):
+Nếu luồng RESTful HTTP đã xong nhưng tác vụ ngầm bị thất bại (ví dụ: Consumer gửi email OTP bị sai mật khẩu SMTP, hoặc worker ghi log bị lỗi kết nối DB):
 
 1. Mở **RabbitMQ UI**: `http://localhost:15672/#/queues`.
 2. Tìm các Queue có hậu tố **`_error`** (MassTransit tự động gom các message lỗi vào đây sau khi đã retry hết số lần quy định, ví dụ: `send-otp-email_error`).
@@ -310,8 +311,8 @@ Nếu luồng gRPC đã xong nhưng tác vụ ngầm bị thất bại (ví dụ
 
 | Nhiệm Vụ | Công Cụ | Cách Thực Hiện | Lợi Ích |
 | :--- | :--- | :--- | :--- |
-| **Test 1 hàm gRPC** | **Postman gRPC Request** | Nhập `localhost:800x`, chọn hàm qua Reflection, điền JSON, bấm Invoke. | Không cần import `.proto`, tự gợi ý field, test độc lập từng service. |
+| **Test 1 Endpoint RESTful** | **Swagger UI / Postman / cURL** | Truy cập `localhost:800x/swagger` hoặc gọi HTTP trực tiếp. | Không cần import proto, có UI trực quan, test độc lập từng service. |
 | **Test 1 Event Consumer** | **Postman REST $\rightarrow$ RabbitMQ API** | Gửi HTTP POST tới `:15672/api/exchanges/.../publish`. | Kích hoạt worker ngầm mà không cần chạy các service nguồn. |
-| **Test Function gRPC + Event** | **Postman gRPC + RabbitMQ UI** | Invoke gRPC trên Postman, kiểm tra Queue trên RabbitMQ UI (`:15672`). | Xác nhận cả 2 mắt xích đồng bộ & bất đồng bộ đều thông suốt. |
+| **Test Kết Hợp REST + Event** | **Swagger/Postman + RabbitMQ UI** | Gửi request REST, kiểm tra Queue trên RabbitMQ UI (`:15672`). | Xác nhận cả 2 mắt xích đồng bộ & bất đồng bộ đều thông suốt. |
 | **Bắt lỗi Code & Dòng Crash** | **Grafana Tempo** | Dán `TraceId` vào `:3000/explore`, bấm vào Span đỏ. | Chỉ rõ file `.cs`, số dòng code bị lỗi và câu lệnh SQL gây lỗi. |
 | **Bắt lỗi Worker ngầm** | **RabbitMQ Dead-Letter** | Xem các queue `*_error` trên `:15672`. | Xem nguyên nhân crash của Consumer và replay lại message dễ dàng. |

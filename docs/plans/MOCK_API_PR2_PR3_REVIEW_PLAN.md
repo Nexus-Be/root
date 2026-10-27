@@ -204,7 +204,7 @@ dotnet test  ApiGateway.sln -c Release      # 100% pass
 Smoke tay (Mock mode) — kỳ vọng **200 + `X-Gateway-Mode: Mock`**:
 
 ```bash
-G=http://localhost:8000
+G=http://localhost:8080
 curl -s -D- "$G/api/v1/auctions?page=1&pageSize=5" | head -20
 curl -s -D- "$G/api/v1/auctions/a1000000-0000-0000-0000-000000000001"
 curl -s -D- "$G/api/v1/products?page=1&pageSize=5"          # sau C1: KHÔNG còn /catalog

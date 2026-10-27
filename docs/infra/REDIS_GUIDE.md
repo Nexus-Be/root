@@ -20,16 +20,22 @@ Redis (phiên bản `7-alpine`) là cơ sở dữ liệu In-Memory tốc độ c
 
 ---
 
-## 2. THÔNG SỐ KẾT NỐI & KHỞI ĐỘNG
+## 2. THÔNG SỐ KẾT NỐI, CỔNG MẠNG & GIỚI HẠN BỘ NHỚ (500MB)
 
-| Thông Số | Giá Trị Mặc Định | Ghi Chú |
-| :--- | :--- | :--- |
-| **Tên Container Docker** | `nexus-shared-redis` | Ảnh `redis:7-alpine` |
-| **Cổng mạng (Host & Container)** | `6379` | `localhost:6379` |
-| **Mật khẩu (Password)** | Không mật khẩu (Dev) | Có thể cấu hình `requirepass` trên Prod |
-| **Volume lưu trữ dữ liệu** | `redis_data` | Giữ dữ liệu khi restart container |
+Hệ thống sử dụng **1 instance Redis duy nhất** dùng chung cho cả API Gateway và User Service, cấu hình giới hạn 500MB RAM, phân tách dữ liệu an toàn bằng Key Prefix:
 
-### Khởi động container Redis:
+| Tiêu Chí | Giá Trị Cấu Hình |
+| :--- | :--- |
+| **Dịch vụ phụ trách** | Shared: Distributed Dynamic Rate Limiting (Gateway) & Quản lý vòng đời mã OTP / Cache (User Service) |
+| **Tên Container Docker** | `nexus-shared-redis` |
+| **Tên Service Compose** | `redis` |
+| **Cổng mạng (Host & Container)** | `6379` (`localhost:6379`) |
+| **Giới hạn RAM (Memory Limit)** | **500MB** (`--maxmemory 460mb`, `mem_limit: 500m`, chừa 40MB buffer runtime jemalloc) |
+| **Chính sách Eviction** | `allkeys-lru` (Tự động giải phóng bucket và key cũ khi bộ nhớ đạt ngưỡng) |
+| **Volume lưu trữ dữ liệu** | `redis_data:/data` |
+| **Mật khẩu (Password)** | Không mật khẩu (Môi trường Dev) |
+
+### Khởi động Redis:
 ```bash
 # Từ thư mục gốc Nexus-Be:
 docker compose -f docker-compose.infra.yml up -d redis
@@ -105,7 +111,8 @@ user:otp:buyer01@example.com
 
 ## 5. CẨM NANG LỆNH `redis-cli` DÀNH CHO DEVELOPER
 
-Để tương tác trực tiếp với Redis trong Docker, mở Terminal và gõ:
+Để tương tác trực tiếp với Redis trong Docker, mở Terminal và kết nối trực tiếp vào container:
+
 ```bash
 docker exec -it nexus-shared-redis redis-cli
 ```

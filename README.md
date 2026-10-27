@@ -8,7 +8,7 @@ Hệ sinh thái thương mại điện tử & đấu giá trực tuyến phân t
 
 | Dịch Vụ | Port App | Database | Port DB | Nhiệm Vụ Chính |
 | :--- | :---: | :--- | :---: | :--- |
-| **ApiGateway** | **8080** | Redis 7 | **6379** | Điểm vào duy nhất, Rate Limiting, JWT/RBAC, Mock Engine |
+| **ApiGateway** | **8080** | Redis Rate Limit | **6379** | Điểm vào duy nhất, Rate Limiting, JWT/RBAC, Mock Engine |
 | **UserService** | **8001** | `usermanagement_db` (Postgres) | **5433** | Đăng ký, đăng nhập, JWT, User Profile, RBAC, Duyệt Seller |
 | **CatalogService** | **8002** | `category_db` (Postgres) | **5434** | Danh mục, sản phẩm, quản lý tồn kho kho ảo của Seller |
 | **CommerceService** | **8003** | `commerce_db` (Postgres) | **5435** | Giỏ hàng, đơn hàng, điều phối Checkout Saga |
@@ -20,7 +20,7 @@ Hệ sinh thái thương mại điện tử & đấu giá trực tuyến phân t
 
 ### Hạ Tầng Dùng Chung (Shared Platform Infrastructure)
 - **RabbitMQ**: Port `5672` (AMQP), Port `15672` (Management UI tại `http://localhost:15672`, tài khoản: `guest` / `MatkhaucuaTui123@`).
-- **Redis**: Port `6379` (Distributed Cache & Rate Limiting).
+- **Redis In-Memory Store**: Port `6379` (`nexus-shared-redis`, 500MB RAM, chia sẻ giữa Gateway Rate Limit và User Cache).
 - **Grafana Tempo**: Port `4317` (OTLP gRPC), Port `4318` (OTLP HTTP), Port `3200` (API).
 - **Grafana Dashboard**: Port `3000` (`http://localhost:3000/explore`).
 

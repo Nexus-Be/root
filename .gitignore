@@ -21,3 +21,4 @@ nuget.config
 
 # .agent
 .agents
+.claude

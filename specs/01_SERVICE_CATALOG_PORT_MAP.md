@@ -57,12 +57,14 @@ Chạy `dotnet run` **không** dùng port đặc tả trừ khi set `ASPNETCORE_
 - **Tài khoản mặc định**: `postgres` / `MatkhaucuaTui123@`.
 - **Dải port ánh xạ host**: Bắt đầu từ `5433` đến `5440`, tránh hoàn toàn xung đột với port PostgreSQL mặc định `5432` trên máy host.
 
-### C. Redis In-Memory Store
-- **Cổng**: `6379`.
-- **Mục đích**:
-  - Edge Distributed Rate Limiting (Fixed/Sliding Window per IP & User).
-  - Trạng thái phiên & Idempotency key deduplication.
-- **Fail-Open Policy**: Trong môi trường `Development`, nếu Redis chưa bật hoặc mất kết nối, Gateway tự động cho request đi qua để không gián đoạn lập trình.
+### C. Redis In-Memory Store (Shared Instance - Cổng 6379, Định mức 500MB)
+- **Cổng**: `6379` (Container: `nexus-shared-redis`, service: `redis`).
+- **Định mức RAM**: Tối đa `500MB` (`--maxmemory 460mb`, `mem_limit: 500m`, policy: `allkeys-lru`, chừa 40MB buffer runtime jemalloc chống OOM).
+- **Phân chia Namespace & Mục đích**:
+  - **API Gateway**: Edge Distributed Rate Limiting (Fixed/Sliding Window per IP & User) với prefix `nexus:gateway:*`.
+    * *Fail-Open Policy*: Trong môi trường `Development`, nếu Redis chưa bật hoặc mất kết nối, Gateway tự động cho request đi qua để không gián đoạn lập trình.
+  - **User Service**: Lưu trữ mã OTP đăng ký / đặt lại mật khẩu với cơ chế tự hủy TTL, và cache hồ sơ người dùng với prefix `nexus:otp:*` / `otp:*`.
+  - **Cơ chế an toàn**: Nhờ phân vùng key prefix độc lập, một instance Redis 500MB đảm nhận trơn tru cả 2 nhiệm vụ mà không lo xung đột dữ liệu.
 
 ### D. OpenTelemetry OTLP Collector (Observability)
 - **HTTP OTLP Receiver Port**: `4318`.

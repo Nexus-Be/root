@@ -19,7 +19,7 @@ Chạy `docker compose up -d` để dựng toàn bộ cả 9 services containers
 1. **Bạn chỉ cần bật Cơ sở dữ liệu và Hạ tầng liên quan của riêng service bạn.**
 2. **Chạy Service của bạn trực tiếp trong IDE (Visual Studio / Rider / VS Code) với chế độ Debug (`F5`).**
 3. **Chạy API Gateway ở chế độ Dual-Runtime**:
-   - Service bạn đang code được đặt là **`"Real"`** $\rightarrow$ Gateway gọi gRPC trực tiếp sang code của bạn.
+   - Service bạn đang code được đặt là **`"Real"`** $\rightarrow$ Gateway chuyển tiếp HTTP REST trực tiếp sang code của bạn (`ForwardAsync`).
    - Toàn bộ 7 services còn lại được đặt là **`"Mock"`** $\rightarrow$ Gateway tự trả JSON mẫu giả lập, không cần bất kỳ container nào của 7 service kia chạy thật!
 
 ---
@@ -136,38 +136,46 @@ Gateway sẽ lắng nghe tại cổng `http://localhost:8080`.
 3. Bấm **Try it out** $\rightarrow$ Điền Request Body / Query Params $\rightarrow$ Bấm **Execute**.
 4. **Điều gì sẽ diễn ra?**
    - Gateway nhận request HTTP REST.
-   - Nhận diện `catalog` đang ở chế độ `Real` $\rightarrow$ Tự động chuyển đổi thành gRPC call và gọi tới `http://localhost:8002`.
+   - Nhận diện `catalog` đang ở chế độ `Real` $\rightarrow$ Tự động chuyển tiếp HTTP REST trực tiếp (`ForwardAsync`) sang endpoint của service tại `http://localhost:8002`.
    - IDE của bạn sẽ dừng lại tại các Breakpoint bạn đã đặt trong Service để debug từng dòng mã!
    - Kết quả trả về cho Swagger được đóng gói trong vỏ chuẩn `ApiResponse<T>` với mã HTTP 200, 201 hoặc ProblemDetails 400, 404...
 
 ---
 
-### Phương Pháp 2: Kiểm thử trực tiếp gRPC Service (Không cần qua Gateway)
-Khi bạn muốn test nhanh phương thức gRPC mà không cần bật Gateway:
+### Phương Pháp 2: Kiểm thử trực tiếp RESTful API Backend Service (Cổng 8001-8008, không cần qua Gateway)
+Khi bạn muốn test nhanh phương thức RESTful mà không cần bật Gateway:
+Mỗi backend service là một Web API độc lập lắng nghe trên dải cổng riêng (`8001`-`8008`) và có Swagger UI riêng trong môi trường `Development`.
 
-> ⚠️ **Lưu ý hiện trạng**: Các service đang có gRPC Server thật + Reflection bật sẵn gồm: **`UserService:8001`**, **`LogService:8004`**, **`WalletService:8008`**. (Catalog hiện đang chạy REST Mock tại cổng 8002).
+#### A. Dùng Swagger UI trực tiếp của Service:
+1. Mở trình duyệt vào URL Swagger của service bạn đang chạy:
+   - **UserService**: `http://localhost:8001/swagger`
+   - **CatalogService**: `http://localhost:8002/swagger`
+   - **CommerceService**: `http://localhost:8003/swagger`
+   - **LogService**: `http://localhost:8004/swagger`
+   - **AuctionService**: `http://localhost:8005/swagger`
+   - **FulfillmentService**: `http://localhost:8006/swagger`
+   - **NotificationService**: `http://localhost:8007/swagger`
+   - **WalletService**: `http://localhost:8008/swagger`
+2. Bấm **Try it out** $\rightarrow$ Điền Request Body / Query Params $\rightarrow$ Bấm **Execute** để nhận kết quả ngay.
 
-#### A. Dùng Postman (Hỗ trợ Server Reflection):
-1. Mở Postman $\rightarrow$ Chọn **New** $\rightarrow$ **gRPC Request**.
-2. Điền URL: `http://localhost:8008` (Wallet) hoặc `http://localhost:8001` (User).
-3. Tại **Service definition**, chọn **Use Server reflection**. Postman sẽ tự động nạp danh sách RPC methods mà không cần bạn phải copy file `.proto` thủ công!
-4. Chọn method (ví dụ `WalletApi/GetWallet`), bấm **Use Example Message** để sinh JSON payload.
-5. Soạn thảo request và bấm **Invoke** để nhận kết quả ngay.
+#### B. Dùng Postman hoặc file `.http`:
+1. Tạo HTTP Request (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`).
+2. Điền URL trực tiếp: `http://localhost:800x/api/v1/{resource}`.
+3. Nếu cần giả lập danh tính người dùng và phân quyền RBAC (không cần token JWT Gateway), gắn trực tiếp các Request Headers:
+   - `x-user-id: 01912345-6789-7abc-def0-123456789abc`
+   - `x-user-roles: Buyer` (hoặc `Seller`, `Staff`, `Admin`, `SuperAdmin`)
+   - `x-user-email: user@nexus.local`
 
-#### B. Dùng giao diện Web UI trực quan bằng `grpcui`:
+#### C. Dùng công cụ dòng lệnh `curl` (CLI):
 ```bash
-# Biến gRPC thành giao diện web tương tác như Swagger:
-grpcui -plaintext localhost:8008
-```
+# 1. Gọi trực tiếp endpoint của Catalog Service trên cổng 8002:
+curl -i http://localhost:8002/api/v1/products
 
-#### C. Dùng công cụ dòng lệnh `grpcurl`:
-```bash
-# Liệt kê các service gRPC đang mở trên cổng 8008:
-grpcurl -plaintext localhost:8008 list
-
-# Gọi một method cụ thể kèm payload:
-grpcurl -plaintext -d '{"userId": "01912345-6789-7abc-def0-123456789abc"}' \
-  localhost:8008 ShoppingCart.Contracts.V1.WalletApi/GetWallet
+# 2. Gọi endpoint Wallet Service kèm Header danh tính người dùng:
+curl -i -X GET http://localhost:8008/api/v1/wallets/my-balance \
+  -H "x-user-id: 01912345-6789-7abc-def0-123456789abc" \
+  -H "x-user-roles: Buyer" \
+  -H "x-user-email: buyer01@nexus.local"
 ```
 
 ---
@@ -201,8 +209,8 @@ Khi bạn làm việc trên service nào, hãy tra cứu đúng cổng của ser
 
 | Service của bạn | Port Code App (`dotnet run`) | Dịch vụ Hạ Tầng Phụ Trợ | Cổng Phụ Trợ | Tên Database PostgreSQL (Neon Cloud) |
 | :--- | :---: | :--- | :---: | :--- |
-| **ApiGateway** | **8080** | `nexus-shared-redis` | `6379` | *(Redis Key-Value)* |
-| **UserService** | **8001** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `usermanagement_db` |
+| **ApiGateway** | **8080** | `nexus-shared-redis` | `6379` (500MB) | *(Redis Rate Limit)* |
+| **UserService** | **8001** | `nexus-shared-redis` / Neon Cloud | `6379` (500MB) / Cloud | `user_db` *(Redis OTP & PostgreSQL)* |
 | **CatalogService** | **8002** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `category_db` |
 | **CommerceService** | **8003** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `commerce_db` |
 | **LogService** | **8004** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `log_db` |
@@ -213,7 +221,7 @@ Khi bạn làm việc trên service nào, hãy tra cứu đúng cổng của ser
 
 *Ghi chú hạ tầng dùng chung*:
 - **RabbitMQ**: AMQP `5672`, Management UI `15672`.
-- **Redis**: Port `6379`.
+- **Redis In-Memory**: Cổng `6379` (Container: `nexus-shared-redis`, 500MB RAM, chia sẻ giữa Rate Limit và User Cache).
 - **Grafana Tempo**: OTLP gRPC `4317`, Grafana Explore `3000`.
 
 ---

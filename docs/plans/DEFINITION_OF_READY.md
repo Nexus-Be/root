@@ -78,7 +78,7 @@ Tất cả phải đúng, không có ngoại lệ “tạm”:
 | Loại | Thêm điều kiện |
 |---|---|
 | RPC mới | `grpcurl -plaintext localhost:<port> list` thấy service + method; gọi thử 1 request thật |
-| Endpoint Gateway mới | `curl` qua `localhost:8000` với `X-Gateway-Mode: Mock` **và** `Real` đều đúng |
+| Endpoint Gateway mới | `curl` qua `localhost:8080` với `X-Gateway-Mode: Mock` **và** `Real` đều đúng |
 | Event mới | Test publish→consume end-to-end (bật RabbitMQ); DLQ nhận được message lỗi |
 | Migration | `dotnet ef database update` trên DB trống + chạy lại app không lỗi |
 | Doc/spec | `audit.py --gate doclink` = 0; số liệu khớp `repo_facts.py` |

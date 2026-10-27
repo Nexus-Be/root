@@ -1,6 +1,8 @@
 # HƯỚNG DẪN CÁC BƯỚC TIẾP THEO & BỘ CHECKLIST TRIỂN KHAI MICROSERVICES
 ## (NEXT STEPS & IMPLEMENTATION CHECKLIST)
 
+> **Quy chuẩn kiến trúc chiến lược (ADR 06 & Nguyên tắc 4)**: Toàn bộ hệ thống giao tiếp đồng bộ đã chuẩn hóa **100% RESTful HTTP/JSON** (CẤM TUYỆT ĐỐI gRPC). Mỗi microservice backend expose endpoint REST tại dải cổng `8001`-`8008`, và giao tiếp bất đồng bộ duy trì 100% Event-driven qua RabbitMQ.
+
 Tài liệu này đóng vai trò là **Kim Chỉ Nam Hành Động** cho giai đoạn tiếp theo của dự án sau khi **Nexus API Gateway** đã hoàn thành toàn diện. Tài liệu giải đáp chi tiết:
 1. *API Gateway đã xong chưa? Còn cần làm gì thêm nữa không?*
 2. *Các bước tiếp theo cần triển khai những gì? Thứ tự ưu tiên ra sao?*
@@ -111,18 +113,22 @@ Khi bắt tay vào code bất kỳ service nào (Ví dụ: `UserService`), hãy 
   - Sử dụng `FluentValidation` để kiểm tra dữ liệu đầu vào.
   - Nếu có lỗi nghiệp vụ: Ném exception map sang mã lỗi RFC 9110 hoặc gRPC Status tương ứng.
 
-- [ ] **Bước 5: Triển khai gRPC Server (`*.Api`)**
-  - Tạo class kế thừa từ base class sinh ra bởi Protobuf (Ví dụ: `UsersGrpcService : UsersApi.UsersApiBase`).
-  - Lấy thông tin user trực tiếp từ Header:
+- [ ] **Bước 5: Triển khai RESTful Controllers / Minimal APIs (`*.Api`) — CẤM gRPC**
+  - Tạo Controller kế thừa `ControllerBase` hoặc Minimal API map endpoint `/api/v1/{resource}`.
+  - Lấy thông tin user trực tiếp từ HTTP Headers:
     ```csharp
-    var userId = context.RequestHeaders.Get("x-user-id")?.Value;
-    var roles = context.RequestHeaders.Get("x-user-roles")?.Value;
+    var userId = Request.Headers["x-user-id"].FirstOrDefault();
+    var roles = Request.Headers["x-user-roles"].FirstOrDefault();
+    var email = Request.Headers["x-user-email"].FirstOrDefault();
     ```
-  - Đăng ký service trong `Program.cs`:
+  - Trả về bọc trong vỏ chuẩn `ApiResponse<T>`, `ApiResponse<PagedData<T>>` hoặc `204 NoContent`.
+  - Đăng ký controllers và Swagger trong `Program.cs`:
     ```csharp
-    builder.Services.AddGrpc();
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
     // ...
-    app.MapGrpcService<UsersGrpcService>();
+    app.MapControllers();
     ```
 
 - [ ] **Bước 6: Tích Hợp OpenTelemetry Tracing (1 dòng duy nhất)**
@@ -153,7 +159,7 @@ Mở terminal tại service đó:
 ```bash
 cd src/Services/User
 dotnet run --project User.Api
-# Service sẽ khởi động và lắng nghe gRPC tại port 8001
+# Service sẽ khởi động và lắng nghe RESTful API tại port 8001
 ```
 
 ### Bước 3: Chuyển Gateway sang chế độ Real cho Service đó
@@ -164,7 +170,7 @@ Mở file `src/Services/ApiGateway/Nexus.Gateway/gateway.runtime.json`, sửa:
   "Address": "http://localhost:8001"
 }
 ```
-*(Nhờ cơ chế Hot-Reload, Gateway tự động chuyển sang gọi gRPC thật mà không cần khởi động lại! Các service khác vẫn giữ "Mode": "Mock")*.
+*(Nhờ cơ chế Hot-Reload, Gateway tự động chuyển sang gọi HTTP REST thật mà không cần khởi động lại! Các service khác vẫn giữ "Mode": "Mock")*.
 
 ### Bước 4: Kiểm thử End-to-End trên Swagger
 1. Truy cập Swagger Gateway: `http://localhost:8080/swagger`.
@@ -177,16 +183,16 @@ Mở file `src/Services/ApiGateway/Nexus.Gateway/gateway.runtime.json`, sửa:
 2. Dán mã `X-Trace-Id` từ response của Gateway vào ô tìm kiếm.
 3. Quan sát cây vết (Flame Graph):
    - Nhìn thấy request từ Client vào Gateway.
-   - Nhìn thấy Gateway điều phối gRPC sang UserService.
+   - Nhìn thấy Gateway điều phối HTTP REST sang UserService.
    - Nhìn thấy thời gian câu lệnh SQL thực thi trong PostgreSQL và event bắn vào RabbitMQ.
 
 ---
 
 ## 6. BẢNG CHECKLIST TỔNG HỢP TIẾN ĐỘ TOÀN SÀN
 
-| Service | Database Port | gRPC Port | Domain Entities | EF Core DbContext | gRPC Server Impl | RabbitMQ Events | Tracing | Gateway Test |
+| Service | Database Port | REST Port | Domain Entities | EF Core DbContext | REST API Impl | RabbitMQ Events | Tracing | Gateway Test |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **ApiGateway** | 6379 | 8080 | N/A | N/A | ✅ Client Done | N/A | ✅ Done | ✅ 120/120 Passed |
+| **ApiGateway** | 6379 | 8080 | N/A | N/A | ✅ Done | N/A | ✅ Done | ✅ 404/404 Passed |
 | **UserService** | 5433 | 8001 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 | **CatalogService** | 5434 | 8002 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 | **CommerceService** | 5435 | 8003 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |

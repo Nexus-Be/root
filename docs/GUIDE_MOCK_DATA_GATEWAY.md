@@ -36,7 +36,7 @@ Mọi request khi gửi đến Nexus API Gateway đều được xử lý tuần
 5. Controller Model Binding & Input Validation (Bind DTO, tự động validate dữ liệu đầu vào)
        │
        ▼
-6. Gateway Dispatcher Execution (IGatewayDispatcher điều phối: Mock -> Seeds/ | Real -> gRPC)
+6. Gateway Dispatcher Execution (IGatewayDispatcher điều phối: Mock -> Seeds/ | Real -> HTTP REST Forward)
        │
        ▼
 [ Client Response: ApiResponse<T> ]
@@ -59,7 +59,7 @@ Mọi request khi gửi đến Nexus API Gateway đều được xử lý tuần
    - Controller validate logic nghiệp vụ qua các helper (`ValidationHelpers`, `pagination.EnsureValid()`), ném `GatewayInputException` khi dữ liệu không hợp lệ.
 6. **Gateway Dispatcher Execution (`IGatewayDispatcher`)**:
    - **Khi Service ở chế độ `Mock`**: Tự động tìm và đọc file dữ liệu seed mẫu từ thư mục `Seeds/{service}/{operation}.json`, kiểm tra tính hợp lệ qua Protobuf Parser, và bọc trong `ApiResponse<T>` chuẩn.
-   - **Khi Service ở chế độ `Real`**: Kiểm tra trạng thái Circuit Breaker từ Health Prober Daemon; nếu healthy sẽ gọi gRPC client sang Microservice downstream tương ứng và bọc kết quả trả về.
+   - **Khi Service ở chế độ `Real`**: Kiểm tra trạng thái Circuit Breaker từ Health Prober Daemon; nếu healthy sẽ gọi HTTP REST downstream sang Microservice tương ứng và bọc kết quả trả về.
 
 ---
 
@@ -69,7 +69,7 @@ Trước đây có tài liệu nhắc đến 2 cách (tạo file declarative `*.
 
 Lý do bắt buộc phải tạo Controller Endpoint kết hợp Seed Fixture:
 1. **Đảm bảo đầy đủ các bước của Gateway**: Nếu chỉ tạo file JSON đứng riêng lẻ mà không có Controller, API sẽ không có DTO binding, không có C# validation, không thể khai báo các Attribute phân quyền (`[Authorize]`) và Rate Limit (`[EnableRateLimiting]`) theo chuẩn của hệ thống.
-2. **Chuyển đổi `Mock` $\rightarrow$ `Real` trong 0 giây (Zero-Code Switch)**: Controller chính là cầu nối gRPC client. Khi backend service thật hoàn thành, bạn chỉ cần đổi cấu hình `"Mode": "Real"` trong `gateway.runtime.json`, Controller sẽ tự động gọi gRPC mà **không cần viết lại hay sửa đổi bất kỳ dòng code Gateway nào**. Nếu mock không có Controller, khi chuyển sang `Real` request sẽ bị **404 Not Found**.
+2. **Chuyển đổi `Mock` $\rightarrow$ `Real` trong 0 giây (Zero-Code Switch)**: Controller chính là cầu nối chuyển tiếp. Khi backend service thật hoàn thành, bạn chỉ cần đổi cấu hình `"Mode": "Real"` trong `gateway.runtime.json`, Controller sẽ tự động chuyển tiếp request HTTP REST sang backend service mà **không cần viết lại hay sửa đổi bất kỳ dòng code Gateway nào**. Nếu mock không có Controller, khi chuyển sang `Real` request sẽ bị **404 Not Found**.
 3. **Cơ chế tự động ưu tiên của Gateway Middleware**: Trong code `MockEngineMiddleware.cs` (dòng 51):
    ```csharp
    if (effectiveMode == "Real" || context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>() != null)

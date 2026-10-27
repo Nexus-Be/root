@@ -20,7 +20,7 @@ Các tham số có thể cấu hình thông qua `appsettings.json` hoặc Biến
 | Tham Số | Giá Trị Chuẩn | Ý Nghĩa Kỹ Thuật |
 | :--- | :---: | :--- |
 | **Interval** | **60s** (1 phút) | Chu kỳ định kỳ mỗi lần Prober Daemon gửi request probe tới service. |
-| **Timeout** | **30s** | Thời gian tối đa chờ phản hồi. Nếu quá 30s không nhận được HTTP 200/gRPC OK, coi như lần probe đó thất bại. |
+| **Timeout** | **30s** | Thời gian tối đa chờ phản hồi. Nếu quá 30s không nhận được HTTP 200, coi như lần probe đó thất bại. |
 | **Retries / FailureThreshold** | **5 lần** | Ngưỡng cho phép thất bại liên tiếp trước khi chuyển trạng thái sang `Unhealthy`. |
 | **StartPeriod** | **60s** (1 phút) | Thời gian ân hạn khi container mới bật. Trong 60s này, nếu probe lỗi sẽ không tính vào số lần Retries. |
 
