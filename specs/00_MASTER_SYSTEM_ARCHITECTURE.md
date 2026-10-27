@@ -1,8 +1,8 @@
 # 00 — KIẾN TRÚC TỔNG THỂ HỆ THỐNG (MASTER SYSTEM ARCHITECTURE)
 
-> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — sơ đồ dưới đây là **kiến trúc mục tiêu**. Hiện thực: 3/8 backend có gRPC server, 1/8 có client ở Gateway, Saga chưa triển khai, không service nào phát JWT. Bằng chứng: `docs/plans/SCORECARD.md` + `docs/plans/audit/`.
-> **Nguồn sự thật:** code.
-> **Cập nhật lần cuối:** 2026-10-24.
+> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuyển đổi chuẩn giao tiếp downstream giữa ApiGateway và các Microservices sang **RESTful (JSON over HTTP)**; giao tiếp bất đồng bộ qua **RabbitMQ MassTransit 8.3.0**.
+> **Nguồn sự thật:** code và cấu hình Gateway/Microservices (`PLAN-20261027-0300-GATEWAY-REST-DOWNSTREAM-MIGRATION.md`).
+> **Cập nhật lần cuối:** 2026-10-27.
 
 Tài liệu này cung cấp sơ đồ kiến trúc mức cao (System Architecture), ranh giới miền (Domain-Driven Design Bounded Contexts) và nguyên lý vận hành cốt lõi của hệ sinh thái Microservices **Nexus**.
 
@@ -18,7 +18,7 @@ Tài liệu này cung cấp sơ đồ kiến trúc mức cao (System Architectur
        │       ApiGateway       │ ──(RateLimit Cache)──▶ [ Redis : 6379 ]
        └────────────────────────┘
                    │
-                   ├── (gRPC Channel - Protobuf v3 - Synchronous Query/Command)
+                   ├── (RESTful HTTP/JSON Downstream - Synchronous Query/Command)
                    ▼
   ┌───────────────┬─┴─────────────┬───────────────┬───────────────┐
   ▼               ▼               ▼               ▼               ▼
@@ -42,14 +42,14 @@ UserService    CatalogService  CommerceService  LogService     AuctionService ..
 1. **Database-Per-Service (Cô Lập Tuyệt Đối Cơ Sở Dữ Liệu)**:
    - Mỗi microservice sở hữu cơ sở dữ liệu vật lý riêng biệt (PostgreSQL độc lập qua port khác nhau).
    - Tuyệt đối **KHÔNG** truy cập trực tiếp DB của service khác (kể cả cross-query hay foreign key sang DB khác).
-   - Mọi chia sẻ dữ liệu liên service bắt buộc phải qua **gRPC Call** (đồng bộ) hoặc **RabbitMQ Event** (bất đồng bộ).
+   - Mọi chia sẻ dữ liệu liên service bắt buộc phải qua **REST API Call** (đồng bộ) hoặc **RabbitMQ Event** (bất đồng bộ).
 
 2. **Edge API Gateway Mỏng (Thin Edge Reverse Proxy)**:
-   - Gateway là cổng vào duy nhất cho mọi Client, chịu trách nhiệm xác thực JWT, phân quyền RBAC, Rate Limiting và chuyển đổi REST $\rightarrow$ gRPC.
+   - Gateway là cổng vào duy nhất cho mọi Client, chịu trách nhiệm xác thực JWT, phân quyền RBAC, Rate Limiting và chuyển tiếp REST downstream sang các backend microservices qua HTTP/JSON.
    - Gateway **KHÔNG** chứa database nghiệp vụ, không chứa in-memory DB hay logic tính toán phức tạp.
 
 3. **Hai Trục Giao Tiếp Song Song**:
-   - **Đồng bộ (Synchronous Query/Command)**: Dùng **gRPC Protobuf v3** cho các tác vụ cần kết quả tức thì (xác thực token, kiểm tra số dư, đọc chi tiết sản phẩm).
+   - **Đồng bộ (Synchronous Query/Command)**: Dùng **RESTful HTTP/JSON** cho các tác vụ cần kết quả tức thì (xác thực token, kiểm tra số dư, đọc chi tiết sản phẩm).
    - **Bất đồng bộ (Asynchronous Event-Driven)**: Dùng **RabbitMQ + MassTransit 8.3.0** cho các sự kiện trạng thái thay đổi (`OrderCreated`, `InventoryReserved`, `PaymentCompleted`, `LogRecorded`).
 
 4. **Quản Lý Giao Dịch Phân Tán Bằng Saga State Machine**:

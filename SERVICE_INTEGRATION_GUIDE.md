@@ -12,8 +12,8 @@
 2. [Phân Biệt 3 Mô Hình Ghép Luồng Kinh Điển](#2-phân-biệt-3-mô-hình-ghép-luồng-kinh-điển)
 3. [Case Study 1: Luồng Bất Đồng Bộ 1 Chiều (Gateway ➔ User ➔ RabbitMQ ➔ Notification)](#3-case-study-1-luồng-bất-đồng-bộ-1-chiều)
 4. [Case Study 2: Luồng Bắn Event Ngược Lại & Saga Bù Trừ (Commerce ⇄ Catalog ⇄ Wallet)](#4-case-study-2-luồng-bắn-event-ngược-lại--saga-bù-trừ)
-5. [Case Study 3: Luồng Đồng Bộ 100% Qua gRPC (Gateway ➔ Service A ➔ Service B)](#5-case-study-3-luồng-đồng-bộ-100-qua-grpc)
-6. [Cấu Hình Hạ Tầng: MassTransit, RabbitMQ, Outbox & gRPC](#6-cấu-hình-hạ-tầng-masstransit-rabbitmq-outbox--grpc)
+5. [Case Study 3: Luồng Đồng Bộ 100% RESTful (Gateway ➔ Service A ➔ Service B)](#5-case-study-3-luồng-đồng-bộ-100-restful)
+6. [Cấu Hình Hạ Tầng: MassTransit, RabbitMQ, Outbox & REST Downstream](#6-cấu-hình-hạ-tầng-masstransit-rabbitmq-outbox--rest-downstream)
 7. [6 Bẫy Kỹ Thuật Thường Gặp & Cách Khắc Phục (Pitfalls & Best Practices)](#7-6-bẫy-kỹ-thuật-thường-gặp--cách-khắc-phục)
 8. [Checklist Nghiệm Thu Tích Hợp Dành Cho Developer](#8-checklist-nghiệm-thu-tích-hợp-dành-cho-developer)
 
@@ -32,15 +32,15 @@ Khi Client (Web/Mobile) gửi một HTTP Request đến hệ thống, luồng d�
 │  - Xác thực JWT Bearer & RBAC                          │
 │  - Gán TraceId (x-trace-id) & Caller Claims           │
 │  - Input Validation & Rate Limiting                    │
-│  - Dispatcher điều phối (Mock hoặc Real qua gRPC)      │
+│  - GatewayBaseController.ForwardAsync (Mock / Real)    │
 └────────────────────────────────────────────────────────┘
         │
-        ├──[ Giao tiếp Đồng bộ (gRPC HTTP/2 Protobuf) ]──┐
+        ├──[ Giao tiếp Đồng bộ (RESTful HTTP/JSON) ]─────┐
         │                                                ▼
         │                                ┌───────────────────────────────┐
         │                                │    MICROSERVICE KHỞI TẠO      │
         │                                │    (Ví dụ: UserService)       │
-        │                                │  - gRPC Server xử lý Request  │
+        │                                │  - REST Controller xử lý Req  │
         │                                │  - Ghi CSDL qua DbContext     │
         │                                │  - Lưu Event vào Outbox Table │
         │                                └───────────────────────────────┘
@@ -66,10 +66,10 @@ Khi Client (Web/Mobile) gửi một HTTP Request đến hệ thống, luồng d�
 
 ## 2. PHÂN BIỆT 3 MÔ HÌNH GHÉP LUỒNG KINH ĐIỂN
 
-| Tiêu Chí | Mô Hình 1: Đồng Bộ (Sync gRPC) | Mô Hình 2: Bất Đồng Bộ 1 Chiều (Async Pub-Sub) | Mô Hình 3: Hai Chiều / Saga (Async Choreography) |
+| Tiêu Chí | Mô Hình 1: Đồng Bộ (Sync RESTful) | Mô Hình 2: Bất Đồng Bộ 1 Chiều (Async Pub-Sub) | Mô Hình 3: Hai Chiều / Saga (Async Choreography) |
 |:---|:---|:---|:---|
-| **Cơ chế** | Client gọi gRPC ➔ Server trả kết quả ngay. | Service A lưu DB, bắn Event ➔ Service B nhận và làm tiếp ngầm. | Service A bắn Event 1 ➔ Service B làm xong bắn Event 2 ngược lại ➔ Service A cập nhật. |
-| **Giao thức** | gRPC (HTTP/2, Protobuf v3). | RabbitMQ (AMQP) qua MassTransit 8.3.0. | RabbitMQ (AMQP) qua MassTransit 8.3.0. |
+| **Cơ chế** | Client gọi REST qua Gateway ➔ Service đích trả kết quả ngay. | Service A lưu DB, bắn Event ➔ Service B nhận và làm tiếp ngầm. | Service A bắn Event 1 ➔ Service B làm xong bắn Event 2 ngược lại ➔ Service A cập nhật. |
+| **Giao thức** | RESTful HTTP/JSON (Port 8001-8008). | RabbitMQ (AMQP) qua MassTransit 8.3.0. | RabbitMQ (AMQP) qua MassTransit 8.3.0. |
 | **Khi nào dùng?** | Lấy dữ liệu (Query), kiểm tra tài khoản, đăng nhập, tính giá tức thì. | Gửi email, SMS, push notification, ghi audit log, cập nhật cache. | Đặt hàng - giữ kho - trừ tiền ví, thanh toán đơn hàng nhiều bước. |
 | **Trải nghiệm Client** | Chờ vài milliseconds để có đủ dữ liệu hiển thị. | Nhận ngay `200 OK` hoặc `202 Accepted`, công việc nặng chạy nền. | Nhận `200 OK` (trạng thái `PENDING`), nhận kết quả cuối qua WebSocket/SSE hoặc Polling. |
 
@@ -84,10 +84,10 @@ Khi Client (Web/Mobile) gửi một HTTP Request đến hệ thống, luồng d�
 [Client]                [ApiGateway]             [UserService]            [RabbitMQ]         [NotificationService]
    │                          │                        │                       │                       │
    │── 1. POST /auth/register ─▶                       │                       │                       │
-   │                          │── 2. gRPC Register ───▶│                       │                       │
+   │                          │── 2. POST /auth/register ─▶                    │                       │
    │                          │                        │── 3. Lưu DB & Redis   │                       │
    │                          │                        │── 4. Publish Event ──▶│                       │
-   │                          │◀── 5. gRPC Response ───│    (SendOtpEmailEvent)│                       │
+   │                          │◀── 5. 200/201 JSON ────│    (SendOtpEmailEvent)│                       │
    │◀── 6. 200 OK (Profile) ──│                        │                       │── 7. Push to Queue ──▶│
    │                          │                        │                       │                       │── 8. Gửi Mail SMTP
 ```
@@ -179,36 +179,32 @@ public class AuthService : IAuthService
 }
 ```
 
-#### 2.2. Điểm đón gRPC Server
-Tại tầng API (`src/Services/User/User.Api/Services/UsersGrpcService.cs`):
+#### 2.2. Điểm đón REST Controller Backend
+Tại tầng API (`src/Services/User/User.Api/Controllers/AuthController.cs`):
 
 ```csharp
-[Authorize]
-public class UsersGrpcService : UsersApi.UsersApiBase
+[ApiController]
+[Route("api/v1/auth")]
+public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
 
-    public UsersGrpcService(IAuthService authService) => _authService = authService;
+    public AuthController(IAuthService authService) => _authService = authService;
 
+    [HttpPost("register")]
     [AllowAnonymous]
-    public override async Task<RegisterResponse> Register(RegisterRequest request, ServerCallContext context)
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request, CancellationToken ct)
     {
-        try
-        {
-            var dto = new RegisterDto(request.Email, request.Username, request.Password, request.DisplayName);
-            var profile = await _authService.RegisterAsync(dto, context.CancellationToken);
+        var dto = new RegisterDto(request.Email, request.Username, request.Password, request.DisplayName);
+        var profile = await _authService.RegisterAsync(dto, ct);
 
-            return new RegisterResponse
-            {
-                Success = true,
-                User = profile.ToGrpcModel()
-            };
-        }
-        catch (Exception ex)
+        return StatusCode(StatusCodes.Status201Created, new ApiResponse<UserProfileDto>
         {
-            // Trả lỗi theo chuẩn gRPC StatusCode
-            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
-        }
+            Success = true,
+            Code = StatusCodes.Status201Created,
+            Message = "User registered successfully.",
+            Data = profile
+        });
     }
 }
 ```
@@ -304,59 +300,60 @@ services.AddMassTransit(x =>
 
 ### BƯỚC 4: TẠI API GATEWAY (ĐIỂM VÀO DUY NHẤT CỦA CLIENT)
 
-#### 4.1. Đăng ký gRPC Client trong Gateway
-Tại `src/Services/ApiGateway/Nexus.Gateway/Extensions/GrpcClientsExtension.cs`:
+#### 4.1. Đăng ký Named HttpClient trong Gateway
+Tại `src/Services/ApiGateway/Nexus.Gateway/Extensions/CoreServicesExtension.cs`:
 
 ```csharp
-public static IServiceCollection AddGatewayGrpcClients(this IServiceCollection services)
+public static IServiceCollection AddGatewayHttpClients(this IServiceCollection services, IConfiguration configuration)
 {
-    // Đăng ký client gRPC kết nối tới UserService (cổng 8001)
-    services.AddNamedGrpcClient<UsersApi.UsersApiClient>("users");
+    // Đăng ký Named HttpClient cho 8 microservices backend (đọc base address từ Gateway:Services:{name}:Address)
+    services.AddHttpClient("users", (sp, client) =>
+    {
+        var options = sp.GetRequiredService<IOptions<GatewayOptions>>().Value;
+        if (options.Services.TryGetValue("users", out var svc) && !string.IsNullOrWhiteSpace(svc.Address))
+        {
+            client.BaseAddress = new Uri(svc.Address);
+        }
+    });
     return services;
 }
 ```
 
-#### 4.2. Viết Controller Action siêu mỏng (Thin Controller)
+#### 4.2. Viết Controller Action siêu mỏng qua `ForwardAsync` (Thin Controller)
 Tại `src/Services/ApiGateway/Nexus.Gateway/Controllers/AuthController.cs`:
 
 ```csharp
 [ApiController]
 [Route("api/v1/auth")]
-public class AuthController : ControllerBase
+public class AuthController : GatewayBaseController
 {
-    private readonly IGatewayDispatcher _dispatcher;
-    private readonly UsersApi.UsersApiClient _client;
-
-    public AuthController(IGatewayDispatcher dispatcher, UsersApi.UsersApiClient client)
+    public AuthController(IGatewayDispatcher dispatcher) : base(dispatcher)
     {
-        _dispatcher = dispatcher;
-        _client = client;
     }
 
     [HttpPost("register")]
     [AllowAnonymous]
     public Task<IResult> Register([FromBody] RegisterRequestDto body)
     {
-        // 1. Kiểm tra validation cơ bản tại Gateway
+        // 1. Kiểm tra validation cơ bản tại Gateway (nếu cần)
         if (string.IsNullOrWhiteSpace(body.Email) || string.IsNullOrWhiteSpace(body.Password))
             throw new GatewayInputException("Email and password are required.");
 
-        // 2. Chuyển tiếp tới UserService qua Dispatcher
-        // Dispatcher tự động xử lý chuyển đổi lỗi gRPC sang RFC 9110 ProblemDetails
-        return _dispatcher.DispatchAsync(
-            HttpContext,
-            serviceName: "users",
-            operation: "register",
-            call: opt => _client.RegisterAsync(new RegisterRequest
-            {
-                Email = body.Email.Trim().ToLowerInvariant(),
-                Password = body.Password,
-                DisplayName = body.DisplayName
-            }, opt),
-            parser: UserProfile.Parser,
-            successMessage: "User registered successfully."
-        );
+        // 2. Chuyển tiếp tới UserService qua ForwardAsync (1 dòng duy nhất!)
+        // Hàm tự động check Mock vs Real, bọc ApiResponse<T>, và forward context headers (x-trace-id, etc.)
+        return ForwardAsync<RegisterRequestDto, UserProfileResponse>(new()
+        {
+            Service = "users",
+            DownstreamPath = "/api/v1/auth/register",
+            Method = HttpMethod.Post,
+            Body = body,
+            MockSeed = "register",
+            SuccessMessage = "User registered successfully.",
+            SuccessStatusCode = StatusCodes.Status201Created
+        });
     }
+}
+```
 }
 ```
 
@@ -547,7 +544,7 @@ public sealed class StockReservationFailedConsumer : IConsumer<StockReservationF
 
 ---
 
-## 5. CASE STUDY 3: LUỒNG ĐỒNG BỘ 100% QUA gRPC
+## 5. CASE STUDY 3: LUỒNG ĐỒNG BỘ 100% RESTful
 ### (ApiGateway ➔ FulfillmentService ➔ CatalogService)
 
 Khi một service backend cần truy vấn dữ liệu tức thì từ service khác (ví dụ: `FulfillmentService` cần lấy kích thước/cân nặng của sản phẩm từ `CatalogService` để tính cước phí vận chuyển):
@@ -556,36 +553,42 @@ Khi một service backend cần truy vấn dữ liệu tức thì từ service k
 [ApiGateway]                   [FulfillmentService]               [CatalogService]
      │                                  │                                 │
      │── 1. POST /shipment/estimate ───▶│                                 │
-     │                                  │── 2. gRPC GetProductDetails ───▶│
+     │                                  │── 2. GET /api/v1/products/{id} ─▶│
      │                                  │◀── 3. Trả cân nặng/kích thước ──│
      │                                  │── 4. Tính toán phí GHN/GHTK     │
      │◀── 5. Trả cước vận chuyển ───────│                                 │
 ```
 
 ### Cách triển khai:
-1. **Khai báo RPC trong `Contracts/catalog.proto`**:
-   ```protobuf
-   service CatalogApi {
-     rpc GetProduct (GetProductRequest) returns (ProductResponse);
+1. **Endpoint REST tại `CatalogService`**:
+   `Catalog.Api/Controllers/ProductsController.cs`:
+   ```csharp
+   [HttpGet("products/{id:guid}")]
+   public async Task<IActionResult> GetProduct(Guid id)
+   {
+       var product = await _sender.Send(new GetProductDetailQuery(id));
+       return Ok(product);
    }
    ```
-2. **Đăng ký gRPC Client bên trong `FulfillmentService`**:
+2. **Đăng ký HttpClient bên trong `FulfillmentService`**:
    Tại `Fulfillment.Infrastructure/DependencyInjection.cs`:
    ```csharp
-   services.AddGrpcClient<CatalogApi.CatalogApiClient>(o =>
+   services.AddHttpClient("CatalogClient", client =>
    {
-       o.Address = new Uri(configuration["Services:Catalog:Url"] ?? "http://localhost:8002");
+       client.BaseAddress = new Uri(configuration["Services:Catalog:Url"] ?? "http://localhost:8002");
+       client.Timeout = TimeSpan.FromSeconds(5);
    });
    ```
-3. **Gọi trực tiếp trong Service**:
+3. **Gọi trực tiếp qua IHttpClientFactory**:
    ```csharp
-   var catalogClient = _serviceProvider.GetRequiredService<CatalogApi.CatalogApiClient>();
-   var productInfo = await catalogClient.GetProductAsync(new GetProductRequest { Id = productId.ToString() });
+   var client = _httpClientFactory.CreateClient("CatalogClient");
+   var response = await client.GetFromJsonAsync<ProductDetailDto>($"/api/v1/products/{productId}");
+   ```
    ```
 
 ---
 
-## 6. CẤU HÌNH HẠ TẦNG: MASSTRANSIT, RABBITMQ, OUTBOX & gRPC
+## 6. CẤU HÌNH HẠ TẦNG: MASSTRANSIT, RABBITMQ, OUTBOX & REST DOWNSTREAM
 
 ### 6.1. Cấu hình Chuẩn MassTransit Outbox (Bắt buộc cho mọi Service có Publish)
 Mọi service backend có chức năng Publish Event lên RabbitMQ **BẮT BUỘC** phải bật Transactional Outbox để chống mất dữ liệu khi mất điện hoặc crash ứng dụng:
@@ -661,17 +664,14 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
   - Dùng Outbox/Inbox của MassTransit (`modelBuilder.AddInboxStateEntity()`).
   - Trong logic nghiệp vụ: Luôn kiểm tra trạng thái trước khi thay đổi (ví dụ: `if (order.Status == OrderStatus.Paid) return;`).
 
-### ❌ BẪY 4: Quên map Port gRPC hoặc giao thức HTTP/2
-- **Hiện tượng**: Gateway gọi gRPC sang service báo lỗi `StatusCode.Unavailable` hoặc `Stream removed`.
-- **Nguyên nhân**: gRPC yêu cầu giao thức HTTP/2 không mã hóa (H2C) trong môi trường nội bộ.
-- **Khắc phục**: Kiểm tra `launchSettings.json` hoặc `appsettings.json` của service backend, cấu hình Kestrel lắng nghe đúng:
+### ❌ BẪY 4: Quên map đúng Port downstream hoặc thiếu BaseAddress trong Gateway
+- **Hiện tượng**: Gateway gọi downstream sang service báo lỗi 502/503 hoặc `Connection refused`.
+- **Nguyên nhân**: Service backend chưa khởi chạy đúng cổng quy định hoặc `appsettings.json` của Gateway chưa khai báo `Address` cho service đó.
+- **Khắc phục**: Kiểm tra bảng cổng trong `specs/01_SERVICE_CATALOG_PORT_MAP.md` và `launchSettings.json` của backend service:
   ```json
-  "Kestrel": {
-    "EndpointDefaults": {
-      "Protocols": "Http1AndHttp2"
-    }
-  }
+  "applicationUrl": "http://localhost:8001"
   ```
+  Và đảm bảo `Gateway:Services:{serviceName}:Address` trong `appsettings.json` của ApiGateway trỏ đúng URL này.
 
 ### ❌ BẪY 5: Hardcode Port hoặc Chuỗi Kết Nối
 - **Hiện tượng**: Code chạy trên máy dev cá nhân được nhưng khi ghép lên Docker Compose hoặc VPS thì chết hàng loạt.
@@ -690,14 +690,14 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 Trước khi báo cáo hoàn thành việc ghép một API/luồng liên service, developer bắt buộc phải kiểm tra lần lượt danh sách sau:
 
 - [ ] **Contract Đã Khớp**:
-  - [ ] Proto file đã được đồng bộ giữa Gateway và Service backend.
+  - [ ] REST DTOs / Endpoint route đã được đồng bộ giữa Gateway và Service backend.
   - [ ] Event class/record có tên trường, kiểu dữ liệu và namespace (`Nexus.Contracts.Events`) giống nhau 100%.
 - [ ] **Hạ Tầng Sẵn Sàng**:
   - [ ] RabbitMQ đã khởi chạy và đăng nhập được Web Management (`http://localhost:15672`).
   - [ ] CSDL PostgreSQL của các service liên quan đã migrate đầy đủ các bảng nghiệp vụ + 3 bảng Outbox (`InboxStates`, `OutboxMessages`, `OutboxStates`).
 - [ ] **Thực Thi Luồng**:
   - [ ] Gửi Request từ Client/Postman vào `http://localhost:8000/api/v1/...` của ApiGateway.
-  - [ ] ApiGateway nhận request, log ra `traceId` và gọi gRPC thành công sang Service Khởi tạo.
+  - [ ] ApiGateway nhận request, log ra `traceId` và gọi REST downstream thành công sang Service Khởi tạo.
   - [ ] Service Khởi tạo ghi DB và bảng `OutboxMessage` thành công.
   - [ ] RabbitMQ hiển thị message được publish lên Exchange và chuyển vào Queue của Consumer.
   - [ ] Service Lắng nghe consume message thành công, log ghi nhận xử lý trọn vẹn không ném unhandled exception.

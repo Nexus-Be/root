@@ -1,16 +1,28 @@
 # 04 — ĐĂNG KÝ HỢP ĐỒNG GIAO TIẾP DÙNG CHUNG (SHARED CONTRACTS REGISTRY)
 
-> **Trạng thái triển khai (2026-10-24):** ❌ Không đạt — không có "single source of truth" trên thực tế: có **4 bản `shop.proto` với 3 hash khác nhau**, bản được tài liệu này tuyên bố là nguồn sự thật (bản trong Gateway) lại là **bản thiếu nhất** (66 dòng, chỉ 1 service). Trong 8 gRPC service được liệt kê, **chỉ 3 service có server thật** và **chỉ 1 service có client ở Gateway**.
-> **Nguồn sự thật:** code (các file `Contracts/shop.proto`, `MapGrpcService<…>()`, `AddNamedGrpcClient<…>()`, `Publish(...)`, `AddConsumer<…>()`).
-> **Cập nhật lần cuối:** 2026-10-24.
+> **Trạng thái triển khai (2026-10-27):** ✅ Chuẩn giao tiếp downstream giữa ApiGateway và các Microservices đã chuyển dịch sang **RESTful (JSON over HTTP)** qua các DTO chuẩn C# (`Nexus.Gateway/Dtos/*`). Giao tiếp sự kiện dùng chung tiếp tục sử dụng **RabbitMQ MassTransit Events**. Việc chuyển đổi này giải quyết triệt để vấn đề lệch hash giữa các bản Protobuf cũ và giúp dev thêm API mới dễ dàng mà không bị phụ thuộc vào compilation `shop.proto`.
+> **Nguồn sự thật:** code Gateway DTOs (`src/Services/ApiGateway/Nexus.Gateway/Dtos/`) và MassTransit Integration Events (`Nexus.Contracts.Events`).
+> **Cập nhật lần cuối:** 2026-10-27.
 
-Tài liệu này xác định vị trí nguồn sự thật duy nhất (Single Source of Truth) của các bản hợp đồng dữ liệu gRPC Protobuf và các sự kiện dùng chung (Domain Events) qua RabbitMQ.
+Tài liệu này xác định vị trí nguồn sự thật duy nhất (Single Source of Truth) của các bản hợp đồng dữ liệu REST DTOs và các sự kiện dùng chung (Domain Events) qua RabbitMQ.
 
 ---
 
-## 1. HỢP ĐỒNG PROTOBUF — HIỆN TRẠNG THỰC TẾ
+## 1. HỢP ĐỒNG GIAO TIẾP DOWNSTREAM — RESTFUL DTOs
 
-### 1.1 Bốn bản `shop.proto` đang tồn tại (⚠️ chưa có nguồn sự thật duy nhất)
+Kể từ phiên bản tháng 10/2026, Nexus chuẩn hóa giao tiếp đồng bộ giữa ApiGateway và 8 Microservices hoàn toàn bằng **RESTful API (JSON over HTTP)**:
+1. **Request / Response DTOs**: Nằm tại `Nexus.Gateway/Dtos/{Service}/` và tương ứng trong `Application` / `Api` layer của từng Microservice.
+2. **Quy chuẩn Casing**: 
+   - HTTP JSON payloads: `camelCase`.
+   - C# DTO Properties: `PascalCase`.
+   - Enum Serialization: `PascalCaseJsonStringEnumConverter` hoặc `JsonStringEnumConverter`.
+3. **Mã bọc kết quả**: Bọc thống nhất bằng `ApiResponse<T>` / `ApiResponse<PagedData<T>>`.
+
+---
+
+## 2. LỊCH SỬ HỢP ĐỒNG PROTOBUF CŨ (LEGACY REFERENCE)
+
+Trước khi chuyển sang RESTful, hệ thống từng duy trì các file Protobuf `shop.proto` nhưng gặp vấn đề lệch hash và thiếu server ở 5/9 microservices:
 
 | # | Đường dẫn | Dòng | Số service | Số rpc | `UsersApi` có bao nhiêu rpc | Ghi chú |
 |:--|:---|--:|--:|--:|--:|:---|

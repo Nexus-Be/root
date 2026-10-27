@@ -13,11 +13,11 @@ Tài liệu này là **Bộ Chỉ Dẫn & Đặc Tả Kỹ Thuật Trung Tâm (M
 | File Đặc Tả | Phạm Vi Trách Nhiệm | Nội Dung Chính |
 |:---|:---|:---|
 | [00_MASTER_SYSTEM_ARCHITECTURE.md](00_MASTER_SYSTEM_ARCHITECTURE.md) | Kiến trúc tổng thể | Sơ đồ C4 Container, DDD Bounded Contexts, mô hình Edge Gateway, nguyên tắc độc lập giữa các service. |
-| [01_SERVICE_CATALOG_PORT_MAP.md](01_SERVICE_CATALOG_PORT_MAP.md) | Quy hoạch mạng & hạ tầng | Bảng phân bổ cổng HTTP/gRPC (`8000`-`8008`), cổng Database PostgreSQL (`5433`-`5440`), RabbitMQ, Redis. |
-| [02_INTER_SERVICE_COMMUNICATION_MATRIX.md](02_INTER_SERVICE_COMMUNICATION_MATRIX.md) | Giao tiếp liên service | Ma trận gRPC đồng bộ vs RabbitMQ (MassTransit **8.3.0** — không phải 8.4.1) bất đồng bộ, Điều phối Saga phân tán (Checkout Saga — ❌ chưa triển khai). |
-| [03_SECURITY_RBAC_DATA_GOVERNANCE.md](03_SECURITY_RBAC_DATA_GOVERNANCE.md) | Bảo mật & Chuẩn dữ liệu | JWT Bearer Lifecycle (❌ chưa có nơi phát token), ma trận phân quyền **6 roles**, Gateway Mode (`Enforce` vs `Bypass` + `Mock/Real` theo từng service), chuẩn lỗi RFC 9110 / RFC 6585. |
-| [04_SHARED_CONTRACTS_REGISTRY.md](04_SHARED_CONTRACTS_REGISTRY.md) | Hợp đồng giao tiếp chung | ⚠️ `Contracts/shop.proto` **chưa** là Single Source of Truth (4 bản/3 hash), sự kiện dùng chung (Domain Events), quy trình nâng cấp hợp đồng an toàn. |
-| [05_AI_AGENT_ORCHESTRATION_GUIDELINES.md](05_AI_AGENT_ORCHESTRATION_GUIDELINES.md) | Chỉ dẫn cho AI Agents | Quy tắc chống ảo giác (Anti-Hallucination), hướng dẫn giữ context khi chuyển máy/phiên, quy tắc Clean Architecture, No-Repository pattern. |
+| [01_SERVICE_CATALOG_PORT_MAP.md](01_SERVICE_CATALOG_PORT_MAP.md) | Quy hoạch mạng & hạ tầng | Bảng phân bổ cổng HTTP REST (`8000`-`8008`), cổng Database PostgreSQL (`5433`-`5440`), RabbitMQ, Redis. |
+| [02_INTER_SERVICE_COMMUNICATION_MATRIX.md](02_INTER_SERVICE_COMMUNICATION_MATRIX.md) | Giao tiếp liên service | Ma trận RESTful đồng bộ vs RabbitMQ (MassTransit **8.3.0**) bất đồng bộ, Điều phối Saga phân tán. |
+| [03_SECURITY_RBAC_DATA_GOVERNANCE.md](03_SECURITY_RBAC_DATA_GOVERNANCE.md) | Bảo mật & Chuẩn dữ liệu | JWT Bearer Lifecycle, chuyển tiếp headers qua HTTP sang downstream, ma trận phân quyền **6 roles**, Gateway Mode (`Enforce` vs `Bypass` + `Mock/Real`), chuẩn lỗi RFC 9110 / RFC 6585. |
+| [04_SHARED_CONTRACTS_REGISTRY.md](04_SHARED_CONTRACTS_REGISTRY.md) | Hợp đồng giao tiếp chung | Chuẩn hóa RESTful C# DTOs, sự kiện dùng chung (Domain Events) qua RabbitMQ MassTransit. |
+| [05_AI_AGENT_ORCHESTRATION_GUIDELINES.md](05_AI_AGENT_ORCHESTRATION_GUIDELINES.md) | Chỉ dẫn cho AI Agents | Quy tắc chống ảo giác (Anti-Hallucination), chuẩn hóa RESTful downstream, quy tắc Clean Architecture, No-Repository pattern. |
 
 ---
 
@@ -27,7 +27,7 @@ Mỗi service repository bên trong `src/Services/` là một Git Repository đ�
 
 | STT | Service Repository | Thư Mục | Spec Kit Riêng | Nhiệm Vụ Chính & Bounded Context | Port HTTP/gRPC |
 |:---:|:---|:---|:---:|:---|:---:|
-| 0 | **ApiGateway** | `src/Services/ApiGateway/` | [ApiGateway Spec Kit](../src/Services/ApiGateway/specs/README.md) | Edge Reverse Proxy, REST to gRPC, JWT/RBAC, Rate Limit, Mock Engine, Runtime Mode Switch — ✅ service hoàn chỉnh nhất (98 test case). | `8000` |
+| 0 | **ApiGateway** | `src/Services/ApiGateway/` | [ApiGateway Spec Kit](../src/Services/ApiGateway/specs/README.md) | Edge Reverse Proxy, REST to REST downstream, JWT/RBAC, Rate Limit, Mock Engine, Runtime Mode Switch — ✅ service hoàn chỉnh nhất (370+ test cases). | `8000` |
 | 1 | **UserService** | `src/Services/User/` | [UserService Spec Kit](../src/Services/User/specs/README.md) | Đăng ký, OTP, User Profile — ⚠️ **không có Login/JWT** (chưa implement), chưa có xét duyệt Seller. | `8001` |
 | 2 | **CatalogService** | `src/Services/Catalog/` | [CatalogService Spec Kit](../src/Services/Catalog/specs/README.md) | Danh mục/sản phẩm/kho — ⚠️ hiện chỉ là **REST mock in-memory**, 0/13 rpc gRPC, 0 test. | `8002` |
 | 3 | **CommerceService** | `src/Services/Commerce/` | [CommerceService Spec Kit](../src/Services/Commerce/specs/README.md) | Giỏ hàng/đơn hàng — ⚠️ chỉ có 3 query đọc, 0 lệnh ghi, 0 gRPC, Saga ❌ chưa triển khai. | `8003` |

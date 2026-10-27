@@ -1,27 +1,25 @@
 # 01 — BẢN ĐỒ DỊCH VỤ, CỔNG MẠNG & HẠ TẦNG (SERVICE CATALOG & PORT MAP)
 
-> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — port trong Docker/`docker-compose` khớp 8/8 ✅, nhưng `Properties/launchSettings.json` (chạy local bằng `dotnet run`) lệch **6/8** service (xem §1.1). Ma trận gRPC ở `specs/02` chỉ có 1/8 service thực sự có server.
-> **Nguồn sự thật:** code + `docker-compose.yml` + `*/Properties/launchSettings.json`. Báo cáo kiểm chứng: `docs/plans/audit/ROOT_INFRA_AUDIT.md`.
-> **Cập nhật lần cuối:** 2026-10-24.
+> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuẩn hóa toàn bộ 8 Microservices giao tiếp với ApiGateway qua **HTTP RESTful (`8001`-`8008`)**, loại bỏ giao tiếp gRPC để đạt tính đồng bộ, type-safe và dễ kiểm thử.
 
-Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ sở dữ liệu và biến môi trường kết nối cho toàn bộ 8 Microservices và ApiGateway.
+Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ sở dữ liệu và biến môi trường kết nối cho toàn bộ 8 Microservices, ApiGateway và CheckHealService.
 
 ---
 
 ## 1. BẢNG QUY HOẠCH CỔNG GIAO TIẾP & CƠ SỞ DỮ LIỆU
 
-| Service Name | Cổng HTTP REST | Cổng gRPC | Database Engine | Cổng DB | DB Name | Cổng Redis / RabbitMQ |
+| Service Name | Cổng HTTP REST (Downstream) | Giao Thức Downstream | Database Engine | Cổng DB | DB Name | Cổng Redis / RabbitMQ |
 |:---|:---:|:---:|:---:|:---:|:---|:---:|
-| **ApiGateway** | `8000` | N/A *(Client)* | Redis *(Cache/RateLimit)* | `6379` | `db0` | Redis: `6379` |
-| **UserService** | N/A | `8001` | PostgreSQL | `5433` | `usermanagement_db` | RabbitMQ: `5672` |
-| **CatalogService** | N/A | `8002` | PostgreSQL | `5434` | `category_db` | RabbitMQ: `5672` |
-| **CommerceService** | N/A | `8003` | PostgreSQL | `5435` | `commerce_db` | RabbitMQ: `5672` |
-| **LogService** | N/A | `8004` | PostgreSQL | `5436` | `log_db` | RabbitMQ: `5672` |
-| **AuctionService** | N/A | `8005` | PostgreSQL | `5437` | `auction_db` | RabbitMQ: `5672` |
-| **FulfillmentService** | N/A | `8006` | PostgreSQL | `5438` | `fulfillment_db` | RabbitMQ: `5672` |
-| **NotificationService** | N/A | `8007` | PostgreSQL | `5439` | `notification_db` | RabbitMQ: `5672` |
-| **WalletService** | N/A | `8008` | PostgreSQL | `5440` | `wallet_db` | RabbitMQ: `5672` |
-| **CheckHealService** | `8009` | N/A | PostgreSQL Keep-Alive | N/A *(Client)* | Neon / Render | N/A |
+| **ApiGateway** | `8000` | HTTP/REST (Edge Proxy) | Redis *(Cache/RateLimit)* | `6379` | `db0` | Redis: `6379` |
+| **UserService** | `8001` | REST (JSON over HTTP) | PostgreSQL | `5433` | `usermanagement_db` | RabbitMQ: `5672` |
+| **CatalogService** | `8002` | REST (JSON over HTTP) | PostgreSQL (Neon Cloud) | `5434` / Cloud | `catalog_db` | RabbitMQ: `5672` |
+| **CommerceService** | `8003` | REST (JSON over HTTP) | PostgreSQL | `5435` | `commerce_db` | RabbitMQ: `5672` |
+| **LogService** | `8004` | REST (JSON over HTTP) | PostgreSQL | `5436` | `log_db` | RabbitMQ: `5672` |
+| **AuctionService** | `8005` | REST (JSON over HTTP) | PostgreSQL | `5437` | `auction_db` | RabbitMQ: `5672` |
+| **FulfillmentService** | `8006` | REST (JSON over HTTP) | PostgreSQL | `5438` | `fulfillment_db` | RabbitMQ: `5672` |
+| **NotificationService** | `8007` | REST (JSON over HTTP) | PostgreSQL (Neon Cloud) | `5439` / Cloud | `notification_db` | RabbitMQ: `5672` |
+| **WalletService** | `8008` | REST (JSON over HTTP) | PostgreSQL | `5440` | `wallet_db` | RabbitMQ: `5672` |
+| **CheckHealService** | `8009` | HTTP Monitoring / Webhook | PostgreSQL Keep-Alive | N/A *(Client)* | Neon / Render | N/A |
 
 **Trạng thái bảng trên:** ✅ cổng trong `Dockerfile` (`EXPOSE` + `ASPNETCORE_URLS`) và `docker-compose.yml` khớp 8/8 service; ✅ connection string trong `appsettings*.json` khớp DB port/name 8/8. Cột "Cổng HTTP REST" ghi `N/A` là **đặc tả mục tiêu** — hiện mọi service đều mở `/health` qua HTTP và Catalog mở thêm REST mock (xem §1.1).
 
@@ -76,5 +74,5 @@ Hệ quả: gọi Gateway ở chế độ `Real` tới `http://localhost:8002` s
 
 - **Tuyệt đối KHÔNG thay đổi dải port** từ `8000` đến `8008` trong code hay cấu hình.
   - ⚠️ **Vi phạm hiện tại:** 6/8 `launchSettings.json` đang dùng port ngoài dải (xem §1.1). Đây là lỗi cần sửa về `8000–8008`, không phải ngoại lệ được phép.
-- Khi tạo mới một service backend hoặc thêm endpoint, địa chỉ gRPC upstream trong `appsettings.json` của Gateway phải ánh xạ đúng port của service đó (ví dụ Catalog $\rightarrow$ `http://localhost:8002`).
+- Khi tạo mới một service backend hoặc thêm endpoint, địa chỉ REST downstream trong `appsettings.json` của Gateway phải ánh xạ đúng port của service đó (ví dụ Catalog $\rightarrow$ `http://localhost:8002`).
   - ⚠️ **Vi phạm hiện tại:** `Nexus.Gateway/appsettings.json` khai 8 service `Mode: "Real"` + address `8001–8008`, nhưng `Extensions/GrpcClientsExtension.cs:12` chỉ đăng ký **1** client (`users`). 7 địa chỉ còn lại không có client tương ứng nên không gọi được.

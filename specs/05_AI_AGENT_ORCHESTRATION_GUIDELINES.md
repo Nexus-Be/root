@@ -59,10 +59,10 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 |:---:|:---|:---|
 | 1 | `AGENTS.md` | Bộ quy tắc làm việc tối thượng, quy chuẩn lỗi, quy tắc GitNexus. |
 | 2 | `specs/00_MASTER_SYSTEM_ARCHITECTURE.md` | Bounded Contexts, kiến trúc C4, các quy tắc phân tách service. |
-| 3 | `specs/01_SERVICE_CATALOG_PORT_MAP.md` | Bảng phân bổ cổng mạng HTTP/gRPC (`8000`-`8008`) và DB (`5433`-`5440`). |
-| 4 | `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md` | Ma trận gRPC đồng bộ vs RabbitMQ MassTransit Saga. |
+| 3 | `specs/01_SERVICE_CATALOG_PORT_MAP.md` | Bảng phân bổ cổng mạng HTTP REST (`8000`-`8008`) và DB (`5433`-`5440`). |
+| 4 | `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md` | Ma trận RESTful đồng bộ vs RabbitMQ MassTransit Saga. |
 | 5 | `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md` | Cơ chế xác thực JWT Bearer, phân quyền 6 roles, chuẩn lỗi RFC 9110. |
-| 6 | `specs/04_SHARED_CONTRACTS_REGISTRY.md` | Quy chuẩn Protobuf `shop.proto` và các Domain Events dùng chung. |
+| 6 | `specs/04_SHARED_CONTRACTS_REGISTRY.md` | Quy chuẩn REST DTOs và các Domain Events dùng chung. |
 | 7 | `specs/05_AI_AGENT_ORCHESTRATION_GUIDELINES.md` | Tài liệu quy chuẩn vận hành agent hiện tại. |
 
 ---
@@ -194,10 +194,9 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
    - Mỗi microservice chỉ truy cập cơ sở dữ liệu riêng của mình. Không query chéo database của service khác.
 3. **CẤU HÌNH CỔNG MẠNG VÀ DATABASE LÀ BẤT BIẾN**:
    - Dải port `8000`-`8008` và port database `5433`-`5440` là cố định. Cấm tự ý đổi port trong code hay config.
-4. **NGUỒN SỰ THẬT DUY NHẤT CHO PROTOBUF — HIỆN CHƯA TỒN TẠI**:
-   - Đặc tả: mọi gRPC client và server phải đồng bộ tuyệt đối với `Contracts/shop.proto`; không tự ý đổi tag numbers hiện có.
-   - **Hiện trạng (2026-10-24):** có **4 bản `shop.proto` với 3 nội dung khác nhau** (Gateway 66 dòng chỉ `UsersApi`; User 390 dòng/9 service/63 rpc; Log + Wallet 364 dòng/9 service/61 rpc). Bản được coi là canonical lại **thiếu nhất**. Xem `specs/04_SHARED_CONTRACTS_REGISTRY.md` §1 để biết bảng so sánh và `docs/plans/FIX_BACKLOG.md` mục `FIX-002` cho hướng sửa (proto canonical ở root + script đồng bộ + CI check hash).
-   - Cho tới khi có nguồn sự thật: **không sửa `shop.proto` ở bất kỳ repo nào** nếu chưa chốt quyết định này.
+4. **CHUẨN HÓA GIAO TIẾP DOWNSTREAM BẰNG RESTFUL HTTP/JSON**:
+   - Hệ thống chuyển đổi toàn bộ giao tiếp đồng bộ giữa ApiGateway và các Backend Microservices sang **RESTful API (JSON over HTTP)** qua `GatewayBaseController.ForwardAsync` và `HttpBackendCaller`.
+   - Loại bỏ phụ thuộc vào biên dịch Protobuf `shop.proto`, tránh drift hợp đồng giữa các service repo và tăng tốc độ phát triển. DTOs được quản lý kiểu strongly-typed tại từng service.
 5. **CẤM TỰ Ý SỬA ĐỔI BIẾN MÔI TRƯỜNG, SECRET VÀ KEY BÍ MẬT (MANDATORY HUMAN-IN-THE-LOOP FOR SECRETS)**:
    - **Tuyệt đối CẤM mọi AI Coding Agent tự ý sửa đổi, thay thế, xóa hoặc ghi đè các biến môi trường (`.env`, `.env.*`), Connection Strings, API Keys, JWT Secrets, chứng chỉ hoặc bất kỳ thông tin bí mật (credentials/secrets) nào trong toàn bộ hệ thống.**
    - **Bắt buộc phải xin ý kiến và nhận được sự đồng ý rõ ràng (explicit approval) từ người dùng trước khi thực hiện bất kỳ thay đổi nào liên quan đến biến môi trường hoặc tài khoản bí mật.**

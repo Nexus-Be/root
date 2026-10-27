@@ -41,7 +41,7 @@ Bằng chứng:
   - `iss`: Issuer (`http://localhost:8001` — UserService). ⚠️ Chưa service nào phát token nên claim này chưa từng xuất hiện.
   - `aud`: Audience (`shoppingcart-api`).
   - `exp`: Thời gian hết hạn (Epoch seconds).
-- **Chuyển tiếp qua gRPC**: Khi Client gửi `Authorization: Bearer <token>` lên Gateway, Gateway forward nguyên vẹn header này vào Metadata của gRPC Call sang backend. ✅ Đã kiểm chứng: `ApiGateway/Nexus.Gateway/Dispatching/GrpcServiceCaller.cs:76-95` forward `authorization`, `x-trace-id`, `x-user-id`, `x-user-roles`, `x-user-email`, `idempotency-key`.
+- **Chuyển tiếp qua REST downstream**: Khi Client gửi `Authorization: Bearer <token>` lên Gateway, Gateway forward nguyên vẹn header này cùng `x-trace-id`, `x-user-id`, `x-user-roles`, `x-user-email`, `idempotency-key` vào HTTP Request Headers sang backend microservice. ✅ Đã kiểm chứng: `ApiGateway/Nexus.Gateway/Dispatching/HttpBackendCaller.cs` forward đầy đủ các headers này.
 
 ### 2.1 Khoá ký — hiện trạng bảo mật
 - Khoá thật đang nằm **plaintext trong file được commit**: `ApiGateway/Nexus.Gateway/appsettings.json:26` và lặp lại ở `appsettings.Development.json:25`. Hai file `*.example.json` chứa placeholder đúng.
