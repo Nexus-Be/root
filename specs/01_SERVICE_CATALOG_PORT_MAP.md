@@ -12,7 +12,7 @@ Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ s
 
 | Service Name | Cổng HTTP REST (Downstream) | Giao Thức Downstream | Database Engine | Cổng DB | DB Name | Cổng Redis / RabbitMQ |
 |:---|:---:|:---:|:---:|:---:|:---|:---:|
-| **ApiGateway** | `8000` | HTTP/REST (Edge Proxy) | Redis *(Cache/RateLimit)* | `6379` | `db0` | Redis: `6379` |
+| **ApiGateway** | `8080` | HTTP/REST (Edge Proxy) | Redis *(Cache/RateLimit)* | `6379` | `db0` | Redis: `6379` |
 | **UserService** | `8001` | REST (JSON over HTTP) | PostgreSQL | `5433` | `usermanagement_db` | RabbitMQ: `5672` |
 | **CatalogService** | `8002` | REST (JSON over HTTP) | PostgreSQL (Neon Cloud) | `5434` / Cloud | `catalog_db` | RabbitMQ: `5672` |
 | **CommerceService** | `8003` | REST (JSON over HTTP) | PostgreSQL | `5435` | `commerce_db` | RabbitMQ: `5672` |
@@ -31,6 +31,7 @@ Chạy `dotnet run` **không** dùng port đặc tả trừ khi set `ASPNETCORE_
 
 | Service | Port spec | Port local thật | Trạng thái |
 |:---|:---:|:---:|:---|
+| ApiGateway | `8080` | `8080` | ✅ khớp (tránh xung đột Portainer 8000) |
 | UserService | `8001` | `8001` | ✅ khớp |
 | CatalogService | `8002` | `5272` (https `7232`) | ⚠️ Cần đồng bộ sang 8002 |
 | CommerceService | `8003` | `5105` (https `7035`) | ⚠️ Cần đồng bộ sang 8003 |
@@ -71,6 +72,6 @@ Chạy `dotnet run` **không** dùng port đặc tả trừ khi set `ASPNETCORE_
 
 ## 3. NGUYÊN TẮC QUY ĐỊNH CỔNG CHO AI AGENTS
 
-- **Tuyệt đối KHÔNG thay đổi dải port** từ `8000` đến `8008` trong code hay cấu hình.
+- **Tuyệt đối tuân thủ quy hoạch dải port**: ApiGateway chạy cổng `8080` (tránh xung đột với Portainer chạy port 8000 trên máy dev); các Microservices backend cố định từ `8001` đến `8008` (CheckHeal: `8009`). Cấm tự ý đổi port trong code hay cấu hình.
 - Khi tạo mới một service backend hoặc thêm endpoint, địa chỉ REST downstream trong `appsettings.json` của Gateway phải ánh xạ đúng port của service đó (ví dụ Catalog $\rightarrow$ `http://localhost:8002`, Notification $\rightarrow$ `http://localhost:8007`).
 - Gateway chuyển tiếp hoàn toàn qua HTTP REST downstream (`IHttpClientFactory`), không sử dụng gRPC clients.

@@ -11,7 +11,7 @@ API Gateway là **vành đai phòng thủ và điểm tiếp nhận duy nhất (
 
 ```
 [ Frontend: React / Vue / Mobile ]
-               │  (HTTP/1.1 REST JSON, Port 8000)
+               │  (HTTP/1.1 REST JSON, Port 8080)
                ▼
 ┌────────────────────────────────────────────────────────┐
 │                   NEXUS API GATEWAY                    │

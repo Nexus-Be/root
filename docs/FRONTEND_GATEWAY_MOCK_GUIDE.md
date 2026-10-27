@@ -32,7 +32,7 @@ As a frontend developer on the Nexus project:
 - **You do NOT need to run 8+ microservices** (`User`, `Catalog`, `Commerce`, `Wallet`, `Auction`, `Fulfillment`, `Notification`, `Log`).
 - **You do NOT need to install or run PostgreSQL databases**.
 - **You do NOT need RabbitMQ message brokers**.
-- **You only ever talk to ONE endpoint: The Nexus API Gateway on `http://localhost:8000`**.
+- **You only ever talk to ONE endpoint: The Nexus API Gateway on `http://localhost:8080`**.
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -42,7 +42,7 @@ As a frontend developer on the Nexus project:
                             │ HTTP Requests
                             ▼
 ┌────────────────────────────────────────────────────────┐
-│               NEXUS API GATEWAY (Port 8000)            │
+│               NEXUS API GATEWAY (Port 8080)            │
 │  - Single entry point for all URLs: /api/v1/...        │
 │  - Built-in Mock Engine (stateless sample data)        │
 │  - Authentication Bypass for testing                   │
@@ -70,7 +70,7 @@ When running the Gateway independently for frontend testing, only a minimal set 
 
 | Service | Container Name | Port | Required for Frontend Mock? | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **API Gateway** | `nexus-apigateway` | `8000` | **Mandatory** | The primary HTTP entry point and mock server. Exposes Swagger at `/swagger`. |
+| **API Gateway** | `nexus-apigateway` | `8080` | **Mandatory** | The primary HTTP entry point and mock server. Exposes Swagger at `/swagger`. |
 | **Redis** | `nexus-shared-redis` | `6379` | **Recommended** | High-speed cache used for distributed rate limiting. *(Note: in development mode, Gateway fails-open if Redis is absent, but running Redis prevents rate-limit warnings).* |
 | **Tempo** | `nexus-shared-tempo` | `3200`, `4317` | Optional | Distributed tracing backend. |
 | **RabbitMQ** | `nexus-shared-rabbitmq` | `5672` | **Not Needed** | Message broker for backend async event buses. Gateway does not need it. |
@@ -163,7 +163,7 @@ ASPNETCORE_ENVIRONMENT=Development
 GATEWAY_AUTH_MODE=Bypass
 
 # Gateway Port
-GATEWAY_PORT=8000
+GATEWAY_PORT=8080
 ```
 
 #### Step 3: Start the Gateway and supporting containers
@@ -179,7 +179,7 @@ docker compose up -d gateway
 
 #### Step 4: Verify that Gateway is running
 Open your browser and navigate to:
-👉 **`http://localhost:8000/swagger`**
+👉 **`http://localhost:8080/swagger`**
 
 You should see the Swagger UI listing all API endpoints (Catalog, Commerce, Users, Wallet, etc.). You can click **Try it out** on any endpoint (e.g. `GET /api/v1/catalog/products`) and see mock data returned immediately!
 
@@ -215,7 +215,7 @@ dotnet run --project src/Services/ApiGateway/Nexus.Gateway
 Or open `Nexus.Gateway.sln` inside `src/Services/ApiGateway/` using Visual Studio / JetBrains Rider / VS Code and press **F5 (Debug)** or **Ctrl+F5 (Run)**.
 
 #### Step 3: Access Swagger UI
-Open: `http://localhost:8000/swagger`
+Open: `http://localhost:8080/swagger`
 
 ---
 
@@ -312,7 +312,7 @@ During testing, you can override settings for a single request without modifying
 Send the header `X-Service-Mode-{service-name}`:
 ```http
 GET /api/v1/catalog/products HTTP/1.1
-Host: localhost:8000
+Host: localhost:8080
 X-Service-Mode-catalog: Real
 ```
 *Result*: Even if `catalog` is configured as `Mock` globally, this specific request will try to call the real backend service.
@@ -435,7 +435,7 @@ All responses returned by the Gateway are wrapped in a standard, consistent enve
 ```markdown
 - [ ] Run `docker compose up -d gateway` from the root folder.
 - [ ] Confirm `GATEWAY_AUTH_MODE=Bypass` in `.env`.
-- [ ] Verify `http://localhost:8000/swagger` is accessible.
-- [ ] Configure frontend API client base URL to `http://localhost:8000`.
+- [ ] Verify `http://localhost:8080/swagger` is accessible.
+- [ ] Configure frontend API client base URL to `http://localhost:8080`.
 - [ ] Start building and testing frontend UI with 100% Mock data!
 ```

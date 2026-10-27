@@ -13,7 +13,7 @@ Tài liệu này cung cấp sơ đồ kiến trúc mức cao (System Architectur
 ```
 [ Frontend: Web Next.js / Mobile App ]
                    │
-                   ▼ (HTTP/REST: /api/v1/... - Port 8000)
+                   ▼ (HTTP/REST: /api/v1/... - Port 8080)
        ┌────────────────────────┐
        │       ApiGateway       │ ──(RateLimit Cache)──▶ [ Redis : 6379 ]
        └────────────────────────┘

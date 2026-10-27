@@ -59,7 +59,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 |:---:|:---|:---|
 | 1 | `AGENTS.md` | Bộ quy tắc làm việc tối thượng, quy chuẩn lỗi, quy tắc GitNexus. |
 | 2 | `specs/00_MASTER_SYSTEM_ARCHITECTURE.md` | Bounded Contexts, kiến trúc C4, các quy tắc phân tách service. |
-| 3 | `specs/01_SERVICE_CATALOG_PORT_MAP.md` | Bảng phân bổ cổng mạng HTTP REST (`8000`-`8008`) và DB (`5433`-`5440`). |
+| 3 | `specs/01_SERVICE_CATALOG_PORT_MAP.md` | Bảng phân bổ cổng mạng HTTP REST (Gateway `8080`, Backend `8001`-`8008`) và DB (`5433`-`5440`). |
 | 4 | `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md` | Ma trận RESTful đồng bộ vs RabbitMQ MassTransit Saga. |
 | 5 | `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md` | Cơ chế xác thực JWT Bearer, phân quyền 6 roles, chuẩn lỗi RFC 9110. |
 | 6 | `specs/04_SHARED_CONTRACTS_REGISTRY.md` | Quy chuẩn REST DTOs và các Domain Events dùng chung. |
@@ -71,7 +71,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | Thứ tự | File Cần Đọc | Mục Đích & Ngữ Cảnh Nắm Bắt |
 |:---:|:---|:---|
 | 1 | `AGENTS.md` | Rào chắn agent riêng của Gateway và quy chuẩn thông báo lỗi. |
-| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Bounded Context của Gateway: Reverse proxy, port `8000`, 0 DB. |
+| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Bounded Context của Gateway: Reverse proxy, port `8080`, 0 DB. |
 | 3 | `specs/01_ARCHITECTURAL_BLUEPRINT.md` | Pipeline 6 bước, Circuit Breaker, Health Prober, Redis Rate Limiting. |
 | 4 | `specs/02_GATEWAY_CONTROLLERS_ROUTING.md` | Danh mục Controllers, quy tắc viết Action siêu mỏng gọi ForwardAsync. |
 | 5 | `specs/03_GATEWAY_STATE_SECURITY.md` | Phân giải Mode (`Mock` vs `Real`), AuthMode (`Enforce` vs `Bypass`). |
@@ -193,7 +193,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 2. **CÔ LẬP TUYỆT ĐỐI DỮ LIỆU (DATABASE-PER-SERVICE)**:
    - Mỗi microservice chỉ truy cập cơ sở dữ liệu riêng của mình. Không query chéo database của service khác.
 3. **CẤU HÌNH CỔNG MẠNG VÀ DATABASE LÀ BẤT BIẾN**:
-   - Dải port `8000`-`8008` và port database `5433`-`5440` là cố định. Cấm tự ý đổi port trong code hay config.
+   - Gateway port `8080` (tránh xung đột với Portainer 8000), dải port microservices `8001`-`8008` và port database `5433`-`5440` là cố định. Cấm tự ý đổi port trong code hay config.
 4. **CHUẨN HÓA GIAO TIẾP ĐỒNG BỘ 100% BẰNG RESTFUL HTTP/JSON (CẤM SỬ DỤNG gRPC)**:
    - Hệ thống chuyển đổi toàn diện giao tiếp đồng bộ giữa ApiGateway và các Backend Microservices sang **RESTful API (JSON over HTTP)** qua `GatewayBaseController.ForwardAsync` và `RestDownstreamDispatcher`.
    - Bãi bỏ và loại bỏ hoàn toàn các tệp Protobuf `shop.proto`. DTOs được quản lý kiểu strongly-typed tại từng service (`Dtos/`).

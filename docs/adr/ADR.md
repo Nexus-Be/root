@@ -58,7 +58,7 @@ Nếu để Client (Web Next.js / Mobile App) gọi trực tiếp vào từng mi
 - Khó thay đổi hoặc tái cấu trúc backend mà không làm ảnh hưởng đến client.
 
 #### 2. Quyết định kiến trúc (Decision)
-- Xây dựng **1 Edge API Gateway duy nhất** (`ApiGateway` - HTTP Port `8000`) làm cổng tiếp nhận duy nhất cho toàn bộ lưu lượng ngoại vi từ Client.
+- Xây dựng **1 Edge API Gateway duy nhất** (`ApiGateway` - HTTP Port `8080`) làm cổng tiếp nhận duy nhất cho toàn bộ lưu lượng ngoại vi từ Client.
 - Gateway là **Thin Edge Reverse Proxy**:
   - Chỉ đảm nhận các trách nhiệm hạ tầng: Định tuyến (Routing), Chuyển tiếp REST downstream sang các backend microservices, Xác thực JWT, Kiểm tra quyền RBAC, Rate Limiting phân tán, Điều phối Mock/Real.
   - **Tuyệt đối KHÔNG chứa cơ sở dữ liệu nghiệp vụ**, không lưu trữ in-memory stateful data của các service khác.

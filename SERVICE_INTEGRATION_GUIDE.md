@@ -28,7 +28,7 @@ Khi Client (Web/Mobile) gửi một HTTP Request đến hệ thống, luồng d�
         │  HTTP REST (JSON camelCase)
         ▼
 ┌────────────────────────────────────────────────────────┐
-│               API GATEWAY (Port 8000)                  │
+│               API GATEWAY (Port 8080)                  │
 │  - Xác thực JWT Bearer & RBAC                          │
 │  - Gán TraceId (x-trace-id) & Caller Claims           │
 │  - Input Validation & Rate Limiting                    │
@@ -676,7 +676,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 ### ❌ BẪY 5: Hardcode Port hoặc Chuỗi Kết Nối
 - **Hiện tượng**: Code chạy trên máy dev cá nhân được nhưng khi ghép lên Docker Compose hoặc VPS thì chết hàng loạt.
 - **Khắc phục**: Đọc cấu hình từ `IConfiguration`:
-  - Port cố định từ `specs/01_SERVICE_CATALOG_PORT_MAP.md` (Gateway: `8000`, User: `8001`, Catalog: `8002`, Commerce: `8003`, Log: `8004`, Auction: `8005`, Fulfillment: `8006`, Notification: `8007`, Wallet: `8008`, CheckHeal: `8009`).
+  - Port cố định từ `specs/01_SERVICE_CATALOG_PORT_MAP.md` (Gateway: `8080`, User: `8001`, Catalog: `8002`, Commerce: `8003`, Log: `8004`, Auction: `8005`, Fulfillment: `8006`, Notification: `8007`, Wallet: `8008`, CheckHeal: `8009`).
   - RabbitMQ: `RabbitMq:Host`, `RabbitMq:Port`.
 
 ### ❌ BẪY 6: Thông báo lỗi không tuân thủ Sentence Case
@@ -696,7 +696,7 @@ Trước khi báo cáo hoàn thành việc ghép một API/luồng liên service
   - [ ] RabbitMQ đã khởi chạy và đăng nhập được Web Management (`http://localhost:15672`).
   - [ ] CSDL PostgreSQL của các service liên quan đã migrate đầy đủ các bảng nghiệp vụ + 3 bảng Outbox (`InboxStates`, `OutboxMessages`, `OutboxStates`).
 - [ ] **Thực Thi Luồng**:
-  - [ ] Gửi Request từ Client/Postman vào `http://localhost:8000/api/v1/...` của ApiGateway.
+  - [ ] Gửi Request từ Client/Postman vào `http://localhost:8080/api/v1/...` của ApiGateway.
   - [ ] ApiGateway nhận request, log ra `traceId` và gọi REST downstream thành công sang Service Khởi tạo.
   - [ ] Service Khởi tạo ghi DB và bảng `OutboxMessage` thành công.
   - [ ] RabbitMQ hiển thị message được publish lên Exchange và chuyển vào Queue của Consumer.

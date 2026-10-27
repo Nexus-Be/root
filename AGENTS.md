@@ -82,7 +82,7 @@ Khi bắt đầu một phiên làm việc tại bất kỳ repository nào, AI A
 
 ### 1. Tại Root Repository (`Nexus-Be/`):
 - `specs/00_MASTER_SYSTEM_ARCHITECTURE.md`: Kiến trúc C4 tổng quan, Bounded Contexts.
-- `specs/01_SERVICE_CATALOG_PORT_MAP.md`: Quy hoạch dải port HTTP/REST (`8000`-`8008`) và DB (`5433`-`5440`).
+- `specs/01_SERVICE_CATALOG_PORT_MAP.md`: Quy hoạch dải port HTTP/REST (Gateway `8080`, Backend `8001`-`8008`) và DB (`5433`-`5440`).
 - `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md`: Ma trận RESTful đồng bộ vs RabbitMQ Saga.
 - `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md`: JWT Bearer, ma trận phân quyền 6 roles, chuẩn RFC 9110.
 - `specs/04_SHARED_CONTRACTS_REGISTRY.md`: Nguồn sự thật REST DTOs và các sự kiện dùng chung (loại bỏ Protobuf).
@@ -93,7 +93,7 @@ Khi bắt đầu một phiên làm việc tại bất kỳ repository nào, AI A
   + **NẾU KHÔNG CÓ thư mục `.agents/`**: Bỏ qua, **TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ Ý TẠO THƯ MỤC `.agents`**.
 
 ### 2. Tại `ApiGateway` (`src/Services/ApiGateway/`):
-- `specs/00_AGENT_MISSION_GUARDRAILS.md`: Bounded context gateway, port `8000`, 0 DB.
+- `specs/00_AGENT_MISSION_GUARDRAILS.md`: Bounded context gateway, port `8080`, 0 DB.
 - `specs/01_ARCHITECTURAL_BLUEPRINT.md`: Pipeline 6 bước, Circuit breaker, Health Prober.
 - `specs/02_GATEWAY_CONTROLLERS_ROUTING.md`: Danh mục Controller, quy tắc viết Action siêu tinh gọn gọi ForwardAsync.
 - `specs/03_GATEWAY_STATE_SECURITY.md`: Cấu hình Mock/Real, AuthMode Enforce/Bypass.
@@ -118,7 +118,7 @@ Mỗi service (`User`, `Catalog`, `Commerce`, `Log`, `Auction`, `Fulfillment`, `
 
 1. **CẤM DÙNG REPOSITORY PATTERN BỌC NGOÀI EF CORE**: Sử dụng trực tiếp `DbContext` và `DbSet<T>` trong Application Layer.
 2. **CÔ LẬP TUYỆT ĐỐI DATABASE (DATABASE-PER-SERVICE)**: Không query trực tiếp DB của service khác.
-3. **CẤU HÌNH PORT LÀ BẤT BIẾN**: Dải port HTTP/REST `8000`-`8008` và DB `5433`-`5440` là cố định.
+3. **CẤU HÌNH PORT LÀ BẤT BIẾN**: ApiGateway chạy cổng `8080` (tránh xung đột với Portainer 8000 trên máy dev), dải port Microservices HTTP/REST `8001`-`8008` và DB `5433`-`5440` là cố định.
 4. **QUY TẮC BẤT BIẾN: CẤM SỬ DỤNG gRPC CHO GIAO TIẾP ĐỒNG BỘ — 100% SỬ DỤNG RESTFUL HTTP/JSON**:
    - **Tuyệt đối KHÔNG sử dụng gRPC cho các dịch vụ giao tiếp đồng bộ**: Loại bỏ và cấm sử dụng gRPC giữa ApiGateway và các Microservices backend, cũng như giữa các Microservices nội bộ với nhau. Toàn bộ giao tiếp đồng bộ chuyển dịch hoàn toàn sang chuẩn **RESTful HTTP/JSON**.
    - **Chuẩn hóa RESTful API**:

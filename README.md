@@ -8,7 +8,7 @@ Hệ sinh thái thương mại điện tử & đấu giá trực tuyến phân t
 
 | Dịch Vụ | Port App | Database | Port DB | Nhiệm Vụ Chính |
 | :--- | :---: | :--- | :---: | :--- |
-| **ApiGateway** | **8000** | Redis 7 | **6379** | Điểm vào duy nhất, Rate Limiting, JWT/RBAC, Mock Engine |
+| **ApiGateway** | **8080** | Redis 7 | **6379** | Điểm vào duy nhất, Rate Limiting, JWT/RBAC, Mock Engine |
 | **UserService** | **8001** | `usermanagement_db` (Postgres) | **5433** | Đăng ký, đăng nhập, JWT, User Profile, RBAC, Duyệt Seller |
 | **CatalogService** | **8002** | `category_db` (Postgres) | **5434** | Danh mục, sản phẩm, quản lý tồn kho kho ảo của Seller |
 | **CommerceService** | **8003** | `commerce_db` (Postgres) | **5435** | Giỏ hàng, đơn hàng, điều phối Checkout Saga |
@@ -50,7 +50,7 @@ docker compose up -d
 ```
 Lệnh này dựng trọn bộ:
 - Toàn bộ Hạ tầng & Databases
-- API Gateway (port 8000)
+- API Gateway (port 8080)
 - 8 Microservices container (ports 8001 - 8008)
 
 ---

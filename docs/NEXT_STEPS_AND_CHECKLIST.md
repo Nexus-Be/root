@@ -167,7 +167,7 @@ Mở file `src/Services/ApiGateway/Nexus.Gateway/gateway.runtime.json`, sửa:
 *(Nhờ cơ chế Hot-Reload, Gateway tự động chuyển sang gọi gRPC thật mà không cần khởi động lại! Các service khác vẫn giữ "Mode": "Mock")*.
 
 ### Bước 4: Kiểm thử End-to-End trên Swagger
-1. Truy cập Swagger Gateway: `http://localhost:8000/swagger`.
+1. Truy cập Swagger Gateway: `http://localhost:8080/swagger`.
 2. Gọi API `POST /api/v1/auth/register` để tạo tài khoản thật.
 3. Gọi API `POST /api/v1/auth/login` để lấy Token thật.
 4. Mở DB PostgreSQL kiểm tra xem dữ liệu đã được lưu chuẩn xác vào bảng chưa.
@@ -186,7 +186,7 @@ Mở file `src/Services/ApiGateway/Nexus.Gateway/gateway.runtime.json`, sửa:
 
 | Service | Database Port | gRPC Port | Domain Entities | EF Core DbContext | gRPC Server Impl | RabbitMQ Events | Tracing | Gateway Test |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **ApiGateway** | 6379 | 8000 | N/A | N/A | ✅ Client Done | N/A | ✅ Done | ✅ 120/120 Passed |
+| **ApiGateway** | 6379 | 8080 | N/A | N/A | ✅ Client Done | N/A | ✅ Done | ✅ 120/120 Passed |
 | **UserService** | 5433 | 8001 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 | **CatalogService** | 5434 | 8002 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 | **CommerceService** | 5435 | 8003 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |

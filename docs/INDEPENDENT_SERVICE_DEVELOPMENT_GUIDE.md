@@ -8,7 +8,7 @@
 ## 1. NGUYÊN TẮC LÀM VIỆC ĐỘC LẬP (ISOLATED DEVELOPMENT PARADIGM)
 
 Hệ sinh thái Nexus bao gồm **9 services độc lập**:
-- **1 API Gateway** (`Nexus.Gateway` tại cổng `8000`)
+- **1 API Gateway** (`Nexus.Gateway` tại cổng `8080`)
 - **8 Microservices backend** (`UserService:8001`, `CatalogService:8002`, `CommerceService:8003`, `LogService:8004`, `AuctionService:8005`, `FulfillmentService:8006`, `NotificationService:8007`, `WalletService:8008`)
 
 ### ❌ Sai lầm phổ biến:
@@ -124,14 +124,14 @@ Mở một cửa sổ Terminal riêng và chạy Gateway:
 cd src/Services/ApiGateway/Nexus.Gateway
 dotnet run
 ```
-Gateway sẽ lắng nghe tại cổng `http://localhost:8000`.
+Gateway sẽ lắng nghe tại cổng `http://localhost:8080`.
 
 ---
 
 ## 5. BỐN PHƯƠNG PHÁP KIỂM THỬ DÀNH CHO DEVELOPER (TESTING TOOLKIT)
 
 ### Phương Pháp 1: Kiểm thử qua RESTful Swagger UI của Gateway (Trực quan nhất)
-1. Mở trình duyệt vào: `http://localhost:8000/swagger`.
+1. Mở trình duyệt vào: `http://localhost:8080/swagger`.
 2. Tìm đến nhóm API của service bạn (ví dụ `/api/v1/catalog/...`).
 3. Bấm **Try it out** $\rightarrow$ Điền Request Body / Query Params $\rightarrow$ Bấm **Execute**.
 4. **Điều gì sẽ diễn ra?**
@@ -201,7 +201,7 @@ Khi bạn làm việc trên service nào, hãy tra cứu đúng cổng của ser
 
 | Service của bạn | Port Code App (`dotnet run`) | Dịch vụ Hạ Tầng Phụ Trợ | Cổng Phụ Trợ | Tên Database PostgreSQL (Neon Cloud) |
 | :--- | :---: | :--- | :---: | :--- |
-| **ApiGateway** | **8000** | `nexus-shared-redis` | `6379` | *(Redis Key-Value)* |
+| **ApiGateway** | **8080** | `nexus-shared-redis` | `6379` | *(Redis Key-Value)* |
 | **UserService** | **8001** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `usermanagement_db` |
 | **CatalogService** | **8002** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `category_db` |
 | **CommerceService** | **8003** | Neon Cloud PostgreSQL | Cổng Cloud (`5432`) | `commerce_db` |

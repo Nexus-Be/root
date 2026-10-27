@@ -200,7 +200,7 @@ src/Services/ApiGateway/Nexus.Gateway/Seeds/{tên_service}/{tên_operation}.json
      "TimeoutSeconds": 5
    }
    ```
-2. Mở trình duyệt truy cập: `http://localhost:8000/swagger`.
+2. Mở trình duyệt truy cập: `http://localhost:8080/swagger`.
 3. Tìm đến endpoint vừa khai báo trong Controller $\rightarrow$ bấm **Try it out** $\rightarrow$ **Execute**.
 4. Gateway sẽ trả về response bọc trong vỏ bọc chuẩn `ApiResponse<T>`:
    ```json
@@ -370,9 +370,9 @@ Gateway trang bị hệ thống kiểm tra sức khỏe phân tầng:
 ```
 
 ### 1. Endpoints Kiểm Tra Sức Khỏe Tự Thân Của Gateway:
-* **`GET http://localhost:8000/health/live` (Liveness Probe)**:
+* **`GET http://localhost:8080/health/live` (Liveness Probe)**:
   - Trả về HTTP 200 OK nếu tiến trình Gateway đang sống. Kubernetes sử dụng endpoint này để biết container có bị treo (deadlock) hay không để restart.
-* **`GET http://localhost:8000/health/ready` (Readiness Probe)**:
+* **`GET http://localhost:8080/health/ready` (Readiness Probe)**:
   - Trả về HTTP 200 OK khi Gateway đã sẵn sàng tiếp nhận lưu lượng (Redis đã kết nối, MockEngine đã tải xong định nghĩa).
 
 ---
@@ -382,7 +382,7 @@ Mỗi backend service có một luồng Prober Daemon chạy ngầm trong Gatewa
 
 #### A. Xem trạng thái sức khỏe của toàn bộ 8 services:
 ```bash
-curl -X GET http://localhost:8000/api/v1/gateway/prober/status \
+curl -X GET http://localhost:8080/api/v1/gateway/prober/status \
      -H "Authorization: Bearer <token_admin>"
 ```
 Response mẫu:
@@ -410,7 +410,7 @@ Response mẫu:
 
 #### B. Bật giám sát sức khỏe cho 1 service:
 ```bash
-curl -X PUT http://localhost:8000/api/v1/gateway/prober/catalog \
+curl -X PUT http://localhost:8080/api/v1/gateway/prober/catalog \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer <token_admin>" \
      -d '{
@@ -423,7 +423,7 @@ curl -X PUT http://localhost:8000/api/v1/gateway/prober/catalog \
 #### C. Kích hoạt kiểm tra sức khỏe tức thì (Manual Probe):
 Khi bạn vừa deploy xong một service và muốn Gateway kiểm tra ngay lập tức mà không cần đợi chu kỳ 60 giây:
 ```bash
-curl -X POST http://localhost:8000/api/v1/gateway/prober/check/catalog \
+curl -X POST http://localhost:8080/api/v1/gateway/prober/check/catalog \
      -H "Authorization: Bearer <token_admin>"
 ```
 
