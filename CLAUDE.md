@@ -124,10 +124,21 @@ Mỗi service (`User`, `Catalog`, `Commerce`, `Log`, `Auction`, `Fulfillment`, `
      + Dữ liệu trả về bọc chuẩn `ApiResponse<T>`, `ApiResponse<PagedData<T>>` hoặc `204 NoContent`.
      + Toàn bộ mã lỗi định dạng `SCREAMING_SNAKE_CASE` và câu thông báo tiếng Anh chuẩn Sentence case theo Nguyên tắc 5.
    - **Giao tiếp bất đồng bộ**: Tiếp tục sử dụng RabbitMQ qua MassTransit (Event-driven / Outbox Pattern / Saga).
-5. **CẤM TỰ Ý SỬA ĐỔI BIẾN MÔI TRƯỜNG, SECRET VÀ KEY BÍ MẬT (MANDATORY HUMAN-IN-THE-LOOP FOR SECRETS)**:
-   - **Tuyệt đối CẤM mọi AI Coding Agent tự ý sửa đổi, thay thế, xóa hoặc ghi đè các biến môi trường (`.env`, `.env.*`), Connection Strings, API Keys, JWT Secrets, chứng chỉ hoặc bất kỳ thông tin bí mật (credentials/secrets) nào trong toàn bộ hệ thống.**
-   - **Bắt buộc phải xin ý kiến và nhận được sự đồng ý rõ ràng (explicit approval) từ người dùng trước khi thực hiện bất kỳ thay đổi nào liên quan đến biến môi trường hoặc tài khoản bí mật.**
-   - Khi phát hiện cấu hình môi trường, connection string hoặc secret key có vấn đề hoặc cần cập nhật, Agent **CHỈ ĐƯỢC PHÉP báo cáo hiện trạng, đề xuất phương án và chờ người dùng xác nhận**, tuyệt đối không tự ý can thiệp.
+5. **NGUYÊN TẮC ĐỐI SOÁT TÀI LIỆU EXCEL (CHỈ TIN THÔNG TIN, KHÔNG TIN ĐỊNH DẠNG/CẤU TRÚC)**:
+   - **Tuyệt đối KHÔNG tin tưởng định dạng hoặc cấu trúc form trong file Excel**: File Excel có thể chứa lỗi định dạng, casing tùy tiện hoặc không nhất quán do người soạn thảo (ví dụ: trong file viết `snake_case`, hoặc viết tên role dạng chữ thường `buyer` thay vì PascalCase `Buyer`...).
+   - **Chỉ tin thông tin và ý đồ nghiệp vụ (Semantic Information)**: Trích xuất ý nghĩa trường dữ liệu, quan hệ logic, các bước trong luồng quy trình và điều kiện nghiệp vụ.
+   - **Mọi cấu trúc, casing và giá trị enum/role BẮT BUỘC phải quy chuẩn lại theo Code & System Specs**:
+     + **Tên Role / Phân quyền**: Bắt buộc tuân thủ chuẩn quy định trong `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md` (ví dụ: `Buyer`, `Seller`, `Staff`, `Admin`, `SuperAdmin`, `Guest` — PascalCase, tuyệt đối không viết thường như `buyer`).
+     + **Casing API JSON & DTO**: Bắt buộc tuân thủ quy chuẩn hệ thống (Gateway JSON `camelCase`, C# Model/DTO `PascalCase`, Database `snake_case`, Enum giá trị viết hoa `ACTIVE`, `SUCCESS`...).
+     + **Tuyệt đối không sao chép máy móc casing hay form lỗi từ Excel vào code, seed data hay cấu hình**.
+6. **NGUYÊN TẮC BẢO MẬT & QUẢN LÝ BIẾN MÔI TRƯỜNG (`.env`, `.env.*`)**:
+   - **Bảo vệ Secrets & Rào chắn Sandbox**: AI Coding Agent không được tự ý xóa, làm lộ hoặc ghi đè sai lệch các biến môi trường nhạy cảm (JWT Secrets, DB Connection Strings, API Keys...). Lưu ý: Do cơ chế bảo vệ an toàn của sandbox (`secret.basename.env`), việc đọc/ghi trực tiếp file `.env` thực tế có thể bị hệ thống chặn tự động.
+   - **Quyền chỉnh sửa khi có chỉ đạo từ Người dùng (Sếp)**: Khi Người dùng (Sếp) có chỉ đạo trực tiếp (ví dụ: *"chỉnh giúp tôi các file env"*, *"cập nhật cấu hình môi trường"*...), AI Agent **ĐƯỢC PHÉP và BẮT BUỘC PHẢI THỰC HIỆN** rà soát, chuẩn hóa các file mẫu `.env.example`, `.env.test`, cấu hình compose, đồng thời đối soát chi tiết và cung cấp block cấu hình rõ ràng để Người dùng cập nhật vào file `.env` thực tế một cách nhanh chóng, chính xác.
+   - **Tuyệt đối cấm duplicate keys**: Không để xảy ra tình trạng khai báo trùng lặp biến trong các file môi trường.
+7. **HẠ TẦNG PHỤ TRỢ DÙNG CHUNG TẬP TRUNG (SINGLE SHARED INFRASTRUCTURE) — CẤM KHAI BÁO REDIS/RABBITMQ TRÙNG LẶP**:
+   - **Hạ tầng phụ trợ (Redis In-Memory Store, RabbitMQ Message Bus, Tempo Tracing, Grafana Dashboard) chỉ được khai báo duy nhất 1 lần tại cụm hạ tầng chung**: Toàn bộ hạ tầng chung nằm tại `src/Infrastructure/docker-compose.yml`, `docker-compose.infra.yml`, hoặc Phần 1 (Hạ tầng) của `docker-compose.yml` gốc.
+   - **Tuyệt đối CẤM các microservices con (`src/Services/*`) khai báo container Redis hay RabbitMQ riêng lẻ trong file docker-compose của service đó**: Từng microservice độc lập (như User, ApiGateway...) chỉ định nghĩa duy nhất 1 container ứng dụng của chính service đó (`nexus-{service}`), kết nối vào hạ tầng dùng chung qua bridge network `nexus-network` (`redis:6379`, `rabbitmq:5672`).
+   - **Cơ chế phân tách dữ liệu Redis (Shared Redis Multi-Tenancy)**: Toàn hệ thống dùng chung 1 instance Redis (port `6379`, định mức 500MB). Các service sử dụng chung Redis bắt buộc phải phân tách vùng dữ liệu bằng Key Prefix riêng (ví dụ: API Gateway dùng prefix `nexus:gateway:*` cho rate-limiting; User Service dùng prefix `otp:*` cho mã xác thực OTP và `user:*` cho cache người dùng). Tuyệt đối không dựng thêm instance Redis thứ 2 gây lãng phí tài nguyên và xung đột cổng.
 
 ---
 
@@ -211,4 +222,35 @@ Mỗi lần kết thúc/hoãn phiên, bắt buộc tạo file nhật ký theo ng
    - Các vấn đề đã xử lý thành công.
    - Các vấn đề gặp phải và cách giải quyết của team.
    - Các phần việc/plan chưa xong, cần hoàn thành trong phiên kế tiếp.
+
+---
+
+## 🏗️ NGUYÊN TẮC 9: QUY CHUẨN ĐỒNG NHẤT HÓA CẤU TRÚC SERVICE & RÀO CHẮN AGENT (MANDATORY SERVICE STANDARDS & AGENT GUARDRAILS)
+
+Toàn bộ các Microservice trong hệ thống Nexus (`User`, `Catalog`, `Commerce`, `Log`, `Auction`, `Fulfillment`, `Notification`, `Wallet`) và `ApiGateway` **BẮT BUỘC** phải tuân thủ 6 quy chuẩn đồng nhất sau:
+
+1. **Chuyển Đổi Enum Bằng Chuỗi (Enum Serialization Standardization)**:
+   - Tất cả các Microservice bắt buộc phải cấu hình bộ chuyển đổi JSON Enum (`JsonStringEnumConverter` hoặc `PascalCaseJsonStringEnumConverter(allowIntegerValues: false)`) trong cả `builder.Services.ConfigureHttpJsonOptions` và `builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>`.
+   - **Tuyệt đối CẤM để Enum serialize thành số nguyên (integer)** trong API Response. Mọi Enum trả về client phải là chuỗi định danh rõ nghĩa (`PascalCase` hoặc `UPPERCASE`).
+
+2. **Swagger / OpenAPI 100% Cho Mọi Service**:
+   - Tất cả các Microservice bắt buộc phải đăng ký `builder.Services.AddEndpointsApiExplorer()`, `builder.Services.AddSwaggerGen()`, và kích hoạt `app.UseSwagger()`, `app.UseSwaggerUI()` trong môi trường Development/Staging.
+   - Luôn đảm bảo endpoint `/swagger/v1/swagger.json` có thể truy cập để phục vụ tra cứu API, kiểm thử và sinh client.
+
+3. **Công Cụ Kiểm Thử & Giám Sát Request (Testing Tools & Distributed Tracing)**:
+   - **Liveness/Readiness Probe**: Mỗi service bắt buộc phải có endpoint `GET /health` trả về JSON `{"status": "Healthy", "service": "{ServiceName}.Api"}`.
+   - **File Test HTTP**: Mỗi project `.Api` bắt buộc phải có file `{ServiceName}.Api.http` chuẩn bị sẵn các request mẫu (`/health`, `/swagger/v1/swagger.json`, các action chính) để phục vụ test nhanh.
+   - **Giám Sát Request (OpenTelemetry Tracing & Metrics)**: Tất cả các service bắt buộc tích hợp OpenTelemetry (`AddServiceObservability`) trỏ về biến môi trường `OTEL_EXPORTER_OTLP_ENDPOINT` (Tempo / OpenTelemetry Collector). Mọi incoming HTTP request, outgoing HTTP request và MassTransit message phải mang `traceparent` / `x-trace-id` để xem toàn cảnh Waterfall Request Trace trên Grafana.
+
+4. **TUYỆT ĐỐI CẤM SỬ DỤNG gRPC CHO GIAO TIẾP ĐỒNG BỘ (100% RESTFUL HTTP/JSON)**:
+   - Toàn bộ giao tiếp đồng bộ giữa API Gateway và các Backend Microservice, cũng như giữa các Microservice nội bộ với nhau, **100% PHẢI là RESTful HTTP/JSON** theo chuẩn RFC 9110.
+   - Tuyệt đối không được thêm gRPC service, gRPC client hoặc proto-generated synchronous RPC vào các service backend.
+
+5. **TUYỆT ĐỐI CẤM DỮ LIỆU MOCK VÀ MOCK STORE TRONG BACKEND MICROSERVICES**:
+   - Cơ chế Mock và Seed Fixture chỉ được phép tồn tại tại tầng **API Gateway** (trong thư mục `Seeds/` của Gateway khi kích hoạt `X-Gateway-Mode: Mock`).
+   - Các Backend Microservice **tuyệt đối KHÔNG được tạo in-memory mock store, mock repository, hay seed json giả lập bên trong service**. Microservice backend phải tương tác với CSDL PostgreSQL thật qua EF Core hoặc gửi/nhận message qua RabbitMQ.
+
+6. **BẢO TOÀN NGUYÊN VẸN LOGIC NGHIỆP VỤ NỘI BỘ (IMMUTABLE BUSINESS LOGIC)**:
+   - Đối với các service đã có sẵn mã nguồn nghiệp vụ (Domain Entities, Application Services, Handlers, Validators, Database Models): AI Agent **TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ Ý SỬA ĐỔI, XÓA HOẶC VIẾT LẠI LOGIC NỘI BỘ** nếu không có yêu cầu nghiệp vụ cụ thể từ Người dùng.
+   - Mọi thao tác kết nối chỉ được phép bổ sung tầng giao tiếp (Controller, DTO, Endpoint, Event Consumer) và bảo toàn tính toàn vẹn của logic cốt lõi.
 

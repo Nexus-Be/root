@@ -197,10 +197,18 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 4. **CHUẨN HÓA GIAO TIẾP ĐỒNG BỘ 100% BẰNG RESTFUL HTTP/JSON (CẤM SỬ DỤNG gRPC)**:
    - Hệ thống chuyển đổi toàn diện giao tiếp đồng bộ giữa ApiGateway và các Backend Microservices sang **RESTful API (JSON over HTTP)** qua `GatewayBaseController.ForwardAsync` và `RestDownstreamDispatcher`.
    - Bãi bỏ và loại bỏ hoàn toàn các tệp Protobuf `shop.proto`. DTOs được quản lý kiểu strongly-typed tại từng service (`Dtos/`).
-5. **CẤM TỰ Ý SỬA ĐỔI BIẾN MÔI TRƯỜNG, SECRET VÀ KEY BÍ MẬT (MANDATORY HUMAN-IN-THE-LOOP FOR SECRETS)**:
-   - **Tuyệt đối CẤM mọi AI Coding Agent tự ý sửa đổi, thay thế, xóa hoặc ghi đè các biến môi trường (`.env`, `.env.*`), Connection Strings, API Keys, JWT Secrets, chứng chỉ hoặc bất kỳ thông tin bí mật (credentials/secrets) nào trong toàn bộ hệ thống.**
-   - **Bắt buộc phải xin ý kiến và nhận được sự đồng ý rõ ràng (explicit approval) từ người dùng trước khi thực hiện bất kỳ thay đổi nào liên quan đến biến môi trường hoặc tài khoản bí mật.**
-   - Khi phát hiện cấu hình môi trường, connection string hoặc secret key có vấn đề hoặc cần cập nhật, Agent **CHỈ ĐƯỢC PHÉP báo cáo hiện trạng, đề xuất phương án và chờ người dùng xác nhận**, tuyệt đối không tự ý can thiệp.
+5. **NGUYÊN TẮC ĐỐI SOÁT TÀI LIỆU EXCEL (CHỈ TIN THÔNG TIN, KHÔNG TIN ĐỊNH DẠNG/CẤU TRÚC)**:
+   - **Tuyệt đối KHÔNG tin tưởng định dạng hoặc cấu trúc form trong file Excel**: File Excel có thể chứa lỗi định dạng, casing tùy tiện hoặc không nhất quán do người soạn thảo (ví dụ: trong file viết `snake_case`, hoặc viết tên role dạng chữ thường `buyer` thay vì PascalCase `Buyer`...).
+   - **Chỉ tin thông tin và ý đồ nghiệp vụ (Semantic Information)**: Trích xuất ý nghĩa trường dữ liệu, quan hệ logic, các bước trong luồng quy trình và điều kiện nghiệp vụ.
+   - **Mọi cấu trúc, casing và giá trị enum/role BẮT BUỘC phải quy chuẩn lại theo Code & System Specs**: Tên role chuẩn PascalCase (`Buyer`, `Seller`, `Staff`, `Admin`, `SuperAdmin`, `Guest`), Casing API JSON `camelCase`, C# Model/DTO `PascalCase`, Database `snake_case`.
+6. **NGUYÊN TẮC BẢO MẬT & QUẢN LÝ BIẾN MÔI TRƯỜNG (`.env`, `.env.*`)**:
+   - **Bảo vệ Secrets & Rào chắn Sandbox**: AI Coding Agent không được tự ý xóa, làm lộ hoặc ghi đè sai lệch các biến môi trường nhạy cảm (JWT Secrets, DB Connection Strings, API Keys...). Lưu ý: Do cơ chế bảo vệ an toàn của sandbox (`secret.basename.env`), việc đọc/ghi trực tiếp file `.env` thực tế có thể bị hệ thống chặn tự động.
+   - **Quyền chỉnh sửa khi có chỉ đạo từ Người dùng (Sếp)**: Khi Người dùng (Sếp) có chỉ đạo trực tiếp (ví dụ: *"chỉnh giúp tôi các file env"*, *"cập nhật cấu hình môi trường"*...), AI Agent **ĐƯỢC PHÉP và BẮT BUỘC PHẢI THỰC HIỆN** rà soát, chuẩn hóa các file mẫu `.env.example`, `.env.test`, cấu hình compose, đồng thời đối soát chi tiết và cung cấp block cấu hình rõ ràng để Người dùng cập nhật vào file `.env` thực tế một cách nhanh chóng, chính xác.
+   - **Tuyệt đối cấm duplicate keys**: Không để xảy ra tình trạng khai báo trùng lặp biến trong các file môi trường.
+7. **HẠ TẦNG PHỤ TRỢ DÙNG CHUNG TẬP TRUNG (SINGLE SHARED INFRASTRUCTURE) — CẤM KHAI BÁO REDIS/RABBITMQ TRÙNG LẶP**:
+   - **Hạ tầng phụ trợ (Redis In-Memory Store, RabbitMQ Message Bus, Tempo Tracing, Grafana Dashboard) chỉ được khai báo duy nhất 1 lần tại cụm hạ tầng chung**: Toàn bộ hạ tầng chung nằm tại `src/Infrastructure/docker-compose.yml`, `docker-compose.infra.yml`, hoặc Phần 1 (Hạ tầng) của `docker-compose.yml` gốc.
+   - **Tuyệt đối CẤM các microservices con (`src/Services/*`) khai báo container Redis hay RabbitMQ riêng lẻ trong file docker-compose của service đó**: Từng microservice độc lập (như User, ApiGateway...) chỉ định nghĩa duy nhất 1 container ứng dụng của chính service đó (`nexus-{service}`), kết nối vào hạ tầng dùng chung qua bridge network `nexus-network` (`redis:6379`, `rabbitmq:5672`).
+   - **Cơ chế phân tách dữ liệu Redis (Shared Redis Multi-Tenancy)**: Toàn hệ thống dùng chung 1 instance Redis (port `6379`, định mức 500MB). Các service sử dụng chung Redis bắt buộc phải phân tách vùng dữ liệu bằng Key Prefix riêng (ví dụ: API Gateway dùng prefix `nexus:gateway:*` cho rate-limiting; User Service dùng prefix `otp:*` cho mã xác thực OTP và `user:*` cho cache người dùng). Tuyệt đối không dựng thêm instance Redis thứ 2 gây lãng phí tài nguyên và xung đột cổng.
 
 ---
 

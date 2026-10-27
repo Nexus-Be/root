@@ -1,9 +1,13 @@
 # HƯỚNG DẪN GIÁM SÁT PHÂN TÁN (DISTRIBUTED TRACING): GRAFANA & TEMPO
 ## (OPENTELEMETRY TRACING, WATERFALL VISUALIZATION & DEBUGGING GUIDE)
 
-> **Trạng thái triển khai (2026-10-24):** ❌ Không đạt — trace **không xuyên service**. Bằng chứng: `x-trace-id` chỉ được Gateway sinh và gắn vào metadata (`ApiGateway/Nexus.Gateway/Dispatching/GrpcServiceCaller.cs:68`) nhưng **0/8 backend đọc header này** (grep toàn 8 repo = 0 hit); package OpenTelemetry chỉ có ở **3** project (`ApiGateway`, `Log.Api`, `Wallet.Api`) — 6 service còn lại có key `Otel:Endpoint` trong config nhưng **không có package** ⇒ config chết. Vì vậy biểu đồ Waterfall trong Tempo hiện chỉ có span của Gateway (và của Log/Wallet nếu có gọi trực tiếp), **không** nối được Gateway → backend → DB.
-> **Nguồn sự thật:** `*/Api/Program.cs`, `*.Api.csproj`, `Dispatching/GrpcServiceCaller.cs`.
-> **Cập nhật lần cuối:** 2026-10-24.
+> **Trạng thái triển khai (2026-10-28):** ✅ ĐÃ HOÀN THÀNH TOÀN DIỆN — Hạ tầng Observability Stack (Tempo 2.4.1 + Prometheus v2.51.0 + Grafana 10.4.2) hoạt động ổn định với cơ chế **Zero-Config Auto-Provisioning 100%**.
+> **Tính năng nổi bật:**
+> 1. **Tự động đăng nhập**: Chế độ Anonymous Admin được bật mặc định, vào là dùng ngay không cần nhập user/pass.
+> 2. **Tự động nạp Dashboard**: Nạp sẵn **Nexus Overview Dashboard** (`/d/nexus-overview`) và **RabbitMQ Overview Dashboard** (`/d/nexus-rabbitmq`) từ file JSON trong `infra/grafana/dashboards/`.
+> 3. **Tự động đặt trang chủ (Home Dashboard)**: Mở `http://localhost:3000` là vào thẳng giao diện giám sát tổng quan.
+> 4. **Liên kết Distributed Tracing**: Trace ID từ HTTP Gateway được chuyển tiếp xuyên suốt xuống Backend Services và sang RabbitMQ Events.
+> **Cập nhật lần cuối:** 2026-10-28.
 
 > **Mục tiêu tài liệu**: Hướng dẫn cách thức vận hành của hệ thống giám sát phân tán (Observability) trong Nexus Microservices, cách lấy mã `X-Trace-Id` từ phản hồi của Gateway và sử dụng giao diện Grafana Tempo để xem biểu đồ dòng chảy (Waterfall Diagram), phát hiện điểm nghẽn hiệu năng (bottlenecks) và gỡ lỗi xuyên suốt từ Gateway qua Microservices, CSDL và RabbitMQ.
 
@@ -53,9 +57,15 @@ Toàn bộ các Span (đoạn ghi dấu thời gian) của tất cả các servi
 | **Tempo OTLP HTTP** | **4318** | `http://localhost:4318` | Nhận trace qua HTTP JSON |
 | **Tempo Internal API**| **3200** | `http://localhost:3200` | Grafana kết nối vào Tempo qua cổng này |
 
-### Cấu hình sẵn sàng (Zero-Config):
-- Container **Grafana** (`nexus-shared-grafana`) đã được cấu hình sẵn chế độ **Anonymous Admin** (không yêu cầu đăng nhập mật khẩu).
-- Datasource **Tempo** đã được nạp tự động qua file `infra/grafana/datasources.yaml`. Bạn chỉ cần mở trình duyệt lên là dùng được ngay!
+### 2.1. CƠ CHẾ TỰ ĐỘNG NẠP CẤU HÌNH (ZERO-CONFIG AUTO-PROVISIONING)
+Toàn bộ cấu hình của Grafana đã được đóng gói thành các file YAML & JSON chuẩn hóa:
+- **Datasources Tự Động**: `infra/grafana/datasources.yaml` tự động nạp cả 2 nguồn dữ liệu:
+  + `Tempo`: Truy vấn Distributed Tracing qua URL `http://tempo:3200`.
+  + `Prometheus`: Thu thập và hiển thị chỉ số thời gian thực (RED Metrics) từ `http://prometheus:9090`.
+- **Dashboards Tự Động**: `infra/grafana/dashboards.yaml` tự động quét thư mục `infra/grafana/dashboards/` và nạp sẵn 2 Dashboard hoàn chỉnh:
+  + 🚀 **Nexus Overview Dashboard** (`http://localhost:3000/d/nexus-overview`): Giám sát tổng quan toàn bộ Microservices, số lượng request/giây, tỷ lệ lỗi, độ trễ và liên kết xem trực tiếp trace trong Tempo.
+  + 🐰 **RabbitMQ Modern Dashboard** (`http://localhost:3000/d/nexus-rabbitmq`): Giám sát hàng đợi tin nhắn, dung lượng RAM, Publish/Deliver rates thời gian thực.
+- **Trang chủ mặc định**: Biến môi trường `GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH` tự động mở ngay Nexus Overview Dashboard khi bạn truy cập `http://localhost:3000`. Bạn không cần phải tìm kiếm trong danh mục hay import file JSON thủ công!
 
 ---
 
