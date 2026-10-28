@@ -29,31 +29,43 @@
       "title": "🔍 Explore Traces (Tempo)",
       "tooltip": "Open Tempo in Explore view",
       "type": "link",
-      "url": "/explore?left=%5B%22now-1h%22,%22now%22,%22tempo%22,%7B%22query%22:%22%7B%7D%22%7D%5D"
+      "url": "/explore?left=%5B%22now-15m%22,%22now%22,%22tempo%22,%7B%22query%22:%22%7B%7D%22%7D%5D"
     },
     {
       "asDropdown": false,
       "icon": "cloud",
       "includeVars": false,
-      "keepTime": true,
+      "keepTime": false,
       "tags": [],
-      "targetBlank": false,
-      "title": "🐰 RabbitMQ Broker",
-      "tooltip": "Open Modern RabbitMQ Dashboard",
+      "targetBlank": true,
+      "title": "🐰 RabbitMQ 4.0 Console (15672)",
+      "tooltip": "Open Modern RabbitMQ Web UI",
       "type": "link",
-      "url": "/d/nexus-rabbitmq"
+      "url": "http://localhost:15672"
     },
     {
       "asDropdown": false,
       "icon": "heart-rate",
       "includeVars": false,
-      "keepTime": true,
+      "keepTime": false,
       "tags": [],
       "targetBlank": true,
       "title": "🌐 Gateway Swagger",
       "tooltip": "Open API Gateway Swagger UI",
       "type": "link",
       "url": "http://localhost:8080/swagger"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "📦 Dedicated RabbitMQ Dashboard",
+      "tooltip": "Open Dedicated RabbitMQ Metrics Dashboard",
+      "type": "link",
+      "url": "/d/nexus-rabbitmq"
     }
   ],
   "liveNow": true,
@@ -68,7 +80,7 @@
       },
       "id": 1,
       "options": {
-        "content": "<div style=\"display:flex; justify-content:space-between; align-items:center; background:linear-gradient(90deg, #1f2430 0%, #0f141c 100%); padding:12px 20px; border-radius:8px; border:1px solid #2e3846;\">\n  <div>\n    <h2 style=\"margin:0; color:#5794f2; font-size:20px;\">🚀 Nexus Microservices - Observability & Distributed Traces Portal</h2>\n    <p style=\"margin:4px 0 0 0; color:#a0aec0; font-size:13px;\">Hệ thống giám sát thời gian thực: API Gateway (8080), User (8001), Catalog (8002), Wallet (8008), Notification (8007) tích hợp Tempo & Prometheus.</p>\n  </div>\n  <div style=\"text-align:right;\">\n    <span style=\"display:inline-block; padding:4px 10px; background:#10b98122; color:#10b981; border:1px solid #10b98155; border-radius:4px; font-weight:bold; font-size:12px;\">🟢 ALL SYSTEMS ACTIVE</span>\n  </div>\n</div>",
+        "content": "<div style=\"display:flex; justify-content:space-between; align-items:center; background:linear-gradient(90deg, #1f2430 0%, #0f141c 100%); padding:12px 20px; border-radius:8px; border:1px solid #2e3846;\">\n  <div>\n    <h2 style=\"margin:0; color:#5794f2; font-size:20px;\">🚀 Nexus Microservices - Unified Observability & Request Tracing Portal</h2>\n    <p style=\"margin:4px 0 0 0; color:#a0aec0; font-size:13px;\">Hệ thống giám sát phân tán thời gian thực: API Gateway (8080), User (8001), Catalog (8002), Wallet (8008), Notification (8007) tích hợp Tempo Traces, Prometheus Metrics & RabbitMQ Broker Flow.</p>\n  </div>\n  <div style=\"text-align:right;\">\n    <span style=\"display:inline-block; padding:4px 10px; background:#10b98122; color:#10b981; border:1px solid #10b98155; border-radius:4px; font-weight:bold; font-size:12px;\">🟢 ALL SYSTEMS ACTIVE</span>\n  </div>\n</div>",
         "mode": "html"
       },
       "pluginVersion": "10.4.2",
@@ -78,7 +90,7 @@
       "collapsed": false,
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 4,
         "x": 0,
         "y": 4
       },
@@ -126,7 +138,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#5794f2",
                 "value": null
               }
             ]
@@ -140,74 +152,12 @@
       "collapsed": false,
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 4,
+        "x": 4,
         "y": 4
       },
       "id": 3,
-      "title": "🔥 Request Rate (RPS)",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(traces_spanmetrics_calls_total[1m])) or vector(0)",
-          "instant": true,
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          },
-          "unit": "reqps"
-        },
-        "overrides": []
-      }
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 4
-      },
-      "id": 4,
-      "title": "⚠️ Error Rate (%)",
+      "title": "🚨 Error Rate (%)",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -227,8 +177,8 @@
         }
       ],
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
+        "colorMode": "background",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -254,8 +204,8 @@
                 "value": null
               },
               {
-                "color": "orange",
-                "value": 1
+                "color": "#EAB839",
+                "value": 2
               },
               {
                 "color": "red",
@@ -272,12 +222,12 @@
       "collapsed": false,
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 18,
+        "w": 4,
+        "x": 8,
         "y": 4
       },
-      "id": 5,
-      "title": "⏱️ P95 Latency",
+      "id": 4,
+      "title": "⏱️ P95 Latency (ms)",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -324,7 +274,7 @@
                 "value": null
               },
               {
-                "color": "yellow",
+                "color": "#EAB839",
                 "value": 200
               },
               {
@@ -341,14 +291,14 @@
     {
       "collapsed": false,
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 4
       },
-      "id": 6,
-      "title": "📈 Request Rate by Service (Req/s)",
-      "type": "timeseries",
+      "id": 5,
+      "title": "📦 Total Queued Messages",
+      "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -360,20 +310,50 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(traces_spanmetrics_calls_total[1m])) by (service_name)",
-          "legendFormat": "{{service_name}}",
+          "expr": "sum(rabbitmq_queue_messages) or vector(0)",
+          "instant": false,
           "range": true,
           "refId": "A"
         }
       ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "fillOpacity": 15
+          "color": {
+            "mode": "thresholds"
           },
-          "unit": "reqps"
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "short"
         },
         "overrides": []
       }
@@ -381,14 +361,14 @@
     {
       "collapsed": false,
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 4
       },
-      "id": 7,
-      "title": "📊 Request Status Codes (Ok vs Error)",
-      "type": "timeseries",
+      "id": 6,
+      "title": "⚙️ In-Flight (Unacked)",
+      "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -400,19 +380,113 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(traces_spanmetrics_calls_total[1m])) by (status_code)",
-          "legendFormat": "Status: {{status_code}}",
+          "expr": "sum(rabbitmq_queue_messages_unacked) or vector(0)",
+          "instant": false,
           "range": true,
           "refId": "A"
         }
       ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 80
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#5794F2",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
           },
           "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 4
+      },
+      "id": 7,
+      "title": "📥 Message Inflow (msg/s)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(rabbitmq_global_messages_received_total[1m])) or vector(0)",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#B877D9",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#B877D9",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
         },
         "overrides": []
       }
@@ -423,10 +497,10 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 8
       },
       "id": 8,
-      "title": "🔍 Live Traces & Request Inspector (Click row to inspect Waterfall)",
+      "title": "🔍 Live Traces & Request Inspector (Click Trace ID to view Waterfall & Error Stack)",
       "type": "table",
       "datasource": {
         "type": "tempo",
@@ -473,14 +547,14 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Trace ID"
+                "value": "Trace ID (Click to View Waterfall)"
               },
               {
                 "id": "links",
                 "value": [
                   {
                     "title": "🔍 Inspect Trace Waterfall",
-                    "url": "/explore?left=%5B%22now-1h%22,%22now%22,%22tempo%22,%7B%22query%22:%22${__value.raw}%22%7D%5D",
+                    "url": "/explore?left=%5B%22now-15m%22,%22now%22,%22tempo%22,%7B%22query%22:%22${__value.raw}%22%7D%5D",
                     "targetBlank": true
                   }
                 ]
@@ -500,6 +574,33 @@
               {
                 "id": "unit",
                 "value": "ms"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 200
+                    },
+                    {
+                      "color": "red",
+                      "value": 1000
+                    }
+                  ]
+                }
               }
             ]
           },
@@ -511,7 +612,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Service"
+                "value": "Initial Service"
               }
             ]
           },
@@ -523,7 +624,19 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Operation / API Endpoint"
+                "value": "API Operation / HTTP Endpoint"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "startTime"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Start Time"
               }
             ]
           }
@@ -541,13 +654,13 @@
     {
       "collapsed": false,
       "gridPos": {
-        "h": 10,
+        "h": 9,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 18
       },
       "id": 9,
-      "title": "🕸️ Service Dependency Map (Node Graph)",
+      "title": "🕸️ Live Service Dependency & Error Map (Node Graph)",
       "type": "nodeGraph",
       "datasource": {
         "type": "prometheus",
@@ -567,6 +680,234 @@
         }
       ],
       "options": {}
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 8,
+        "w": 14,
+        "x": 0,
+        "y": 27
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(rabbitmq_global_messages_received_total[1m])) or vector(0)",
+          "legendFormat": "Publish Rate",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(rabbitmq_global_messages_delivered_total[1m])) or vector(0)",
+          "legendFormat": "Deliver Rate",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(rabbitmq_global_messages_acknowledged_total[1m])) or vector(0)",
+          "legendFormat": "Ack Rate",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(rabbitmq_global_messages_redelivered_total[1m])) or vector(0)",
+          "legendFormat": "Redeliver Rate",
+          "range": true,
+          "refId": "D"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "title": "📈 RabbitMQ Real-Time Throughput (Publish vs Deliver vs Ack)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 14,
+        "y": 27
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Total"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rabbitmq_queue_messages",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "vhost": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "Value": "Total Messages",
+              "queue": "Queue Name"
+            }
+          }
+        }
+      ],
+      "title": "📋 Live RabbitMQ Queues & Backlog",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "id": 12,
+      "title": "📈 Microservices Request Throughput (Req/s)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(traces_spanmetrics_calls_total[1m])) by (service_name)",
+          "legendFormat": "{{service_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 35
+      },
+      "id": 13,
+      "title": "📊 HTTP Status Code Breakdown (Ok vs Error)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(traces_spanmetrics_calls_total[1m])) by (status_code)",
+          "legendFormat": "Status: {{status_code}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
     }
   ],
   "refresh": "5s",
@@ -575,13 +916,14 @@
     "nexus",
     "microservices",
     "traces",
-    "observability"
+    "observability",
+    "rabbitmq"
   ],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {
@@ -593,8 +935,8 @@
     ]
   },
   "timezone": "browser",
-  "title": "Nexus Microservices - Requests, Traces & Observability",
+  "title": "Nexus Microservices - Unified Observability & Request Tracing Portal",
   "uid": "nexus-overview",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
