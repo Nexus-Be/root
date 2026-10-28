@@ -49,6 +49,23 @@ Khi bắt đầu phiên làm việc tại bất kỳ repository nào, AI Agent *
    - CẤM tự ý xóa/ghi đè secrets. Khi có chỉ đạo trực tiếp từ người dùng, rà soát `.env.example`, `.env.test`, compose và cung cấp block cấu hình rõ ràng. Tuyệt đối cấm duplicate keys.
 7. **HẠ TẦNG PHỤ TRỢ TẬP TRUNG (SINGLE SHARED INFRASTRUCTURE)**:
    - Redis (`6379`), RabbitMQ (`5672`), Tempo, Grafana chỉ khai báo 1 lần tại `src/Infrastructure/` hoặc `docker-compose.infra.yml`. CẤM khai báo riêng lẻ trong submodule. Dùng Key Prefix riêng trên Redis chung (`nexus:gateway:*`, `otp:*`, `user:*`).
+8. **FEATURE-DRIVEN CO-LOCATION & 1-TO-1 CONTROLLER PAIRING (CHUẨN HÓA ĐẶC TẢ `specs/01`)**:
+   - Tầng Application: Toàn bộ thành phần của một tính năng đặt tại `{Service}.Application/Services/{Feature}/` gồm: `I{Feature}Service.cs`, `{Feature}Service.cs` (inject trực tiếp `I{Service}DbContext`, cấm Repository), `{Feature}Requests.cs`, `{Feature}Responses.cs`, `{Feature}Dtos.cs` (tùy chọn).
+   - Tầng Api: Ghép cặp 1-to-1 với một thin controller tại `{Service}.Api/Controllers/{Feature}Controller.cs`, chỉ inject duy nhất `I{Feature}Service`.
+9. **CÁCH LY INBOUND CONSUMER THEO SERVICE NGUỒN & DI EXTENSION**:
+   - Tầng Application: Consumers nhận sự kiện RabbitMQ bắt buộc đặt tại `{Service}.Application/Consumers/{SourceService}/{EventName}Consumer.cs`.
+   - Đóng gói đăng ký MassTransit qua file `{Service}.Application/Consumers/ConsumerExtensions.cs` (extension method `AddApplicationConsumers(this IBusRegistrationConfigurator)`).
+   - Tầng Infrastructure: Cấu hình MassTransit chỉ gọi `x.AddApplicationConsumers()` kết hợp với Outbox và RabbitMQ. Cấm đặt Consumer tại tầng Api hoặc rải rác trong Infrastructure.
+10. **QUY CHUẨN BẮT BIẾN KHI PHÁT TRIỂN & KHAI BÁO API MỚI (MANDATORY API RULES)**:
+   - **Cấm trùng lặp Route alias (No Duplicate Route Aliases)**: Cấm tuyệt đối khai báo nhiều route attributes trùng lặp (ví dụ `[HttpGet("user")]` và `[HttpGet("users")]`) trên cùng một Action. Mỗi action chỉ có 1 route endpoint chính thức duy nhất.
+   - **Quy ước Route Số ít cho User/AdminUser (Singular Route Convention)**: Toàn bộ endpoint liên quan đến User và AdminUser phải dùng danh từ số ít (`/api/v1/user`, `/api/v1/user/{userId}`, `/api/v1/admin/user`, `/api/v1/admin/user/{userId}`, `/api/v1/me`). Giữ danh từ số nhiều cho các collection chuẩn của domain khác (`/api/v1/auctions`, `/api/v1/categories`, `/api/v1/wallets`, `/api/v1/notifications`).
+   - **Mô hình Thin Controller & Kế thừa đúng chuẩn**:
+     - Tại API Gateway: Controller bắt buộc kế thừa `GatewayBaseController`, không chứa business logic, chỉ validate input cơ bản qua `UserValidation` và ủy quyền downstream qua `ForwardAsync` / `ForwardPagedAsync` / `ForwardNoContentAsync`.
+     - Tại Microservice: Kế thừa `ControllerBase`, ghép cặp 1-to-1 với feature service tương ứng.
+   - **Phong bì dữ liệu chuẩn (Envelope Standard)**: Mọi endpoint trả dữ liệu đều phải bọc qua `ApiResponse<T>` hoặc `ApiResponse<PagedData<T>>`. Endpoint xóa hoặc không trả dữ liệu body bắt buộc trả HTTP `204 NoContent`. DTOs dùng PascalCase trong C# và camelCase trong JSON serialization.
+   - **Chuẩn hóa XML Comment Endpoint**: Chỉ dùng single-line XML `<summary>` ngắn gọn trực tiếp trên từng Action method. Cấm viết class-level remarks, section dividers kẻ ngang hoặc comment dài dòng nhiều dòng.
+   - **Bắt buộc Mock Seed Fixture**: Khi thêm endpoint mới vào Gateway, bắt buộc tạo seed fixture tương ứng tại `Seeds/{service}/{name}.json` để đảm bảo Mock mode luôn hoạt động độc lập và pass 100% test `UserSeedConformanceTests`.
+   - **Đồng bộ Tài liệu & Specs**: Khi thêm mới hoặc thay đổi bất kỳ route/DTO nào, bắt buộc cập nhật đồng thời file spec tương ứng (`specs/02_GATEWAY_CONTROLLERS_ROUTING.md`) và tài liệu API Frontend (`docs/FRONTEND_API_ENDPOINT_MAPPING.md`).
 
 ## 💬 NGUYÊN TẮC 5: QUY CHUẨN THÔNG BÁO LỖI TOÀN HỆ THỐNG
 1. **Ngôn ngữ (100% English)**: Toàn bộ thông báo lỗi viết bằng tiếng Anh. Tuyệt đối không dùng tiếng Việt.

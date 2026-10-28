@@ -4,6 +4,7 @@ Khi bắt đầu một phiên làm việc tại bất kỳ repository nào, AI A
 
 ### 1. Tại Root Repository (`Nexus-Be/`):
 - `specs/00_MASTER_SYSTEM_ARCHITECTURE.md`: Kiến trúc C4 tổng quan, Bounded Contexts.
+- `specs/01_UNIFIED_MICROSERVICE_ARCHITECTURE_BLUEPRINT.md`: Kiến trúc Clean Architecture chuẩn hóa, Feature Co-location, Consumer Isolation.
 - `specs/01_SERVICE_CATALOG_PORT_MAP.md`: Quy hoạch dải port HTTP/REST (Gateway `8080`, Backend `8001`-`8008`) và DB (`5433`-`5440`).
 - `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md`: Ma trận RESTful đồng bộ vs RabbitMQ Saga.
 - `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md`: JWT Bearer, ma trận phân quyền 6 roles, chuẩn RFC 9110.

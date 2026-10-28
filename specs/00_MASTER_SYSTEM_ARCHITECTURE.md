@@ -56,6 +56,13 @@ UserService    CatalogService  CommerceService  LogService     AuctionService ..
    - Không sử dụng Distributed Transaction / 2-Phase Commit (2PC).
    - Sử dụng **Choreography/Orchestration Saga** với cơ chế Bù Trừ (Compensating Transactions) khi có bước thất bại (ví dụ: Trừ ví thất bại $\rightarrow$ Nhả kho đã giữ $\rightarrow$ Hủy đơn hàng).
 
+5. **Chuẩn Hóa Cấu Trúc Toàn Bộ Microservices (`specs/01_UNIFIED_MICROSERVICE_ARCHITECTURE_BLUEPRINT.md`)**:
+   - Toàn bộ 8 microservices backend bắt buộc tuân theo kiến trúc 4 tầng chuẩn hóa:
+   - **Feature Co-location**: Mọi use case đồng bộ đặt tại `{Service}.Application/Services/{Feature}/` gồm `I{Feature}Service.cs`, `{Feature}Service.cs`, `{Feature}Requests.cs`, `{Feature}Responses.cs`.
+   - **No-Repository Pattern**: `DbContext` được inject trực tiếp trong tầng Application qua `I{Service}DbContext`.
+   - **Inbound Consumer Isolation**: Consumers tiếp nhận sự kiện RabbitMQ bắt buộc đặt tại `{Service}.Application/Consumers/{SourceService}/` và đăng ký tập trung qua `ConsumerExtensions.cs`.
+   - **1-to-1 Controller**: Mỗi Feature folder tương ứng duy nhất một thin controller tại `{Service}.Api/Controllers/{Feature}Controller.cs`.
+
 ---
 
 ## 3. RANH GIỚI MIỀN NGHIỆP VỤ (BOUNDED CONTEXTS)

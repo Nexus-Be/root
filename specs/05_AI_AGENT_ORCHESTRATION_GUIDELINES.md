@@ -209,6 +209,23 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
    - **Hạ tầng phụ trợ (Redis In-Memory Store, RabbitMQ Message Bus, Tempo Tracing, Grafana Dashboard) chỉ được khai báo duy nhất 1 lần tại cụm hạ tầng chung**: Toàn bộ hạ tầng chung nằm tại `src/Infrastructure/docker-compose.yml`, `docker-compose.infra.yml`, hoặc Phần 1 (Hạ tầng) của `docker-compose.yml` gốc.
    - **Tuyệt đối CẤM các microservices con (`src/Services/*`) khai báo container Redis hay RabbitMQ riêng lẻ trong file docker-compose của service đó**: Từng microservice độc lập (như User, ApiGateway...) chỉ định nghĩa duy nhất 1 container ứng dụng của chính service đó (`nexus-{service}`), kết nối vào hạ tầng dùng chung qua bridge network `nexus-network` (`redis:6379`, `rabbitmq:5672`).
    - **Cơ chế phân tách dữ liệu Redis (Shared Redis Multi-Tenancy)**: Toàn hệ thống dùng chung 1 instance Redis (port `6379`, định mức 500MB). Các service sử dụng chung Redis bắt buộc phải phân tách vùng dữ liệu bằng Key Prefix riêng (ví dụ: API Gateway dùng prefix `nexus:gateway:*` cho rate-limiting; User Service dùng prefix `otp:*` cho mã xác thực OTP và `user:*` cho cache người dùng). Tuyệt đối không dựng thêm instance Redis thứ 2 gây lãng phí tài nguyên và xung đột cổng.
+8. **FEATURE-DRIVEN CO-LOCATION & 1-TO-1 CONTROLLER PAIRING (CHUẨN HÓA ĐẶC TẢ `specs/01`)**:
+   - **Tầng Application**: Toàn bộ thành phần của một tính năng bắt buộc đặt tại `{Service}.Application/Services/{Feature}/` gồm: `I{Feature}Service.cs`, `{Feature}Service.cs` (inject trực tiếp `I{Service}DbContext`, cấm Repository), `{Feature}Requests.cs`, `{Feature}Responses.cs`, `{Feature}Dtos.cs` (tùy chọn).
+   - **Tầng Api**: Ghép cặp 1-to-1 với một thin controller tại `{Service}.Api/Controllers/{Feature}Controller.cs`, chỉ inject duy nhất `I{Feature}Service`.
+9. **CÁCH LY INBOUND CONSUMER THEO SERVICE NGUỒN & DI EXTENSION**:
+   - **Tầng Application**: Consumers nhận sự kiện RabbitMQ bắt buộc đặt tại `{Service}.Application/Consumers/{SourceService}/{EventName}Consumer.cs`.
+   - **Đóng gói đăng ký MassTransit** qua file `{Service}.Application/Consumers/ConsumerExtensions.cs` (extension method `AddApplicationConsumers(this IBusRegistrationConfigurator)`).
+   - **Tầng Infrastructure**: Cấu hình MassTransit chỉ gọi `x.AddApplicationConsumers()` kết hợp với Outbox và RabbitMQ. Cấm đặt Consumer tại tầng Api hoặc rải rác trong Infrastructure.
+10. **QUY CHUẨN BẮT BIẾN KHI PHÁT TRIỂN & KHAI BÁO API MỚI (MANDATORY API RULES)**:
+   - **Cấm trùng lặp Route alias (No Duplicate Route Aliases)**: Cấm tuyệt đối khai báo nhiều route attributes trùng lặp (ví dụ `[HttpGet("user")]` và `[HttpGet("users")]`) trên cùng một Action. Mỗi action chỉ có 1 route endpoint chính thức duy nhất.
+   - **Quy ước Route Số ít cho User/AdminUser (Singular Route Convention)**: Toàn bộ endpoint liên quan đến User và AdminUser phải dùng danh từ số ít (`/api/v1/user`, `/api/v1/user/{userId}`, `/api/v1/admin/user`, `/api/v1/admin/user/{userId}`, `/api/v1/me`). Giữ danh từ số nhiều cho các collection chuẩn của domain khác (`/api/v1/auctions`, `/api/v1/categories`, `/api/v1/wallets`, `/api/v1/notifications`).
+   - **Mô hình Thin Controller & Kế thừa đúng chuẩn**:
+     - Tại API Gateway: Controller bắt buộc kế thừa `GatewayBaseController`, không chứa business logic, chỉ validate input cơ bản qua `UserValidation` và ủy quyền downstream qua `ForwardAsync` / `ForwardPagedAsync` / `ForwardNoContentAsync`.
+     - Tại Microservice: Kế thừa `ControllerBase`, ghép cặp 1-to-1 với feature service tương ứng.
+   - **Phong bì dữ liệu chuẩn (Envelope Standard)**: Mọi endpoint trả dữ liệu đều phải bọc qua `ApiResponse<T>` hoặc `ApiResponse<PagedData<T>>`. Endpoint xóa hoặc không trả dữ liệu body bắt buộc trả HTTP `204 NoContent`. DTOs dùng PascalCase trong C# và camelCase trong JSON serialization.
+   - **Chuẩn hóa XML Comment Endpoint**: Chỉ dùng single-line XML `<summary>` ngắn gọn trực tiếp trên từng Action method. Cấm viết class-level remarks, section dividers kẻ ngang hoặc comment dài dòng nhiều dòng.
+   - **Bắt buộc Mock Seed Fixture**: Khi thêm endpoint mới vào Gateway, bắt buộc tạo seed fixture tương ứng tại `Seeds/{service}/{name}.json` để đảm bảo Mock mode luôn hoạt động độc lập và pass 100% test `UserSeedConformanceTests`.
+   - **Đồng bộ Tài liệu & Specs**: Khi thêm mới hoặc thay đổi bất kỳ route/DTO nào, bắt buộc cập nhật đồng thời file spec tương ứng (`specs/02_GATEWAY_CONTROLLERS_ROUTING.md`) và tài liệu API Frontend (`docs/FRONTEND_API_ENDPOINT_MAPPING.md`).
 
 ---
 
