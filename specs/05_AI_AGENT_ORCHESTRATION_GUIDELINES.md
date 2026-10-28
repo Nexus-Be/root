@@ -235,3 +235,62 @@ Một nhiệm vụ kỹ thuật của AI Agent chỉ được xem là hoàn thà
 - [ ] `dotnet build <Solution>.sln -c Release` thành công 100% không có lỗi.
 - [ ] `dotnet test <Solution>.sln -c Release` vượt qua 100% các bài kiểm thử.
 - [ ] `git status` sạch, không có file rác (`bin/`, `obj/`, `.vs/`, `.idea/`).
+
+---
+
+## 🏗️ 7. KHUNG KIẾN TRÚC CHUẨN MỰC CHO MICROSERVICE (SERVICE BLUEPRINT & THIN CONTROLLER RULE)
+
+Toàn bộ các Microservice trong hệ thống Nexus (`User`, `Catalog`, `Commerce`, `Log`, `Auction`, `Fulfillment`, `Notification`, `Wallet`, `CheckHeal`) và `ApiGateway` bắt buộc phải tuân thủ cấu trúc phân tầng và quy tắc thiết kế sau:
+
+### 1. Phân Tầng Chuẩn & Quy Tắc Giao Tiếp Đồng Bộ (RESTful)
+```
+{Service}.sln
+├── {Service}.Domain/           # 100% Thuần C# độc lập: Entities, Enums, Domain Exceptions.
+├── {Service}.Application/      # Use cases nghiệp vụ:
+│   ├── Services/{Feature}/     # Chia thư mục theo từng Feature/Module:
+│   │   ├── I{Feature}Service.cs   # Hợp đồng interface
+│   │   ├── {Feature}Service.cs    # Triển khai use case logic
+│   │   └── {Feature}Dtos.cs       # Request DTOs (kèm DataAnnotations validation) & Response DTOs
+│   ├── Contracts/              # Hợp đồng sự kiện dùng chung (Integration Events)
+│   ├── Interfaces/             # Interfaces trừu tượng hóa hạ tầng (I{Service}DbContext...)
+│   └── DependencyInjection.cs  # Đăng ký IoC cho tầng Application
+├── {Service}.Infrastructure/   # Triển khai kỹ thuật:
+│   ├── Persistence/            # AppDbContext, EntityTypeConfigurations, Migrations
+│   ├── Consumers/              # MassTransit RabbitMQ Event Consumers (IConsumer<T>)
+│   ├── Services/               # Triển khai các dịch vụ hạ tầng kỹ thuật (Redis, Email, External API...)
+│   └── DependencyInjection.cs  # Đăng ký IoC cho tầng Infrastructure (DbContext, Bus, Redis, Consumers)
+└── {Service}.Api/              # Cổng giao tiếp Web API (ASP.NET Core Web API):
+    ├── Controllers/            # Thin Controllers (Dispatcher)
+    ├── Middleware/             # GlobalExceptionHandlerMiddleware
+    ├── Extensions/             # Swagger, Observability, Authentication extensions
+    └── Program.cs              # Nạp DI từ Application & Infrastructure, map middleware & controllers
+```
+
+### 2. Quy Tắc "Thin Controller" (Bắt Buộc)
+- **Controller chỉ là bộ điều hướng (Thin Dispatcher)**:
+  - Chỉ nhận HTTP Request, đọc headers/claims (ví dụ `x-user-id`).
+  - Gọi Service Interface trong tầng Application (`I{Feature}Service`).
+  - Nhận Response DTO từ Service và bọc trong `IActionResult` phù hợp (`Ok`, `Created`, `NoContent`, `NotFound`).
+- **3 ĐIỀU TUYỆT ĐỐI CẤM TRONG CONTROLLER**:
+  1. ❌ **CẤM viết logic nghiệp vụ hay chuyển đổi chuỗi trong Controller Action** (ví dụ: cắt chuỗi `DisplayName`, gán role mặc định, tính toán số liệu...). Mọi logic này bắt buộc phải đưa vào bên trong `Application/{Feature}Service`.
+  2. ❌ **CẤM map thực thể Domain sang anonymous object** (`new { id = ..., email = ... }`) trong Controller. Service phải trả về Response DTO rõ ràng, strongly-typed.
+  3. ❌ **CẤM định nghĩa class/record DTO bên trong file Controller**. Controller và Application dùng chung Request/Response DTO được định nghĩa trong `Application/Services/{Feature}/`.
+
+### 3. Quy Tắc Giao Tiếp Bất Đồng Bộ (Event-Driven Messaging)
+- **Vị trí Event Contracts**: Đặt tại `{Service}.Application/Contracts/` (hoặc `Nexus.Contracts.Events`). Các sự kiện là immutable records/POCO, chỉ chứa dữ liệu thuần túy (ví dụ: `SendOtpEmailIntegrationEvent`, `SellerApprovedIntegrationEvent`).
+- **Vị trí Consumers**: Đặt tại `{Service}.Infrastructure/Consumers/`.
+  - Triển khai interface `IConsumer<TEvent>` của MassTransit.
+  - Consumer nhận message, inject Application Service hoặc `AppDbContext` để xử lý nghiệp vụ, không chứa business logic phức tạp trực tiếp trong consumer.
+  - Được đăng ký tự động hoặc tường minh trong `{Service}.Infrastructure/DependencyInjection.cs`.
+
+### 4. Quy Tắc Giảm Ràng Buộc & Quản Lý DI (Decoupled Dependency Injection)
+- Mỗi tầng có trách nhiệm tự quản lý và đóng gói các dịch vụ của mình thông qua file `DependencyInjection.cs`:
+  - `Application/DependencyInjection.cs`: Đăng ký tất cả Application Services (`AddScoped<I{Feature}Service, {Feature}Service>()`).
+  - `Infrastructure/DependencyInjection.cs`: Đăng ký DbContext, Redis, MassTransit Bus, Consumers, và các Adapter kỹ thuật.
+- `Api/Program.cs`: Chỉ gọi `builder.Services.AddApplicationServices()` và `builder.Services.AddInfrastructureServices(builder.Configuration)`. Tuyệt đối không đăng ký lẫn lộn các service của Application hay Infrastructure trực tiếp trong `Program.cs`.
+
+### 5. Quy Tắc Validate Dữ Liệu (Validation Placement)
+- **Validate định dạng đầu vào (Input Validation)**: Đặt trực tiếp tại Request DTOs bằng Data Annotations (`[Required]`, `[EmailAddress]`, `[MinLength]`, `[RegularExpression]`...) hoặc Validator classes.
+- **Validate nghiệp vụ (Business / Domain Validation)**: Đặt bên trong use case của `Application/{Feature}Service` hoặc trong Domain Entities/Exceptions. Khi vi phạm, ném Exception tương ứng để `GlobalExceptionHandlerMiddleware` bắt và trả về ProblemDetails / ApiResponse chuẩn.
+- **Thông báo lỗi validation**: Bắt buộc tuân thủ 100% tiếng Anh, Sentence case, và mã lỗi `SCREAMING_SNAKE_CASE` theo Nguyên tắc 5.
+

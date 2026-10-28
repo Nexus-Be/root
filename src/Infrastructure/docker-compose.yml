@@ -10,15 +10,15 @@ name: nexus-be
 
 services:
 
-  # 1. RabbitMQ (AMQP Protocol & Management Web UI - Tinh chỉnh siêu nhẹ & Prometheus Metrics)
+  # 1. RabbitMQ (AMQP Protocol & Management Web UI - Modern 4.0 UI & Prometheus Metrics)
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:4-management-alpine
     container_name: nexus-shared-rabbitmq
-    mem_limit: 350m
+    mem_limit: 450m
     deploy:
       resources:
         limits:
-          memory: 350M
+          memory: 450M
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_UI_PORT:-15672}:15672"
@@ -99,6 +99,8 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_USERS_DEFAULT_THEME=dark
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/json/nexus_overview.json
     volumes:
       - ./configs/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
