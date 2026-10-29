@@ -3,17 +3,27 @@
 # =============================================================================
 # Quy hoạch phân đoạn hệ thống:
 #   1. PHẦN 1: HẠ TẦNG DÙNG CHUNG (RabbitMQ, Redis Local, Tempo, Grafana)
-#   2. PHẦN 2: CÁC DỊCH VỤ MICROSERVICES (.NET 8 - Gateway & 9 Services)
-#   * Toàn bộ CSDL PostgreSQL đã lưu trữ và vận hành trên Neon Cloud.
+#   2. PHẦN 1.5: CƠ SỞ DỮ LIỆU POSTGRESQL CỤC BỘ (8 Local Databases: 5433 -> 5440)
+#   3. PHẦN 2: CÁC DỊCH VỤ MICROSERVICES (.NET 8 - Gateway & 9 Services)
+#   * CSDL PostgreSQL chạy container cục bộ theo nguyên tắc Database-Per-Service độc lập.
 #
 # BẢNG TỔNG HỢP CỔNG LOCALHOST (HOST PORT -> CONTAINER PORT):
 # -----------------------------------------------------------------------------
-# [Hạ Tầng]
+# [Hạ Tầng Dùng Chung & CSDL Local]
 #   - RabbitMQ AMQP:        5672  -> 5672
 #   - RabbitMQ Web UI:     15672  -> 15672
 #   - Redis In-Memory:      6379  -> 6379 (500MB - Rate Limit & User Cache)
 #   - Grafana Web UI:       3000  -> 3000
 #   - Tempo Tracing:        3200 (UI/API) | 4317 (gRPC) | 4318 (HTTP)
+#   - Prometheus Metrics:   9090  -> 9090
+#   - User DB:              5433  -> 5432 (usermanagement_db)
+#   - Catalog DB:           5434  -> 5432 (catalog_db)
+#   - Commerce DB:          5435  -> 5432 (commerce_db)
+#   - Log DB:               5436  -> 5432 (log_db)
+#   - Auction DB:           5437  -> 5432 (auction_db)
+#   - Fulfillment DB:       5438  -> 5432 (fulfillment_db)
+#   - Notification DB:      5439  -> 5432 (notification_db)
+#   - Wallet DB:            5440  -> 5432 (wallet_db)
 #
 # [Các Dịch Vụ Microservices]
 #   - Gateway API:          8080  -> 8080
@@ -137,6 +147,170 @@ services:
     restart: unless-stopped
 
   # =========================================================================
+  # PHẦN 1.5: CƠ SỞ DỮ LIỆU POSTGRESQL CỤC BỘ (LOCAL DATABASES - CỔNG 5433 -> 5440)
+  # =========================================================================
+
+  # 1.6 User Service Database (usermanagement_db - Port 5433)
+  user-db:
+    image: postgres:16-alpine
+    container_name: nexus-user-db
+    ports:
+      - "${USER_DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: usermanagement_db
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d usermanagement_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 1.7 Catalog Service Database (catalog_db - Port 5434)
+  catalog-db:
+    image: postgres:16-alpine
+    container_name: nexus-catalog-db
+    ports:
+      - "${CATALOG_DB_PORT:-5434}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: catalog_db
+    volumes:
+      - catalog_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d catalog_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 1.8 Commerce Service Database (commerce_db - Port 5435)
+  commerce-db:
+    image: postgres:16-alpine
+    container_name: nexus-commerce-db
+    ports:
+      - "${COMMERCE_DB_PORT:-5435}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: commerce_db
+    volumes:
+      - commerce_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d commerce_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 1.9 Log Service Database (log_db - Port 5436)
+  log-db:
+    image: postgres:16-alpine
+    container_name: nexus-log-db
+    ports:
+      - "${LOG_DB_PORT:-5436}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: log_db
+    volumes:
+      - log_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d log_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 1.10 Auction Service Database (auction_db - Port 5437)
+  auction-db:
+    image: postgres:16-alpine
+    container_name: nexus-auction-db
+    ports:
+      - "${AUCTION_DB_PORT:-5437}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: auction_db
+    volumes:
+      - auction_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d auction_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 1.11 Fulfillment Service Database (fulfillment_db - Port 5438)
+  fulfillment-db:
+    image: postgres:16-alpine
+    container_name: nexus-fulfillment-db
+    ports:
+      - "${FULFILLMENT_DB_PORT:-5438}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: fulfillment_db
+    volumes:
+      - fulfillment_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d fulfillment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 1.12 Notification Service Database (notification_db - Port 5439)
+  notification-db:
+    image: postgres:16-alpine
+    container_name: nexus-notification-db
+    ports:
+      - "${NOTIFICATION_DB_PORT:-5439}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: notification_db
+    volumes:
+      - notification_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 1.13 Wallet Service Database (wallet_db - Port 5440)
+  wallet-db:
+    image: postgres:16-alpine
+    container_name: nexus-wallet-db
+    ports:
+      - "${WALLET_DB_PORT:-5440}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: wallet_db
+    volumes:
+      - wallet_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d wallet_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # =========================================================================
   # PHẦN 2: CÁC DỊCH VỤ ỨNG DỤNG (MICROSERVICES APPLICATIONS)
   # =========================================================================
 
@@ -187,7 +361,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${USER_CONNECTION_STRING:-${CONNECTION_STRING:-}}
+      - ConnectionStrings__DefaultConnection=${USER_CONNECTION_STRING:-Host=user-db;Port=5432;Database=usermanagement_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -201,6 +375,8 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
+      user-db:
+        condition: service_healthy
     restart: unless-stopped
 
   # 2.3 Catalog Service (Sản phẩm, danh mục, kho ảo seller - Port 8002)
@@ -215,7 +391,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${CATALOG_CONNECTION_STRING:-${CONNECTION_STRING:-}}
+      - ConnectionStrings__DefaultConnection=${CATALOG_CONNECTION_STRING:-Host=catalog-db;Port=5432;Database=catalog_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -226,6 +402,8 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
+      catalog-db:
+        condition: service_healthy
     restart: unless-stopped
 
   # 2.4 Commerce Service (Giỏ hàng, Đơn hàng, Checkout Saga - Port 8003)
@@ -240,7 +418,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${COMMERCE_CONNECTION_STRING:-${CONNECTION_STRING:-}}
+      - ConnectionStrings__DefaultConnection=${COMMERCE_CONNECTION_STRING:-Host=commerce-db;Port=5432;Database=commerce_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -251,6 +429,8 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
+      commerce-db:
+        condition: service_healthy
     restart: unless-stopped
 
   # 2.5 Log Service (Audit Log tập trung - Port 8004)
@@ -265,7 +445,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${LOG_CONNECTION_STRING:-${CONNECTION_STRING:-}}
+      - ConnectionStrings__DefaultConnection=${LOG_CONNECTION_STRING:-Host=log-db;Port=5432;Database=log_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -276,6 +456,8 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
+      log-db:
+        condition: service_healthy
     restart: unless-stopped
 
   # 2.6 Auction Service (Đấu giá, đặt giá bid - Port 8005)
@@ -290,7 +472,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${AUCTION_CONNECTION_STRING:-${CONNECTION_STRING:-}}
+      - ConnectionStrings__DefaultConnection=${AUCTION_CONNECTION_STRING:-Host=auction-db;Port=5432;Database=auction_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -301,6 +483,8 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
+      auction-db:
+        condition: service_healthy
     restart: unless-stopped
 
   # 2.7 Fulfillment Service (Kho vật lý, Tính phí ship, Vận đơn - Port 8006)
@@ -315,7 +499,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${FULFILLMENT_CONNECTION_STRING:-${CONNECTION_STRING:-}}
+      - ConnectionStrings__DefaultConnection=${FULFILLMENT_CONNECTION_STRING:-Host=fulfillment-db;Port=5432;Database=fulfillment_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -326,6 +510,8 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
+      fulfillment-db:
+        condition: service_healthy
     restart: unless-stopped
 
   # 2.8 Notification Service (Thông báo, Cài đặt tùy chọn nhận tin - Port 8007)
@@ -340,7 +526,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${NOTIFICATION_CONNECTION_STRING:-${CONNECTION_STRING:-}}
+      - ConnectionStrings__DefaultConnection=${NOTIFICATION_CONNECTION_STRING:-Host=notification-db;Port=5432;Database=notification_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -358,6 +544,8 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
+      notification-db:
+        condition: service_healthy
     restart: unless-stopped
 
   # 2.9 Wallet Service (Ví điện tử, nạp, rút, chuyển tiền - Port 8008)
@@ -372,7 +560,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
-      - ConnectionStrings__DefaultConnection=${WALLET_CONNECTION_STRING:-${CONNECTION_STRING:-}}
+      - ConnectionStrings__DefaultConnection=${WALLET_CONNECTION_STRING:-Host=wallet-db;Port=5432;Database=wallet_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}
       - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
       - RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - RabbitMq__User=${RABBITMQ_USER:-guest}
@@ -383,6 +571,8 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
+      wallet-db:
+        condition: service_healthy
     restart: unless-stopped
 
   # 2.10 CheckHeal Service (Keep-alive Neon/Render DB & Microservices Health - Port 8009)
@@ -411,14 +601,31 @@ services:
       - CheckHeal__Services__fulfillment__Url=${FULFILLMENT_SERVICE_URL:-http://fulfillment-service:8006/health}
       - CheckHeal__Services__notification__Url=${NOTIFICATION_SERVICE_URL:-http://notification-service:8007/health}
       - CheckHeal__Services__wallet__Url=${WALLET_SERVICE_URL:-http://wallet-service:8008/health}
-      - CheckHeal__Databases__users__ConnectionString=${USERS_DB_CONNECTION:-${USER_CONNECTION_STRING:-}}
-      - CheckHeal__Databases__catalog__ConnectionString=${CATALOG_DB_CONNECTION:-${CATALOG_CONNECTION_STRING:-}}
-      - CheckHeal__Databases__commerce__ConnectionString=${COMMERCE_DB_CONNECTION:-${COMMERCE_CONNECTION_STRING:-}}
-      - CheckHeal__Databases__log__ConnectionString=${LOG_DB_CONNECTION:-${LOG_CONNECTION_STRING:-}}
-      - CheckHeal__Databases__auction__ConnectionString=${AUCTION_DB_CONNECTION:-${AUCTION_CONNECTION_STRING:-}}
-      - CheckHeal__Databases__fulfillment__ConnectionString=${FULFILLMENT_DB_CONNECTION:-${FULFILLMENT_CONNECTION_STRING:-}}
-      - CheckHeal__Databases__notification__ConnectionString=${NOTIFICATION_DB_CONNECTION:-${NOTIFICATION_CONNECTION_STRING:-}}
-      - CheckHeal__Databases__wallet__ConnectionString=${WALLET_DB_CONNECTION:-${WALLET_CONNECTION_STRING:-}}
+      - CheckHeal__Databases__users__ConnectionString=${USERS_DB_CONNECTION:-${USER_CONNECTION_STRING:-Host=user-db;Port=5432;Database=usermanagement_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}}
+      - CheckHeal__Databases__catalog__ConnectionString=${CATALOG_DB_CONNECTION:-${CATALOG_CONNECTION_STRING:-Host=catalog-db;Port=5432;Database=catalog_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}}
+      - CheckHeal__Databases__commerce__ConnectionString=${COMMERCE_DB_CONNECTION:-${COMMERCE_CONNECTION_STRING:-Host=commerce-db;Port=5432;Database=commerce_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}}
+      - CheckHeal__Databases__log__ConnectionString=${LOG_DB_CONNECTION:-${LOG_CONNECTION_STRING:-Host=log-db;Port=5432;Database=log_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}}
+      - CheckHeal__Databases__auction__ConnectionString=${AUCTION_DB_CONNECTION:-${AUCTION_CONNECTION_STRING:-Host=auction-db;Port=5432;Database=auction_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}}
+      - CheckHeal__Databases__fulfillment__ConnectionString=${FULFILLMENT_DB_CONNECTION:-${FULFILLMENT_CONNECTION_STRING:-Host=fulfillment-db;Port=5432;Database=fulfillment_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}}
+      - CheckHeal__Databases__notification__ConnectionString=${NOTIFICATION_DB_CONNECTION:-${NOTIFICATION_CONNECTION_STRING:-Host=notification-db;Port=5432;Database=notification_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}}
+      - CheckHeal__Databases__wallet__ConnectionString=${WALLET_DB_CONNECTION:-${WALLET_CONNECTION_STRING:-Host=wallet-db;Port=5432;Database=wallet_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}}
+    depends_on:
+      user-db:
+        condition: service_healthy
+      catalog-db:
+        condition: service_healthy
+      commerce-db:
+        condition: service_healthy
+      log-db:
+        condition: service_healthy
+      auction-db:
+        condition: service_healthy
+      fulfillment-db:
+        condition: service_healthy
+      notification-db:
+        condition: service_healthy
+      wallet-db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test:
@@ -442,3 +649,19 @@ volumes:
     name: nexus-be_tempo_data
   prometheus_data:
     name: nexus-be_prometheus_data
+  user_db_data:
+    name: nexus-be_user_db_data
+  catalog_db_data:
+    name: nexus-be_catalog_db_data
+  commerce_db_data:
+    name: nexus-be_commerce_db_data
+  log_db_data:
+    name: nexus-be_log_db_data
+  auction_db_data:
+    name: nexus-be_auction_db_data
+  fulfillment_db_data:
+    name: nexus-be_fulfillment_db_data
+  notification_db_data:
+    name: nexus-be_notification_db_data
+  wallet_db_data:
+    name: nexus-be_wallet_db_data

@@ -1,9 +1,9 @@
 # =============================================================================
-# NEXUS MICROSERVICES - INFRASTRUCTURE ONLY
+# NEXUS MICROSERVICES - INFRASTRUCTURE & LOCAL DATABASES
 # =============================================================================
 # Dành riêng cho việc chỉ khởi chạy hạ tầng dùng chung (RabbitMQ, Redis, Tempo, Grafana)
-# phục vụ trường hợp bạn muốn chạy các service .NET trực tiếp từ IDE / Visual Studio / CLI.
-# Toàn bộ PostgreSQL Database đã lưu và quản lý tập trung trên Neon Cloud.
+# và 8 CSDL PostgreSQL cục bộ (5433 -> 5440) phục vụ trường hợp bạn muốn chạy các
+# service .NET trực tiếp từ IDE / Visual Studio / CLI.
 #
 # Lệnh sử dụng:
 #   docker compose -f docker-compose.infra.yml up -d
@@ -114,6 +114,170 @@ services:
       - prometheus
     restart: unless-stopped
 
+  # =========================================================================
+  # CƠ SỞ DỮ LIỆU POSTGRESQL CỤC BỘ (LOCAL DATABASES - CỔNG 5433 -> 5440)
+  # =========================================================================
+
+  # 6. User Service Database (usermanagement_db - Port 5433)
+  user-db:
+    image: postgres:16-alpine
+    container_name: nexus-user-db
+    ports:
+      - "${USER_DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: usermanagement_db
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d usermanagement_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 7. Catalog Service Database (catalog_db - Port 5434)
+  catalog-db:
+    image: postgres:16-alpine
+    container_name: nexus-catalog-db
+    ports:
+      - "${CATALOG_DB_PORT:-5434}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: catalog_db
+    volumes:
+      - catalog_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d catalog_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 8. Commerce Service Database (commerce_db - Port 5435)
+  commerce-db:
+    image: postgres:16-alpine
+    container_name: nexus-commerce-db
+    ports:
+      - "${COMMERCE_DB_PORT:-5435}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: commerce_db
+    volumes:
+      - commerce_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d commerce_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 9. Log Service Database (log_db - Port 5436)
+  log-db:
+    image: postgres:16-alpine
+    container_name: nexus-log-db
+    ports:
+      - "${LOG_DB_PORT:-5436}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: log_db
+    volumes:
+      - log_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d log_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 10. Auction Service Database (auction_db - Port 5437)
+  auction-db:
+    image: postgres:16-alpine
+    container_name: nexus-auction-db
+    ports:
+      - "${AUCTION_DB_PORT:-5437}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: auction_db
+    volumes:
+      - auction_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d auction_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 11. Fulfillment Service Database (fulfillment_db - Port 5438)
+  fulfillment-db:
+    image: postgres:16-alpine
+    container_name: nexus-fulfillment-db
+    ports:
+      - "${FULFILLMENT_DB_PORT:-5438}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: fulfillment_db
+    volumes:
+      - fulfillment_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d fulfillment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 12. Notification Service Database (notification_db - Port 5439)
+  notification-db:
+    image: postgres:16-alpine
+    container_name: nexus-notification-db
+    ports:
+      - "${NOTIFICATION_DB_PORT:-5439}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: notification_db
+    volumes:
+      - notification_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 13. Wallet Service Database (wallet_db - Port 5440)
+  wallet-db:
+    image: postgres:16-alpine
+    container_name: nexus-wallet-db
+    ports:
+      - "${WALLET_DB_PORT:-5440}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: wallet_db
+    volumes:
+      - wallet_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d wallet_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 # =============================================================================
 # MẠNG DÙNG CHUNG & VOLUMES LƯU TRỮ DỮ LIỆU
 # =============================================================================
@@ -129,3 +293,19 @@ volumes:
     name: nexus-be_tempo_data
   prometheus_data:
     name: nexus-be_prometheus_data
+  user_db_data:
+    name: nexus-be_user_db_data
+  catalog_db_data:
+    name: nexus-be_catalog_db_data
+  commerce_db_data:
+    name: nexus-be_commerce_db_data
+  log_db_data:
+    name: nexus-be_log_db_data
+  auction_db_data:
+    name: nexus-be_auction_db_data
+  fulfillment_db_data:
+    name: nexus-be_fulfillment_db_data
+  notification_db_data:
+    name: nexus-be_notification_db_data
+  wallet_db_data:
+    name: nexus-be_wallet_db_data
