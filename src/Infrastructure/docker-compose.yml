@@ -1,7 +1,7 @@
 # =============================================================================
 # NEXUS INFRASTRUCTURE - DOCKER COMPOSE
 # =============================================================================
-# Cụm hạ tầng dùng chung độc lập (RabbitMQ, Redis Local, Tempo, Prometheus, Grafana).
+# Cụm hạ tầng dùng chung độc lập (Redis Local, Tempo, Prometheus, Grafana).
 # Khởi chạy độc lập:
 #   docker compose up -d
 # =============================================================================
@@ -10,34 +10,7 @@ name: nexus-be
 
 services:
 
-  # 1. RabbitMQ (AMQP Protocol & Management Web UI - Modern 4.0 UI & Prometheus Metrics)
-  rabbitmq:
-    image: rabbitmq:4-management-alpine
-    container_name: nexus-shared-rabbitmq
-    mem_limit: 450m
-    deploy:
-      resources:
-        limits:
-          memory: 450M
-    ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_UI_PORT:-15672}:15672"
-      - "${RABBITMQ_PROMETHEUS_PORT:-15692}:15692"
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "+S 2:2 +P 1048576"
-    volumes:
-      - ./configs/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-  # 2. Redis In-Memory Store (Shared cho API Gateway Rate Limit & User Service OTP/Cache - Cổng 6379, 500MB)
+  # 1. Redis In-Memory Store (Shared cho API Gateway Rate Limit & User Service OTP/Cache - Cổng 6379, 500MB)
   redis:
     image: redis:7-alpine
     container_name: nexus-shared-redis

@@ -2,15 +2,13 @@
 # NEXUS MICROSERVICES - MASTER DOCKER COMPOSE
 # =============================================================================
 # Quy hoạch phân đoạn hệ thống:
-#   1. PHẦN 1: HẠ TẦNG DÙNG CHUNG (RabbitMQ, Redis Local, Tempo, Grafana)
+#   1. PHẦN 1: HẠ TẦNG DÙNG CHUNG (Redis, Tempo, Prometheus, Grafana)
 #   2. PHẦN 2: CÁC DỊCH VỤ MICROSERVICES (.NET 8 - Gateway & 9 Services)
 #   * Toàn bộ CSDL PostgreSQL đã lưu trữ và vận hành trên Neon Cloud.
 #
 # BẢNG TỔNG HỢP CỔNG LOCALHOST (HOST PORT -> CONTAINER PORT):
 # -----------------------------------------------------------------------------
 # [Hạ Tầng]
-#   - RabbitMQ AMQP:        5672  -> 5672
-#   - RabbitMQ Web UI:     15672  -> 15672
 #   - Redis In-Memory:      6379  -> 6379 (500MB - Rate Limit & User Cache)
 #   - Grafana Web UI:       3000  -> 3000
 #   - Tempo Tracing:        3200 (UI/API) | 4317 (gRPC) | 4318 (HTTP)
@@ -35,34 +33,7 @@ services:
   # PHẦN 1: HẠ TẦNG DÙNG CHUNG (SHARED INFRASTRUCTURE)
   # =========================================================================
 
-  # 1.1 RabbitMQ (Message Bus cho MassTransit Event-Driven - Tinh chỉnh siêu nhẹ & Prometheus Metrics)
-  rabbitmq:
-    image: rabbitmq:4-management-alpine
-    container_name: nexus-shared-rabbitmq
-    mem_limit: 450m
-    deploy:
-      resources:
-        limits:
-          memory: 450M
-    ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_UI_PORT:-15672}:15672"
-      - "${RABBITMQ_PROMETHEUS_PORT:-15692}:15692"
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "+S 2:2 +P 1048576"
-    volumes:
-      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 1m
-      timeout: 30s
-      retries: 5
-      start_period: 60s
-
-  # 1.2 Redis In-Memory Store (Shared cho API Gateway Rate Limit & User Service OTP/Cache - Cổng 6379, 500MB)
+  # 1.1 Redis In-Memory Store (Shared cho API Gateway Rate Limit & User Service OTP/Cache - Cổng 6379, 500MB)
   redis:
     image: redis:7-alpine
     container_name: nexus-shared-redis
@@ -156,6 +127,14 @@ services:
       - Gateway__RedisConnectionString=${REDIS_CONNECTION_STRING:-redis:6379}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
       - Gateway__Services__users__Address=${USERS_SERVICE_URL:-http://user-service:8001}
+      - Gateway__Services__users__Mode=${GATEWAY_USERS_MODE:-Real}
+      - Gateway__Services__catalog__Mode=${GATEWAY_CATALOG_MODE:-Real}
+      - Gateway__Services__commerce__Mode=${GATEWAY_COMMERCE_MODE:-Real}
+      - Gateway__Services__log__Mode=${GATEWAY_LOG_MODE:-Real}
+      - Gateway__Services__auction__Mode=${GATEWAY_AUCTION_MODE:-Real}
+      - Gateway__Services__fulfillment__Mode=${GATEWAY_FULFILLMENT_MODE:-Real}
+      - Gateway__Services__notification__Mode=${GATEWAY_NOTIFICATION_MODE:-Real}
+      - Gateway__Services__wallet__Mode=${GATEWAY_WALLET_MODE:-Real}
       - Gateway__Services__catalog__Address=${CATALOG_SERVICE_URL:-http://catalog-service:8002}
       - Gateway__Services__commerce__Address=${COMMERCE_SERVICE_URL:-http://commerce-service:8003}
       - Gateway__Services__log__Address=${LOG_SERVICE_URL:-http://log-service:8004}
@@ -188,15 +167,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=${USER_CONNECTION_STRING:-${CONNECTION_STRING:-}}
-      - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
-      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
-      - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - Redis__ConnectionString=${REDIS_CONNECTION_STRING:-redis:6379}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       redis:
         condition: service_healthy
       tempo:
@@ -216,14 +189,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=${CATALOG_CONNECTION_STRING:-${CONNECTION_STRING:-}}
-      - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
-      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
-      - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
@@ -241,14 +208,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=${COMMERCE_CONNECTION_STRING:-${CONNECTION_STRING:-}}
-      - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
-      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
-      - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
@@ -266,14 +227,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=${LOG_CONNECTION_STRING:-${CONNECTION_STRING:-}}
-      - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
-      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
-      - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
@@ -291,14 +246,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=${AUCTION_CONNECTION_STRING:-${CONNECTION_STRING:-}}
-      - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
-      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
-      - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
@@ -316,14 +265,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=${FULFILLMENT_CONNECTION_STRING:-${CONNECTION_STRING:-}}
-      - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
-      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
-      - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
@@ -341,10 +284,6 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=${NOTIFICATION_CONNECTION_STRING:-${CONNECTION_STRING:-}}
-      - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
-      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
-      - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - Smtp__Host=${SMTP_HOST:-smtp.gmail.com}
       - Smtp__Port=${SMTP_PORT:-587}
       - Smtp__UseSsl=${SMTP_USE_SSL:-false}
@@ -354,8 +293,6 @@ services:
       - Smtp__Password=${SMTP_PASSWORD:-}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
@@ -373,14 +310,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__DefaultConnection=${WALLET_CONNECTION_STRING:-${CONNECTION_STRING:-}}
-      - RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
-      - RabbitMq__Port=${RABBITMQ_PORT:-5672}
-      - RabbitMq__User=${RABBITMQ_USER:-guest}
-      - RabbitMq__Password=${RABBITMQ_PASSWORD:-guest}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       tempo:
         condition: service_started
     restart: unless-stopped
@@ -421,8 +352,7 @@ services:
       - CheckHeal__Databases__wallet__ConnectionString=${WALLET_DB_CONNECTION:-${WALLET_CONNECTION_STRING:-}}
     restart: unless-stopped
     healthcheck:
-      test:
-        ["CMD-SHELL", "wget -qO- http://localhost:8009/health/live || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8009/health/live || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -82,7 +82,7 @@ dotnet run --project Catalog.Api
 Toàn bộ tài liệu kỹ thuật được chuẩn hóa và lưu trữ tại thư mục **`docs/`**:
 
 ### 📘 Cẩm Nang Phát Triển (Developer Guides):
-- **[Hướng Dẫn Cầm Tay Chỉ Việc: Ghép Nối API & Tích Hợp Liên Microservice (SERVICE_INTEGRATION_GUIDE.md)](SERVICE_INTEGRATION_GUIDE.md)** *(Đọc khi ghép luồng Gateway - gRPC - RabbitMQ Event)*
+- **[Hướng Dẫn Cầm Tay Chỉ Việc: Ghép Nối API & Tích Hợp Liên Microservice (SERVICE_INTEGRATION_GUIDE.md)](SERVICE_INTEGRATION_GUIDE.md)** *(Đọc khi ghép luồng Gateway - REST Downstream - Typed Clients)*
 - **[Cẩm Nang Phát Triển & Kiểm Thử Độc Lập 1 Service (docs/INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)](docs/INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)** *(Đọc trước khi code service)*
 - **[Quy Chuẩn Kiến Trúc Clean Architecture 4 Tầng Cho Microservices (docs/CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)](docs/CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)**
 - **[Hướng Dẫn Tạo Mock API, Chuyển Đổi Runtime, Bypass Auth & Health Check (docs/GUIDE_MOCK_DATA_GATEWAY.md)](docs/GUIDE_MOCK_DATA_GATEWAY.md)**
@@ -94,7 +94,6 @@ Toàn bộ tài liệu kỹ thuật được chuẩn hóa và lưu trữ tại t
   - [FulfillmentService](src/Services/Fulfillment/README.md) | [NotificationService](src/Services/Notification/README.md) | [LogService](src/Services/Log/README.md) | [WalletService](src/Services/Wallet/README.md) | [ApiGateway](src/Services/ApiGateway/README.md)
 
 ### 🛠️ Cẩm Nang Hạ Tầng Kỹ Thuật Chuyên Biệt (Infrastructure Guides):
-- **[Hướng Dẫn Hạ Tầng RabbitMQ & MassTransit Message Bus (docs/infra/RABBITMQ_GUIDE.md)](docs/infra/RABBITMQ_GUIDE.md)**
 - **[Hướng Dẫn Hạ Tầng Redis: Rate Limiting & Mã OTP (docs/infra/REDIS_GUIDE.md)](docs/infra/REDIS_GUIDE.md)**
 - **[Hướng Dẫn Giám Sát Phân Tán: Grafana & Tempo Traces (docs/infra/OBSERVABILITY_GUIDE.md)](docs/infra/OBSERVABILITY_GUIDE.md)**
 - **[Hướng Dẫn 8 Cơ Sở Dữ Liệu PostgreSQL & EF Core Migrations (docs/infra/POSTGRES_DATABASES_GUIDE.md)](docs/infra/POSTGRES_DATABASES_GUIDE.md)**

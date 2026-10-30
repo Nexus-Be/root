@@ -1,6 +1,10 @@
 # HƯỚNG DẪN CẦM TAY CHỈ VIỆC: GHÉP NỐI API & TÍCH HỢP LIÊN MICROSERVICE
 ## (END-TO-END SERVICE INTEGRATION PLAYBOOK FOR DEVELOPERS)
 
+> **Trạng thái triển khai (2026-10-30):** ✅ ĐÃ CHUẨN HÓA TOÀN BỘ SANG 100% RESTFUL HTTP/JSON & TYPED REST CLIENTS.  
+> **CẤM TUYỆT ĐỐI gRPC & BÃI BỎ HOÀN TOÀN MESSAGE BROKER**: Toàn bộ kiến trúc RabbitMQ, MassTransit 8.3.0, Saga State Machine và Outbox/Inbox tables đã chính thức bị **gỡ bỏ hoàn toàn (decommissioned & deleted)** khỏi hệ thống.  
+> **Chuẩn giao tiếp liên service mới**: Toàn bộ tương tác giữa các service (`User` ➔ `Notification`, `Commerce` ➔ `Catalog` / `Wallet`) được triển khai thông qua **Typed REST Clients** (`IHttpClientFactory`) đồng bộ với timeout, retry và graceful fallback theo Nguyên tắc 4.9 trong `AGENTS.md`.
+
 > **Mục tiêu tài liệu**: Tài liệu này là kim chỉ nam "cầm tay chỉ việc" (Step-by-step Hands-on Guide) dành cho các Developer và AI Coding Agents trong team. Khi mỗi thành viên đã code xong các chức năng, Controller, Service hoặc Entity riêng rẽ trong từng Microservice độc lập (`User`, `Notification`, `Catalog`, `Commerce`, `Wallet`, `Auction`, `Fulfillment`, `Log`), tài liệu này hướng dẫn chi tiết cách **ghép nối chúng thành các luồng nghiệp vụ hoàn chỉnh (End-to-End Flow)** chạy thông suốt từ **ApiGateway** xuống các backend services.
 >
 > **Nguồn sự thật tham chiếu**: `specs/00_MASTER_SYSTEM_ARCHITECTURE.md`, `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md`, `specs/04_SHARED_CONTRACTS_REGISTRY.md`, `AGENTS.md`.

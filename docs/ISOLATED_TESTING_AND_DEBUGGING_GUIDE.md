@@ -1,7 +1,10 @@
-# CẨM NANG KIỂM THỬ ĐỘC LẬP RESTFUL API, EVENT BUS & CHẨN ĐOÁN LỖI TOÀN HỆ THỐNG
-## (ISOLATED RESTFUL API TESTING, EVENT BUS & DISTRIBUTED DEBUGGING GUIDE)
+# CẨM NANG KIỂM THỬ ĐỘC LẬP RESTFUL API & CHẨN ĐOÁN LỖI TOÀN HỆ THỐNG
+## (ISOLATED RESTFUL API TESTING & DISTRIBUTED DEBUGGING GUIDE)
 
-> **Mục tiêu tài liệu**: Cung cấp cẩm nang thực hành chi tiết cho lập trình viên để **kiểm thử độc lập từng Endpoint RESTful HTTP/JSON và từng Event Consumer/Publisher bất đồng bộ** bằng Swagger UI, Postman và cURL mà **không cần thông qua API Gateway**, đồng thời hướng dẫn quy trình 3 bước sử dụng **Grafana Tempo & RabbitMQ Dead-Letter Queues** để định vị chính xác file `.cs` và dòng code bị lỗi khi có sự cố xảy ra.
+> **Trạng thái triển khai (2026-10-30):** ✅ ĐÃ CHUẨN HÓA 100% RESTFUL HTTP/JSON & OPENTELEMETRY TRACING.  
+> **BÃI BỎ MESSAGE BROKER & gRPC**: Toàn bộ hệ thống đã loại bỏ RabbitMQ, MassTransit và gRPC. Mọi giao tiếp đồng bộ đều qua RESTful HTTP/JSON (cổng `8001`-`8008`). Việc chẩn đoán lỗi phân tán được thực hiện 100% qua **Grafana Tempo** với W3C Trace Context (`traceparent`, `X-Trace-Id`).
+
+> **Mục tiêu tài liệu**: Cung cấp cẩm nang thực hành chi tiết cho lập trình viên để **kiểm thử độc lập từng Endpoint RESTful HTTP/JSON** bằng Swagger UI, Postman và cURL mà **không cần thông qua API Gateway**, đồng thời hướng dẫn quy trình sử dụng **Grafana Tempo** để định vị chính xác file `.cs` và dòng code bị lỗi khi có sự cố xảy ra.
 
 ---
 
@@ -9,32 +12,33 @@
 
 Trong hệ thống Microservices Nexus, khi lập trình viên vừa code xong một tính năng hoặc Endpoint tại một Service (ví dụ: `UserService` hoặc `WalletService`), việc phải bật toàn bộ 9 services cùng API Gateway để kiểm thử qua giao diện là rất cồng kềnh, tốn RAM và khó đặt breakpoint debug.
 
-Tuân thủ **Nguyên tắc 4** và **ADR 06**, toàn bộ hệ thống Nexus đã chuẩn hóa hai trục giao tiếp tách biệt:
-1. **Trục Đồng Bộ (Synchronous)**: **100% RESTful HTTP/JSON** (CẤM TUYỆT ĐỐI gRPC). Mỗi microservice backend sở hữu dải cổng riêng (`8001`-`8008`) và có thể tiếp nhận trực tiếp các request HTTP REST từ Swagger UI, Postman hoặc cURL.
-2. **Trục Bất Đồng Bộ (Asynchronous)**: **100% Event-driven qua RabbitMQ** (MassTransit) kết hợp Outbox Pattern và Dead-Letter Queues (`*_error`).
+Tuân thủ **Nguyên tắc 4** và **ADR 06**, toàn bộ hệ thống Nexus đã chuẩn hóa kiến trúc:
+1. **Giao thức đồng bộ (Synchronous)**: **100% RESTful HTTP/JSON** (CẤM TUYỆT ĐỐI gRPC & BÃI BỎ MESSAGE BROKER). Mỗi microservice backend sở hữu dải cổng riêng (`8001`-`8008`) và có thể tiếp nhận trực tiếp các request HTTP REST từ Swagger UI, Postman hoặc cURL.
+2. **Quan sát phân tán (Observability)**: Mọi cuộc gọi được gắn `X-Trace-Id` và tự động đẩy Spans về **Grafana Tempo** (`port 4317`) để xem biểu đồ Waterfall.
 
-Hệ thống cho phép bạn chia tách việc kiểm thử thành 3 trụ cột độc lập:
+Hệ thống cho phép bạn chia tách việc kiểm thử độc lập:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                      POSTMAN / cURL / SWAGGER UI / DÒNG LỆNH                     │
 │                                                                                  │
-│   [Kiểm Thử RESTful API Đồng Bộ]           [Kiểm Thử Event Bất Đồng Bộ]          │
-│   HTTP GET/POST/PUT/PATCH/DELETE           Postman HTTP REST Request             │
-│   (Swagger UI / cURL / Postman)            (Basic Auth: guest/guest hoặc $RABBITMQ_PASSWORD) │
+│   [Kiểm Thử RESTful API Trực Tiếp]          [Kiểm Thử Qua API Gateway]            │
+│   HTTP GET/POST/PUT/PATCH/DELETE           HTTP GET/POST/PUT/PATCH/DELETE        │
+│   (Swagger UI: port 8001-8008)             (Gateway Port 8080: /api/v1/...)       │
 └───────────────┬──────────────────────────────────────────┬───────────────────────┘
-                │ HTTP/1.1 REST (JSON)                     │ HTTP POST (Port 15672)
+                │ HTTP/1.1 REST (JSON)                     │ ForwardAsync (REST)
                 ▼                                          ▼
 ┌───────────────────────────────┐          ┌───────────────────────────────────────┐
-│     MICROSERVICE BACKEND      │          │        RABBITMQ MANAGEMENT API        │
-│   Port: 8001, 8002, 8008...   │          │  POST /api/exchanges/%2f/{name}/publish│
-│                               │          └───────────────────┬───────────────────┘
-│   - Minimal API / Controller  │                              │ AMQP Routing
-│   - Swagger UI (/swagger)     │                              ▼
-│   - MassTransit Consumers     │◄─────────────────── RabbitMQ Exchange / Queue
-└───────────────┬───────────────┘                     (Kích hoạt độc lập Consumer)
-                │ OTLP Traces (gRPC 4317)
-                ▼
+│     MICROSERVICE BACKEND      │          │              API GATEWAY              │
+│   Port: 8001, 8002, 8008...   │          │               Port 8080               │
+│   - Feature Service & DbContext│         │  - JWT Bearer & RBAC Authorization    │
+│   - Swagger UI (/swagger)     │          │  - Rate Limiter (Redis 6379)          │
+│   - Thin Controller           │          │  - Mock / Real Backend Dispatcher     │
+└───────────────┬───────────────┘          └───────────────────┬───────────────────┘
+                │                                              │
+                └───────────────────────┬──────────────────────┘
+                                        │ OTLP Traces (gRPC 4317)
+                                        ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                         CHẨN ĐOÁN LỖI: GRAFANA TEMPO                             │
 │       Dán TraceId -> Xem Biểu đồ Waterfall -> Click Span Đỏ -> Thấy File & Dòng   │

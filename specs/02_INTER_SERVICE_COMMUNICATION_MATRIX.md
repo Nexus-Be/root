@@ -1,22 +1,22 @@
-# 02 — MA TRẬN GIAO TIẾP & ĐIỀU PHỐI SAGA (INTER-SERVICE COMMUNICATION)
+# 02 — MA TRẬN GIAO TIẾP LIÊN DỊCH VỤ (INTER-SERVICE COMMUNICATION MATRIX)
 
-> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuyển dịch toàn diện sang **100% RESTful (JSON over HTTP)** cho toàn bộ giao tiếp đồng bộ từ Gateway $\rightarrow$ Backend Microservices và giữa các Microservices với nhau. **CẤM TUYỆT ĐỐI gRPC**. Giao tiếp sự kiện phân tán sử dụng **RabbitMQ MassTransit 8.3.0**.
-> **Nguồn sự thật:** code 9 repo (`PLAN-20261027-1400-GLOBAL-RESTFUL-PIVOT-AND-GATEWAY-DECOUPLING.md`).
-> **Cập nhật lần cuối:** 2026-10-27.
+> **Trạng thái triển khai (2026-10-30):** ✅ Đã chuyển dịch toàn diện sang **100% RESTful (JSON over HTTP)** cho toàn bộ giao tiếp từ Gateway $\rightarrow$ Backend Microservices và giữa các Microservices với nhau. **CẤM TUYỆT ĐỐI gRPC**. Bãi bỏ hoàn toàn RabbitMQ, MassTransit, Saga State Machine và Outbox/Inbox tables.
+> **Nguồn sự thật:** code 9 repo (`PLAN-20261030-0335-DECOMMISSION-SAGA-RABBITMQ-AND-OUTBOX-INBOX.md`).
+> **Cập nhật lần cuối:** 2026-10-30.
 
-Tài liệu này xác định ranh giới giữa giao tiếp **đồng bộ (RESTful HTTP/JSON)** và **bất đồng bộ (RabbitMQ MassTransit)**, đồng thời mô tả chi tiết ma trận gọi liên service và luồng giao dịch phân tán **Checkout Saga**.
+Tài liệu này xác định ma trận giao tiếp **100% RESTful HTTP/JSON** giữa API Gateway và 8 microservices, cũng như các tương tác trực tiếp liên microservice.
 
 ---
 
-## 1. NGUYÊN TẮC LỰA CHỌN GIAO TIẾP
+## 1. NGUYÊN TẮC GIAO TIẾP ĐỒNG BỘ 100% RESTFUL HTTP/JSON
 
-| Tiêu Chí | Giao Tiếp Đồng Bộ (RESTful HTTP/JSON) — DUY NHẤT | Giao Tiếp Bất Đồng Bộ (RabbitMQ) |
-|:---|:---|:---|
-| **Mục đích** | Truy vấn dữ liệu tức thì (Query) hoặc Command cần xác nhận ngay lập tức từ 1 service. | Thông báo trạng thái thay đổi (Event) hoặc kích hoạt quy trình phức tạp qua nhiều service (Saga). |
-| **Giao thức** | HTTP/1.1 hoặc HTTP/2 (Keep-Alive Pooling) trên nền chuẩn JSON (`camelCase`). **CẤM gRPC**. | AMQP 0-9-1 qua thư viện **MassTransit 8.3.0**. |
-| **Tính phụ thuộc** | Tight coupling tại thời điểm gọi (Caller đợi Callee phản hồi hoặc timeout). | Decoupled (Publisher phát event và tiếp tục, Subscribers nhận xử lý độc lập). |
-| **Độ trễ** | Rất thấp (< 5-10ms trong mạng nội bộ Docker/VPS). | Bất đồng bộ (vài chục ms qua hàng đợi). |
-| **Độ bền dữ liệu** | Phụ thuộc availability của callee (xử lý qua timeout / retry / circuit breaker). | Bền vững (Durable Queues, Message Persistence, Outbox/Inbox Pattern). |
+| Tiêu Chí | Đặc Tả |
+|:---|:---|
+| **Mục đích** | Truy vấn dữ liệu (Query), thực hiện lệnh (Command), và trao đổi thông tin liên service. |
+| **Giao thức** | HTTP/1.1 hoặc HTTP/2 (Keep-Alive Pooling) trên nền chuẩn JSON (`camelCase`). **CẤM gRPC**. |
+| **Bảo mật & Ủy quyền** | JWT Bearer Token tại Gateway, metadata `x-user-id`, `x-user-roles`, `x-user-permissions` chuyển tiếp downstream. |
+| **Độ trễ** | Rất thấp (< 5-10ms trong mạng nội bộ Docker/VPS). |
+| **Khả năng phục hồi** | Xử lý qua timeout ngắn, circuit breaker tại Gateway, và client retry có backoff. |
 
 ---
 
@@ -24,7 +24,7 @@ Tài liệu này xác định ranh giới giữa giao tiếp **đồng bộ (RES
 
 | Nguồn Gọi (Caller) | Đích Đến (Callee) | Giao Thức | Tên Phương Thức / Route | Mục Đích Nghiệp Vụ | Trạng thái triển khai |
 |:---|:---|:---:|:---|:---|:---|
-| **ApiGateway** | `UserService` | REST | `/api/v1/auth/*`, `/api/v1/users/*`, `/api/v1/admin/users/*` | Quản lý người dùng, đăng ký, đăng nhập và hồ sơ | ✅ Gateway hỗ trợ Mock/Real qua `ForwardAsync` |
+| **ApiGateway** | `UserService` | REST | `/api/v1/auth/*`, `/api/v1/user/*`, `/api/v1/admin/user/*` | Quản lý người dùng, đăng ký, đăng nhập và hồ sơ | ✅ Gateway hỗ trợ Mock/Real qua `ForwardAsync` |
 | **ApiGateway** | `CatalogService` | REST | `/api/v1/products/*`, `/api/v1/categories/*`, `/api/v1/inventory/*` | Truy vấn và cập nhật danh mục, sản phẩm, tồn kho | ✅ Catalog có 13 REST Controllers, Gateway hỗ trợ `ForwardAsync` |
 | **ApiGateway** | `CommerceService` | REST | `/api/v1/cart/*`, `/api/v1/orders/*` | Thao tác giỏ hàng và đặt hàng | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
 | **ApiGateway** | `AuctionService` | REST | `/api/v1/auctions/*` | Tham gia và tạo phòng đấu giá | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
@@ -32,64 +32,19 @@ Tài liệu này xác định ranh giới giữa giao tiếp **đồng bộ (RES
 | **ApiGateway** | `NotificationService`| REST | `/api/v1/notifications/*`, `/api/v1/notifications/email/*` | Quản lý thông báo người dùng, gửi email OTP/alert | ✅ Notification có `NotificationsController` & `EmailController`, Gateway hỗ trợ `ForwardAsync` |
 | **ApiGateway** | `LogService` | REST | `/api/v1/logs/*`, `/api/v1/log/batch` | Ghi log, truy vấn nhật ký hệ thống | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
 | **ApiGateway** | `WalletService` | REST | `/api/v1/wallet/*` | Tra cứu số dư, nạp, rút và giao dịch ví | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
-| **CommerceService**| RabbitMQ | Event | `OrderSubmittedEvent` | Bắn tin nhắn đơn hàng mới được tạo | ❌ 0 publisher, 0 consumer |
-| `CatalogService` | RabbitMQ | Event | `StockReservedEvent` / `StockReservationFailedEvent` | Giữ kho ảo cho sản phẩm trong đơn | ❌ 0 publisher |
-| `WalletService` | RabbitMQ | Event | `PaymentCompletedEvent` / `PaymentFailedEvent` | Trừ số dư tiền trong ví người mua | ❌ Contract có nhưng 0 lời gọi publish |
-| `FulfillmentService`| RabbitMQ | Event | `ShipmentCreatedEvent` | Tạo phiếu xuất kho và đóng gói hàng | ❌ 0 publisher, 0 consumer |
-| `NotificationService`| RabbitMQ | Consumer | Nghe mọi sự kiện trạng thái đơn, ví, đấu giá | Gửi email / push thông báo cho user | ⚠️ Có `SendOtpEmailConsumer` (1 event OTP từ User) |
-| `LogService` | RabbitMQ | Consumer | Nghe toàn bộ Domain Events trên Event Bus | Ghi chép nhật ký hệ thống tập trung | ⚠️ `GlobalLogConsumer.cs` tồn tại |
+| **UserService** | `NotificationService`| REST | `POST /api/v1/notifications/email` | Gửi mã OTP xác thực qua email khi đăng ký / quên mật khẩu | ✅ Triển khai qua `IEmailNotificationClient` |
+| **CommerceService**| `WalletService` | REST | `POST /api/v1/wallet/transactions` | Thanh toán đơn hàng trực tiếp qua API ví | 🎯 Thiết kế REST trực tiếp |
+| **CommerceService**| `CatalogService` | REST | `POST /api/v1/inventory/reserve` | Khóa tồn kho ảo trực tiếp khi xác nhận đơn hàng | 🎯 Thiết kế REST trực tiếp |
 
 ---
 
-## 3. ĐIỀU PHỐI GIAO DỊCH PHÂN TÁN: CHECKOUT SAGA
+## 3. QUY TẮC ĐẢM BẢO TÍNH TOÀN VẸN VÀ CHỐNG TRÙNG LẶP (IDEMPOTENCY)
 
-> **Trạng thái (2026-10-24): ❌ CHƯA TRIỂN KHAI.** Không tồn tại `StateMachine`, `SagaState`, `MassTransitStateMachine` nào trong 9 repo (grep `StateMachine|SagaState|MassTransitStateMachine` = 0 hit). Toàn bộ sơ đồ dưới đây là **đặc tả mục tiêu**, không phải mô tả hệ thống đang chạy. Sáu event trong sơ đồ (`OrderSubmittedEvent`, `StockReservedEvent`, `StockReservationFailedEvent`, `PaymentCompletedEvent`, `PaymentFailedEvent`, `ShipmentCreatedEvent`) **không có publisher** nào trong code.
-
-Quy trình đặt hàng nhiều bước được điều phối bởi **Commerce Saga State Machine** với cơ chế Bù Trừ (Compensating Transactions):
-
-```
-[ Khách hàng đặt hàng ]
-       │
-       ▼ (1) POST /api/v1/commerce/orders
-[ CommerceService ] ──▶ Tạo đơn trạng thái: PENDING
-       │
-       ▼ (2) Bắn OrderSubmittedEvent lên RabbitMQ
-┌─────────────────────────────────────────────────────────────┐
-│ (3) CatalogService lắng nghe:                               │
-│     - Kiểm tra tồn kho ảo của các sản phẩm trong đơn.       │
-│     - NẾU ĐỦ: Giữ hàng ──▶ Bắn StockReservedEvent           │
-│     - NẾU THIẾU: ────────▶ Bắn StockReservationFailedEvent  │
-└─────────────────────────────────────────────────────────────┘
-       │
-       ├──[Nếu StockReservationFailed] ──▶ CommerceService đổi trạng thái: CANCELLED (Lý do: Hết hàng).
-       │
-       ▼ (4) [Nếu StockReserved] ──▶ WalletService lắng nghe:
-┌─────────────────────────────────────────────────────────────┐
-│     - Kiểm tra số dư ví của khách hàng.                     │
-│     - NẾU ĐỦ: Trừ tiền ví ──▶ Bắn PaymentCompletedEvent     │
-│     - NẾU THIẾU: ───────────▶ Bắn PaymentFailedEvent        │
-└─────────────────────────────────────────────────────────────┘
-       │
-       ├──[Nếu PaymentCompleted] ─────────────────────────────┐
-       │   - CommerceService đổi trạng thái: CONFIRMED / PAID │
-       │   - FulfillmentService tạo vận đơn: PREPARING        │
-       │   - NotificationService gửi thông báo: Đặt hàng ok   │
-       │                                                      │
-       └──[NẾU BÙ TRỪ: PaymentFailed - Không đủ tiền] ────────┘
-           │
-           ├── (A) CommerceService đổi trạng thái: CANCELLED (Lý do: Thanh toán thất bại).
-           └── (B) CatalogService lắng nghe PaymentFailed: Nhả lại kho ảo đã giữ (ReleaseStock).
-```
-
----
-
-## 4. QUY TẮC ĐẢM BẢO TÍNH TOÀN VẸN VÀ CHỐNG TRÙNG LẶP (IDEMPOTENCY)
-
-> **Trạng thái (2026-10-24):** ⚠️ Một phần — Outbox/Inbox đã bật ở 8/8 service (`AppDbContext` có `OutboxMessage`/`InboxState`, DI gọi `AddEntityFrameworkOutbox`) nhưng **chỉ 1 service có message thật để đẩy** (User). 7 service còn lại có hạ tầng outbox rỗng. Chưa service nào cấu hình `UseMessageRetry`/error queue.
-
-1. **Transactional Outbox Pattern**:
-   - Mọi service khi ghi dữ liệu vào DB bắt buộc lưu Event vào bảng `OutboxMessage` trong cùng một Database Transaction.
-   - Background worker của MassTransit định kỳ đọc bảng outbox và đẩy lên RabbitMQ $\rightarrow$ Đảm bảo không bao giờ bị mất event dù crash ứng dụng.
-2. **Idempotent Consumer (Chống xử lý trùng)**:
-   - Mọi event mang `MessageId` hoặc `CorrelationId`.
-   - Consumer lưu `MessageId` vào bảng `InboxMessage`. Nếu event đến lần thứ 2 $\rightarrow$ Bỏ qua, không trừ tiền hay giữ kho 2 lần.
+1. **Idempotent REST APIs**:
+   - Các API tạo giao dịch (thanh toán, trừ ví, đặt hàng) chấp nhận header `Idempotency-Key` (UUIDv4) để đảm bảo không bị trừ tiền hoặc tạo đơn 2 lần khi client retry.
+2. **Timeouts & Graceful Degradation**:
+   - Khi gọi liên service phụ trợ (như gửi email OTP), nếu service đích tạm thời offline, client ghi nhận structured log và trả mã lỗi rõ ràng hoặc tiếp tục với fallback an toàn.
+3. **HTTP Status Codes Chuẩn Hóa**:
+   - Thành công: `200 OK` (có body `ApiResponse<T>`), `201 Created` (tạo mới tài nguyên), `204 NoContent` (xóa hoặc không cần body).
+   - Lỗi Client: `400 BadRequest`, `401 Unauthorized`, `403 Forbidden`, `404 NotFound`, `409 Conflict`.
+   - Lỗi Server: `500 InternalServerError`, `502 BadGateway` (khi downstream service không phản hồi).

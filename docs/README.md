@@ -55,9 +55,6 @@ Tài liệu thực chiến giúp lập trình viên bắt tay vào làm việc n
 
 Bộ tài liệu chuyên sâu về từng thành phần hạ tầng trong thư mục `docs/infra/`:
 
-* **[Hướng Dẫn RabbitMQ & Message Bus MassTransit (infra/RABBITMQ_GUIDE.md)](infra/RABBITMQ_GUIDE.md)**  
-  👉 Bản chất Event-Driven, tài khoản kết nối (`guest` / `MatkhaucuaTui123@`), cách sử dụng Web UI (`:15672`), xem hàng đợi, soi nội dung JSON tin nhắn, và xử lý lỗi hàng đợi `_error`.
-
 * **[Hướng Dẫn Redis: Rate Limiting & Lưu Trữ OTP (infra/REDIS_GUIDE.md)](infra/REDIS_GUIDE.md)**  
   👉 Bản chất Distributed Rate Limiter tại Gateway, cấu trúc key Rate Limit bucket, cấu trúc key OTP tại UserService, cẩm nang lệnh `redis-cli`, và mẹo xóa key giải phóng hạn mức.
 
@@ -72,7 +69,7 @@ Bộ tài liệu chuyên sâu về từng thành phần hạ tầng trong thư m
 ## 3. QUYẾT ĐỊNH KIẾN TRÚC & ĐẶC TẢ HỆ THỐNG (SYSTEM ARCHITECTURE & ADRS)
 
 * **[Hệ Thống 15 Quyết Định Kiến Trúc Toàn Hệ Thống (docs/adr/ADR.md)](adr/ADR.md)**  
-  👉 Các quyết định kiến trúc bất biến đã được phê duyệt: .NET 8, Clean Architecture, No-Repository, RESTful HTTP/JSON (CẤM gRPC), RabbitMQ MassTransit, Checkout Saga, Dual-mode Gateway, Zero-validation Controller, Redis Rate Limit...
+  👉 Các quyết định kiến trúc bất biến đã được phê duyệt: .NET 8, Clean Architecture, No-Repository, 100% RESTful HTTP/JSON (CẤM gRPC, bãi bỏ RabbitMQ / MassTransit / Saga), Dual-mode Gateway, Zero-validation Controller, Redis Rate Limit...
 
 * **[Kiến Trúc Health Prober & Chiến Lược Quản Lý Log Tập Trung (HEALTH_AND_LOGGING_ARCHITECTURE.md)](HEALTH_AND_LOGGING_ARCHITECTURE.md)**  
   👉 Nguyên lý Prober Daemon, State Machine của Health Check, Circuit Breaker Fast-Fail (503), Docker Self-Healing, và chiến lược gom log tập trung về `LogService`.

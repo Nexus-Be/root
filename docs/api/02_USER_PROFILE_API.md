@@ -26,7 +26,7 @@ Tài liệu chuẩn hóa toàn bộ các API quản lý thông tin cá nhân (Pr
 | 12 | `GET` | [`/api/v1/user/{userId}/reputation`](#12-get-api-v1-user-userid-reputation) | `Authenticated User` (Yêu cầu JWT Bearer Token) | Xem Thẻ Tóm tắt Hồ sơ Uy tín công khai |
 | 13 | `GET` | [`/api/v1/user/{userId}/reputation/history`](#13-get-api-v1-user-userid-reputation-history) | `Authenticated User` (Yêu cầu JWT Bearer Token) | Xem lịch sử uy tín (tăng or giảm) |
 | 14 | `POST` | [`/api/v1/report/files/upload`](#14-post-api-v1-report-files-upload) | `Authenticated User` (Yêu cầu JWT Bearer Token) | Upload bằng chứng tố cáo tài khoản vi phạm (User Violation Evidence) |
-| 15 | `POST` | [`/api/v1/users/reports`](#15-post-api-v1-users-reports) | `Authenticated User` (Yêu cầu JWT Bearer Token) | Người dùng gửi đơn tố cáo tài khoản vi phạm quy chế |
+| 15 | `POST` | [`/api/v1/user/reports`](#15-post-api-v1-user-reports) | `Authenticated User` (Yêu cầu JWT Bearer Token) | Người dùng gửi đơn tố cáo tài khoản vi phạm quy chế |
 | 16 | `GET` | [`/api/v1/me/reports`](#16-get-api-v1-me-reports) | `Buyer` (Yêu cầu JWT Bearer Token) | Người dùng xem danh sách các báo cáo do mình đã gửi |
 | 17 | `POST` | [`/api/v1/seller/registration`](#17-post-api-v1-seller-registration) | `Seller` | Seller tạo đơn đăng kí |
 | 18 | `POST` | [`/api/v1/seller/registration/otp/resend`](#18-post-api-v1-seller-registration-otp-resend) | `Seller` | Gửi lại otp cho tài khoản Seller |
@@ -826,14 +826,14 @@ Tài liệu chuẩn hóa toàn bộ các API quản lý thông tin cá nhân (Pr
 
 ---
 
-<a id="15-post-api-v1-users-reports"></a>
-### 15. `POST /api/v1/users/reports`
+<a id="15-post-api-v1-user-reports"></a>
+### 15. `POST /api/v1/user/reports`
 
 **Người dùng gửi đơn tố cáo tài khoản vi phạm quy chế**
 
 - **Quyền hạn (RBAC)**: `Authenticated User` (Yêu cầu JWT Bearer Token)
 - **Phương thức**: `POST`
-- **Đường dẫn**: `/api/v1/users/reports`
+- **Đường dẫn**: `/api/v1/user/reports`
 
 #### 1. Yêu cầu (Request)
 - **Headers:**

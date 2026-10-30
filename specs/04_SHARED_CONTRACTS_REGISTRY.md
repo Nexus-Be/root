@@ -1,10 +1,10 @@
 # 04 — ĐĂNG KÝ HỢP ĐỒNG GIAO TIẾP DÙNG CHUNG (SHARED CONTRACTS REGISTRY)
 
-> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuyển dịch toàn diện sang chuẩn hợp đồng **RESTful DTOs (JSON over HTTP)** cho toàn bộ giao tiếp đồng bộ. **BÃI BỎ VÀ LOẠI BỎ HOÀN TOÀN PROTOBUF (`shop.proto`)**. Giao tiếp sự kiện dùng chung tiếp tục sử dụng **RabbitMQ MassTransit Events**. Việc chuyển đổi này giải quyết dứt điểm các lỗi lệch hash, xóa bỏ hoàn toàn rào cản gRPC và cho phép phát triển, kiểm thử độc lập nhanh chóng.
-> **Nguồn sự thật:** code Gateway DTOs (`src/Services/ApiGateway/Nexus.Gateway/Dtos/`) và MassTransit Integration Events (`Nexus.Contracts.Events`).
-> **Cập nhật lần cuối:** 2026-10-27.
+> **Trạng thái triển khai (2026-10-30):** ✅ Đã chuyển dịch toàn diện sang chuẩn hợp đồng **RESTful DTOs (JSON over HTTP)** cho toàn bộ giao tiếp. **BÃI BỎ VÀ LOẠI BỎ HOÀN TOÀN PROTOBUF (`shop.proto`) VÀ RABBITMQ / MASSTRANSIT EVENTS**. Toàn bộ giao tiếp giữa các service chuyển sang gọi trực tiếp RESTful API.
+> **Nguồn sự thật:** code Gateway DTOs (`src/Services/ApiGateway/Nexus.Gateway/Dtos/`) và REST Controllers tại các microservices.
+> **Cập nhật lần cuối:** 2026-10-30.
 
-Tài liệu này xác định vị trí nguồn sự thật duy nhất (Single Source of Truth) của các bản hợp đồng dữ liệu REST DTOs và các sự kiện dùng chung (Domain Events) qua RabbitMQ.
+Tài liệu này xác định vị trí nguồn sự thật duy nhất (Single Source of Truth) của các bản hợp đồng dữ liệu REST DTOs cho toàn hệ thống.
 
 ---
 
@@ -27,26 +27,28 @@ Kể từ bản kiến trúc tháng 10/2026, Nexus chuẩn hóa giao tiếp đ�
 
 ## 2. QUY TRÌNH THÊM MỚI HOẶC NÂNG CẤP API ĐỒNG BỘ (RESTFUL WORKFLOW)
 
-Quy trình phát triển API mới chuẩn mực không còn phụ thuộc vào `protoc` hay gRPC compilation:
+Quy trình phát triển API mới chuẩn mực không còn phụ thuộc vào `protoc` hay gRPC compilation, loại bỏ mock engine để chạy trực tiếp:
 
 ```
 [ Developer / AI Agent ]
            │
-           ▼ (Bước 1) Khai báo DTOs tại Gateway:
-           │         src/Services/ApiGateway/Nexus.Gateway/Dtos/{service}/{feature}Dtos.cs
+           ▼ (Bước 1) Khai báo DTOs tại Gateway và Backend Microservice:
+           │         Gateway: src/Services/ApiGateway/Nexus.Gateway/Dtos/{service}/{feature}Dtos.cs
+           │         Backend: src/Services/{Service}/{Service}.Application/Services/{Feature}/{Feature}Requests.cs & Responses.cs
            │
-           ▼ (Bước 2) Tạo Seed JSON tương ứng phục vụ Mock Engine:
-           │         src/Services/ApiGateway/Nexus.Gateway/Seeds/{service}/{operation}.json
+           ▼ (Bước 2) Triển khai Feature Service tại Microservice backend:
+           │         src/Services/{Service}/{Service}.Application/Services/{Feature}/I{Feature}Service.cs & {Feature}Service.cs
            │
-           ▼ (Bước 3) Viết Gateway Controller Action (Kế thừa GatewayBaseController):
-           │         Gọi ForwardAsync / ForwardPagedAsync / ForwardNoContentAsync
-           │
-           ▼ (Bước 4) Triển khai REST Controller tại Microservice backend:
+           ▼ (Bước 3) Triển khai REST Controller tại Microservice backend:
            │         src/Services/{Service}/{Service}.Api/Controllers/{Feature}Controller.cs
            │
-           ▼ (Bước 5) Kiểm thử độc lập:
-           │         - Test Mock Mode tại Gateway: pytest / dotnet test / cURL
-           │         - Test Real Mode tại Microservice: dotnet test / cURL
+           ▼ (Bước 4) Viết Gateway Controller Action (Kế thừa GatewayBaseController):
+           │         src/Services/ApiGateway/Nexus.Gateway/Controllers/{Feature}Controller.cs
+           │         Ủy quyền downstream qua ForwardAsync / ForwardPagedAsync / ForwardNoContentAsync
+           │
+           ▼ (Bước 5) Kiểm thử đầu cuối:
+           │         - Kiểm thử unit & integration test: dotnet test <Solution>.sln -c Release
+           │         - Kiểm thử gọi API qua Gateway cURL / Swagger: http://localhost:8080/api/v1/...
 ```
 
 ### Nguyên Tắc An Toàn Tương Thích Ngược (Backward Compatibility):
@@ -71,39 +73,11 @@ Quy trình phát triển API mới chuẩn mực không còn phụ thuộc vào 
 
 ---
 
-## 4. DANH MỤC EVENT DÙNG CHUNG QUA RABBITMQ (MASSTRANSIT EVENTS)
+## 4. LỊCH SỬ BÃI BỎ EVENT BROKER VÀ MASSTRANSIT (DEPRECATION LOG)
 
-> **Trạng thái (2026-10-24):** ❌ **6/8 event trong bảng dưới đây không tồn tại trong code.** Toàn hệ thống chỉ có **1 đường publish còn sống** (`User.Application/Services/Auth/AuthService.cs:147,253` phát `SendOtpEmailIntegrationEvent`); `Wallet` có 4 lời gọi `Publish` (`Wallet.Application/Consumers/StockReservedConsumer.cs:33,50,83,95`) nhưng **nằm trong consumer chưa từng chạy** nên không tính là publisher sống. Có **3 consumer** (Notification nhận OTP, Log nhận `ILogEventOccurred`, Wallet nhận `IStockReservedEvent`). Hai interface event còn lại chỉ được **khai báo**, không ai publish.
+> **Thông báo bãi bỏ (2026-10-30):** Toàn bộ các Consumer, Event Contracts, MassTransit packages và cấu hình RabbitMQ Message Broker đã chính thức bị **gỡ bỏ hoàn toàn (decommissioned & removed)** khỏi 8 Microservices và API Gateway.
+> - User Service gửi OTP email chuyển sang gọi trực tiếp HTTP REST API của Notification Service (`POST /api/v1/notifications/email`) qua `IEmailNotificationClient`.
+> - Giao tiếp giữa các service chuyển sang mô hình RESTful API đồng bộ với cơ chế timeout, retry, và circuit breaker.
+> - Xóa bỏ toàn bộ các bảng `InboxState`, `OutboxMessage`, `OutboxState` khỏi cơ sở dữ liệu.
 
-| Tên Event | Publisher (khai báo) | Consumers (khai báo) | Trạng thái thực tế (2026-10-24) |
-|:---|:---|:---|:---|
-| `IOrderSubmittedEvent` | `Commerce` | `Catalog`, `Notification`, `Log` | ❌ Không tồn tại trong code (0 interface, 0 publisher) |
-| `IStockReservedEvent` | `Catalog` | `Commerce`, `Wallet`, `Log` | ⚠️ **Chỉ có consumer** `Wallet/.../StockReservedConsumer.cs:13`; **0 publisher** (Catalog chưa có code publish) |
-| `IStockReservationFailedEvent` | `Catalog` | `Commerce`, `Notification` | ❌ Không tồn tại |
-| `IPaymentCompletedEvent` | `Wallet` | `Commerce`, `Fulfillment`, `Notification` | ⚠️ Interface được khai báo (`Wallet/Wallet.Domain/Events/WalletEvents.cs`), **0 lời gọi publish** |
-| `IPaymentFailedEvent` | `Wallet` | `Commerce`, `Catalog` | ⚠️ Khai báo, **0 lời gọi publish** |
-| `IShipmentCreatedEvent` | `Fulfillment` | `Commerce`, `Notification`, `Log` | ❌ Không tồn tại |
-| `IAuctionEndedEvent` | `Auction` | `Commerce`, `Notification`, `Log` | ❌ Không tồn tại |
-| `ILogEventOccurred` | Mọi service | `Log` | ⚠️ Consumer có (`Log.Application/Consumers/GlobalLogConsumer.cs:10`), **0 publisher** trong 9 repo |
-| `SendOtpEmailIntegrationEvent` | `User` (`AuthService.cs:147`, `:253`) | `Notification` (`SendOtpEmailConsumer.cs:9`) | ✅ **Hoạt động thật** — 2 bản khai báo giống hệt nhau, cùng namespace `Nexus.Contracts.Events` ⇒ MassTransit MessageUrn khớp |
-| `ServiceUnhealthyIntegrationEvent` | `ApiGateway` (`HealthProber/SagaRollbackPublisher.cs:8`) | (không có) | ⚠️ Được khai báo; publisher **không publish gì** (chỉ log, `return Task.CompletedTask`) |
 
-### 4.1 Payload của các event còn tồn tại
-
-```csharp
-// User/User.Application/Contracts/SendOtpEmailIntegrationEvent.cs
-// Notification/Notification.Application/Contracts/SendOtpEmailIntegrationEvent.cs  (byte-identical)
-namespace Nexus.Contracts.Events;
-public record SendOtpEmailIntegrationEvent(
-    string Email, string FullName, string Otp, int ExpiresInMinutes = 5);
-
-// Wallet/Wallet.Domain/Events/WalletEvents.cs
-public interface IStockReservedEvent { Guid OrderId; Guid ReservationId; DateTimeOffset Timestamp; }
-public interface IPaymentCompletedEvent { Guid OrderId; Guid TransactionId; decimal Amount; DateTimeOffset Timestamp; }
-public interface IPaymentFailedEvent { Guid OrderId; string Reason; DateTimeOffset Timestamp; }
-
-// Log/Log.Domain/Events/LogEvents.cs:3
-public interface ILogEventOccurred { /* ServiceName, EventType, ActorUserId, EntityName, EntityId, DetailsJson */ }
-```
-
-**Ghi chú thiết kế:** event record khai báo **2 lần ở 2 repo** (`User` và `Notification`) là cách duy nhất hiện tại để giữ tính self-contained của submodule. Đây là điểm cần quyết định: hoặc chấp nhận trùng lặp có kiểm soát (kèm test so khớp schema), hoặc tách `Nexus.Contracts` thành NuGet package dùng chung.

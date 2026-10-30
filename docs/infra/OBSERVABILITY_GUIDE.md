@@ -1,21 +1,21 @@
 # HƯỚNG DẪN GIÁM SÁT PHÂN TÁN (DISTRIBUTED TRACING): GRAFANA & TEMPO
 ## (OPENTELEMETRY TRACING, WATERFALL VISUALIZATION & DEBUGGING GUIDE)
 
-> **Trạng thái triển khai (2026-10-28):** ✅ ĐÃ HOÀN THÀNH TOÀN DIỆN — Hạ tầng Observability Stack (Tempo 2.4.1 + Prometheus v2.51.0 + Grafana 10.4.2) hoạt động ổn định với cơ chế **Zero-Config Auto-Provisioning 100%**.
+> **Trạng thái triển khai (2026-10-30):** ✅ ĐÃ HOÀN THÀNH TOÀN DIỆN — Hạ tầng Observability Stack (Tempo 2.4.1 + Prometheus v2.51.0 + Grafana 10.4.2) hoạt động ổn định với cơ chế **Zero-Config Auto-Provisioning 100%**.
 > **Tính năng nổi bật:**
 > 1. **Tự động đăng nhập**: Chế độ Anonymous Admin được bật mặc định, vào là dùng ngay không cần nhập user/pass.
-> 2. **Tự động nạp Dashboard**: Nạp sẵn **Nexus Overview Dashboard** (`/d/nexus-overview`) và **RabbitMQ Overview Dashboard** (`/d/nexus-rabbitmq`) từ file JSON trong `infra/grafana/dashboards/`.
+> 2. **Tự động nạp Dashboard**: Nạp sẵn **Nexus Overview Dashboard** (`/d/nexus-overview`) từ file JSON trong `infra/grafana/dashboards/`.
 > 3. **Tự động đặt trang chủ (Home Dashboard)**: Mở `http://localhost:3000` là vào thẳng giao diện giám sát tổng quan.
-> 4. **Liên kết Distributed Tracing**: Trace ID từ HTTP Gateway được chuyển tiếp xuyên suốt xuống Backend Services và sang RabbitMQ Events.
-> **Cập nhật lần cuối:** 2026-10-28.
+> 4. **Liên kết Distributed Tracing**: Trace ID từ HTTP Gateway được chuyển tiếp xuyên suốt xuống Backend Services qua chuẩn W3C Trace Context (`traceparent`, `X-Trace-Id`).
+> **Cập nhật lần cuối:** 2026-10-30.
 
-> **Mục tiêu tài liệu**: Hướng dẫn cách thức vận hành của hệ thống giám sát phân tán (Observability) trong Nexus Microservices, cách lấy mã `X-Trace-Id` từ phản hồi của Gateway và sử dụng giao diện Grafana Tempo để xem biểu đồ dòng chảy (Waterfall Diagram), phát hiện điểm nghẽn hiệu năng (bottlenecks) và gỡ lỗi xuyên suốt từ Gateway qua Microservices, CSDL và RabbitMQ.
+> **Mục tiêu tài liệu**: Hướng dẫn cách thức vận hành của hệ thống giám sát phân tán (Observability) trong Nexus Microservices, cách lấy mã `X-Trace-Id` từ phản hồi của Gateway và sử dụng giao diện Grafana Tempo để xem biểu đồ dòng chảy (Waterfall Diagram), phát hiện điểm nghẽn hiệu năng (bottlenecks) và gỡ lỗi xuyên suốt từ Gateway qua Microservices, CSDL và các cuộc gọi liên dịch vụ.
 
 ---
 
 ## 1. BẢN CHẤT KIẾN TRÚC DISTRIBUTED TRACING TRONG NEXUS
 
-Trong một hệ thống phân tán gồm 9 services, khi người dùng gặp lỗi hoặc một request bị chậm 3 giây, câu hỏi lớn nhất là: **"Thời gian bị nghẽn ở đâu? Tại Gateway, tại UserService, do câu lệnh SQL chậm, hay do RabbitMQ bị trễ?"**
+Trong một hệ thống phân tán gồm 9 services, khi người dùng gặp lỗi hoặc một request bị chậm 3 giây, câu hỏi lớn nhất là: **"Thời gian bị nghẽn ở đâu? Tại Gateway, tại UserService, do câu lệnh SQL chậm, hay do cuộc gọi liên service bị trễ?"**
 
 Nexus giải quyết bài toán này bằng chuẩn **W3C Distributed Tracing & OpenTelemetry**:
 
@@ -26,21 +26,21 @@ Nexus giải quyết bài toán này bằng chuẩn **W3C Distributed Tracing & 
 ┌────────────────────────────────────────────────────────┐
 │ 1. API GATEWAY                                         │
 │    Sinh ra mã Trace: X-Trace-Id: 4bf92f3577b34da6a3... │
-│    Gắn traceparent vào gRPC Metadata                   │
+│    Gắn traceparent vào HTTP REST Headers Downstream    │
 └──────┬─────────────────────────────────────────────────┘
-       │ (HTTP/2 gRPC)
+       │ (HTTP/1.1 REST JSON)
        ▼
 ┌────────────────────────────────────────────────────────┐
 │ 2. USER SERVICE                                        │
 │    Tiếp nhận TraceId, tạo Span con (Child Span)        │
 │    - Thực thi SQL: SELECT * FROM "Users" (12ms)        │
-│    - Bắn Event lên RabbitMQ kèm Trace Context (3ms)    │
+│    - Gọi REST NotificationService gửi OTP Email (45ms) │
 └──────┬─────────────────────────────────────────────────┘
-       │ (AMQP Message Header)
+       │ (HTTP REST Client)
        ▼
 ┌────────────────────────────────────────────────────────┐
-│ 3. NOTIFICATION SERVICE (WORKER)                       │
-│    Nhận tin nhắn từ RabbitMQ, tiếp tục TraceId gốc     │
+│ 3. NOTIFICATION SERVICE                                │
+│    Tiếp tục TraceId gốc qua HTTP Header                │
 │    - Gửi HTML Email qua Gmail SMTP (450ms)             │
 └────────────────────────────────────────────────────────┘
 ```
@@ -62,9 +62,8 @@ Toàn bộ cấu hình của Grafana đã được đóng gói thành các file 
 - **Datasources Tự Động**: `infra/grafana/datasources.yaml` tự động nạp cả 2 nguồn dữ liệu:
   + `Tempo`: Truy vấn Distributed Tracing qua URL `http://tempo:3200`.
   + `Prometheus`: Thu thập và hiển thị chỉ số thời gian thực (RED Metrics) từ `http://prometheus:9090`.
-- **Dashboards Tự Động**: `infra/grafana/dashboards.yaml` tự động quét thư mục `infra/grafana/dashboards/` và nạp sẵn 2 Dashboard hoàn chỉnh:
+- **Dashboards Tự Động**: `infra/grafana/dashboards.yaml` tự động quét thư mục `infra/grafana/dashboards/` và nạp sẵn Dashboard hoàn chỉnh:
   + 🚀 **Nexus Overview Dashboard** (`http://localhost:3000/d/nexus-overview`): Giám sát tổng quan toàn bộ Microservices, số lượng request/giây, tỷ lệ lỗi, độ trễ và liên kết xem trực tiếp trace trong Tempo.
-  + 🐰 **RabbitMQ Modern Dashboard** (`http://localhost:3000/d/nexus-rabbitmq`): Giám sát hàng đợi tin nhắn, dung lượng RAM, Publish/Deliver rates thời gian thực.
 - **Trang chủ mặc định**: Biến môi trường `GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH` tự động mở ngay Nexus Overview Dashboard khi bạn truy cập `http://localhost:3000`. Bạn không cần phải tìm kiếm trong danh mục hay import file JSON thủ công!
 
 ---
@@ -103,13 +102,13 @@ Bất kỳ khi nào bạn gọi một API qua Gateway (bằng Swagger, Postman h
 ```
 Span Name                                          Duration     Timeline
 ─────────────────────────────────────────────────────────────────────────────
-▼ GET /api/v1/auth/register (Gateway)               185 ms     ■■■■■■■■■■■■■■
-  ▼ UsersApi/Register (gRPC Client Call)            162 ms       ■■■■■■■■■■■■
-    ▼ UsersGrpcService.Register (User Backend)      158 ms       ■■■■■■■■■■■
+▼ POST /api/v1/auth/register (Gateway)              185 ms     ■■■■■■■■■■■■■■
+  ▼ HttpBackendCaller/ForwardAsync (REST Client)    162 ms       ■■■■■■■■■■■■
+    ▼ POST /api/v1/auth/register (UserService)      158 ms       ■■■■■■■■■■■
       ▼ Npgsql: SELECT "Users" WHERE "Email" = @p0   14 ms        ■
       ▼ BCrypt.HashPassword                         120 ms        ■■■■■■■■■
       ▼ Npgsql: INSERT INTO "Users"                  18 ms         ■
-      ▼ MassTransit: Publish SendOtpEmailIntegration  6 ms          ■
+      ▼ POST /api/v1/notifications/email/otp (REST)  45 ms        ■■■
 ```
 
 ---
@@ -147,9 +146,8 @@ builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing
         .AddSource(serviceName)
         .AddAspNetCoreInstrumentation() // Đo lường request HTTP vào
-        .AddGrpcClientInstrumentation() // Đo lường các cuộc gọi gRPC
+        .AddHttpClientInstrumentation() // Đo lường các cuộc gọi HTTP REST client ra ngoài
         .AddNpgsql()                    // Tự động đo lường mọi câu lệnh SQL PostgreSQL
-        .AddSource("MassTransit")       // Tự động đo lường việc gửi/nhận message RabbitMQ
         .AddOtlpExporter(o =>
         {
             o.Endpoint = new Uri(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"] ?? "http://localhost:4317");

@@ -1,8 +1,8 @@
 # 00 — KIẾN TRÚC TỔNG THỂ HỆ THỐNG (MASTER SYSTEM ARCHITECTURE)
 
-> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuyển dịch toàn diện chuẩn giao tiếp đồng bộ liên service và từ ApiGateway sang **100% RESTful (JSON over HTTP)**; **CẤM TUYỆT ĐỐI gRPC**. Giao tiếp bất đồng bộ qua **RabbitMQ MassTransit 8.3.0**.
-> **Nguồn sự thật:** code và cấu hình Gateway/Microservices (`PLAN-20261027-1400-GLOBAL-RESTFUL-PIVOT-AND-GATEWAY-DECOUPLING.md`).
-> **Cập nhật lần cuối:** 2026-10-27.
+> **Trạng thái triển khai (2026-10-30):** ✅ Đã chuyển dịch toàn diện sang **100% RESTful HTTP/JSON** cho toàn bộ giao tiếp đồng bộ từ Gateway $\rightarrow$ Backend Microservices và giữa các Microservices với nhau. **CẤM TUYỆT ĐỐI gRPC**. Đã loại bỏ hoàn toàn RabbitMQ, MassTransit, Saga và Outbox/Inbox để tối ưu hiệu năng và độ ổn định.
+> **Nguồn sự thật:** code và cấu hình Gateway/Microservices (`PLAN-20261030-0335-DECOMMISSION-SAGA-RABBITMQ-AND-OUTBOX-INBOX.md`).
+> **Cập nhật lần cuối:** 2026-10-30.
 
 Tài liệu này cung cấp sơ đồ kiến trúc mức cao (System Architecture), ranh giới miền (Domain-Driven Design Bounded Contexts) và nguyên lý vận hành cốt lõi của hệ sinh thái Microservices **Nexus**.
 
@@ -28,11 +28,6 @@ UserService    CatalogService  CommerceService  LogService     AuctionService ..
   ▼               ▼               ▼               ▼               ▼                  ▼
 [User DB]     [Catalog DB]    [Commerce DB]   [Log DB]        [Auction DB]      [Fulfillment DB, Notification DB...]
 (Port 5433)   (Port 5434)     (Port 5435)     (Port 5436)     (Port 5437)       (Ports 5438, 5439, 5440)
-  │               │               │               │               │                  │
-  └───────────────┴───────────────┼───────────────┴───────────────┴──────────────────┘
-                                  ▼ (Async Event Bus / Saga Coordination)
-                        [ RabbitMQ Event Bus : 5672 ]
-                        (MassTransit 8.3.0 - Outbox / Inbox)
 ```
 
 ---
@@ -42,25 +37,25 @@ UserService    CatalogService  CommerceService  LogService     AuctionService ..
 1. **Database-Per-Service (Cô Lập Tuyệt Đối Cơ Sở Dữ Liệu)**:
    - Mỗi microservice sở hữu cơ sở dữ liệu vật lý riêng biệt (PostgreSQL độc lập qua port khác nhau).
    - Tuyệt đối **KHÔNG** truy cập trực tiếp DB của service khác (kể cả cross-query hay foreign key sang DB khác).
-   - Mọi chia sẻ dữ liệu liên service bắt buộc phải qua **REST API Call** (đồng bộ) hoặc **RabbitMQ Event** (bất đồng bộ).
+   - Mọi chia sẻ dữ liệu liên service bắt buộc phải qua **REST API Call** (đồng bộ qua HttpClient / REST client).
 
 2. **Edge API Gateway Mỏng (Thin Edge Reverse Proxy)**:
    - Gateway là cổng vào duy nhất cho mọi Client, chịu trách nhiệm xác thực JWT, phân quyền RBAC, Rate Limiting và chuyển tiếp REST downstream sang các backend microservices qua HTTP/JSON.
    - Gateway **KHÔNG** chứa database nghiệp vụ, không chứa in-memory DB hay logic tính toán phức tạp.
 
-3. **Hai Trục Giao Tiếp Song Song (CẤM SỬ DỤNG gRPC)**:
-   - **Đồng bộ (Synchronous Query/Command)**: Dùng **RESTful HTTP/JSON** cho các tác vụ cần kết quả tức thì (xác thực token, kiểm tra số dư, đọc chi tiết sản phẩm). Bãi bỏ hoàn toàn Protobuf và gRPC.
-   - **Bất đồng bộ (Asynchronous Event-Driven)**: Dùng **RabbitMQ + MassTransit 8.3.0** cho các sự kiện trạng thái thay đổi (`OrderCreated`, `InventoryReserved`, `PaymentCompleted`, `LogRecorded`, `SendOtpEmailIntegrationEvent`).
+3. **Chuẩn Giao Tiếp 100% RESTful HTTP/JSON (CẤM gRPC & BÃI BỎ MESSAGE BROKER)**:
+   - Toàn bộ giao tiếp giữa API Gateway $\rightarrow$ Microservices và giữa các Microservices với nhau sử dụng **RESTful Web API** (JSON qua HTTP/1.1 hoặc HTTP/2).
+   - Cấm gRPC cho các dịch vụ đồng bộ.
+   - Bãi bỏ RabbitMQ message broker và MassTransit; các tương tác phụ trợ (như gửi OTP email từ User sang Notification) được thực hiện trực tiếp qua REST endpoint (`POST /api/v1/notifications/email`).
 
-4. **Quản Lý Giao Dịch Phân Tán Bằng Saga State Machine**:
-   - Không sử dụng Distributed Transaction / 2-Phase Commit (2PC).
-   - Sử dụng **Choreography/Orchestration Saga** với cơ chế Bù Trừ (Compensating Transactions) khi có bước thất bại (ví dụ: Trừ ví thất bại $\rightarrow$ Nhả kho đã giữ $\rightarrow$ Hủy đơn hàng).
+4. **Đơn Giản Hóa Luồng Nghiệp Vụ Liên Dịch Vụ**:
+   - Loại bỏ cơ chế Saga State Machine phức tạp và Transactional Outbox/Inbox tables.
+   - Các thao tác liên service được thiết kế theo hướng idempotent REST calls hoặc direct downstream invocations có timeout và retry an toàn.
 
 5. **Chuẩn Hóa Cấu Trúc Toàn Bộ Microservices (`specs/01_UNIFIED_MICROSERVICE_ARCHITECTURE_BLUEPRINT.md`)**:
    - Toàn bộ 8 microservices backend bắt buộc tuân theo kiến trúc 4 tầng chuẩn hóa:
    - **Feature Co-location**: Mọi use case đồng bộ đặt tại `{Service}.Application/Services/{Feature}/` gồm `I{Feature}Service.cs`, `{Feature}Service.cs`, `{Feature}Requests.cs`, `{Feature}Responses.cs`.
    - **No-Repository Pattern**: `DbContext` được inject trực tiếp trong tầng Application qua `I{Service}DbContext`.
-   - **Inbound Consumer Isolation**: Consumers tiếp nhận sự kiện RabbitMQ bắt buộc đặt tại `{Service}.Application/Consumers/{SourceService}/` và đăng ký tập trung qua `ConsumerExtensions.cs`.
    - **1-to-1 Controller**: Mỗi Feature folder tương ứng duy nhất một thin controller tại `{Service}.Api/Controllers/{Feature}Controller.cs`.
 
 ---

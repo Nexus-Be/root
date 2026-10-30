@@ -1,0 +1,187 @@
+# =============================================================================
+# NEXUS LOCAL POSTGRESQL DATABASES CLUSTER
+# =============================================================================
+# Cụm 8 cơ sở dữ liệu PostgreSQL cục bộ độc lập cho 8 Microservices (Local Mode)
+# Ports: 5433 - 5440
+#
+# Khởi chạy độc lập:
+#   docker compose -f src/Infrastructure/databases/docker-compose.yml up -d
+# =============================================================================
+
+name: nexus-local-databases
+
+services:
+  # 1. User Database (Port 5433)
+  postgres-user:
+    image: postgres:16-alpine
+    container_name: nexus-postgres-user
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: usermanagement_db
+    ports:
+      - "${USER_DB_PORT:-5433}:5432"
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d usermanagement_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 2. Catalog Database (Port 5434)
+  postgres-catalog:
+    image: postgres:16-alpine
+    container_name: nexus-postgres-catalog
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: category_db
+    ports:
+      - "${CATALOG_DB_PORT:-5434}:5432"
+    volumes:
+      - postgres_catalog_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d category_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 3. Commerce Database (Port 5435)
+  postgres-commerce:
+    image: postgres:16-alpine
+    container_name: nexus-postgres-commerce
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: commerce_db
+    ports:
+      - "${COMMERCE_DB_PORT:-5435}:5432"
+    volumes:
+      - postgres_commerce_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d commerce_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 4. Log Database (Port 5436)
+  postgres-log:
+    image: postgres:16-alpine
+    container_name: nexus-postgres-log
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: log_db
+    ports:
+      - "${LOG_DB_PORT:-5436}:5432"
+    volumes:
+      - postgres_log_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d log_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 5. Auction Database (Port 5437)
+  postgres-auction:
+    image: postgres:16-alpine
+    container_name: nexus-postgres-auction
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: auction_db
+    ports:
+      - "${AUCTION_DB_PORT:-5437}:5432"
+    volumes:
+      - postgres_auction_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d auction_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 6. Fulfillment Database (Port 5438)
+  postgres-fulfillment:
+    image: postgres:16-alpine
+    container_name: nexus-postgres-fulfillment
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: fulfillment_db
+    ports:
+      - "${FULFILLMENT_DB_PORT:-5438}:5432"
+    volumes:
+      - postgres_fulfillment_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d fulfillment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 7. Notification Database (Port 5439)
+  postgres-notification:
+    image: postgres:16-alpine
+    container_name: nexus-postgres-notification
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: notification_db
+    ports:
+      - "${NOTIFICATION_DB_PORT:-5439}:5432"
+    volumes:
+      - postgres_notification_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 8. Wallet Database (Port 5440)
+  postgres-wallet:
+    image: postgres:16-alpine
+    container_name: nexus-postgres-wallet
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: wallet_db
+    ports:
+      - "${WALLET_DB_PORT:-5440}:5432"
+    volumes:
+      - postgres_wallet_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d wallet_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  default:
+    name: nexus-network
+    external: true
+
+volumes:
+  postgres_user_data:
+    name: nexus-local_postgres_user_data
+  postgres_catalog_data:
+    name: nexus-local_postgres_catalog_data
+  postgres_commerce_data:
+    name: nexus-local_postgres_commerce_data
+  postgres_log_data:
+    name: nexus-local_postgres_log_data
+  postgres_auction_data:
+    name: nexus-local_postgres_auction_data
+  postgres_fulfillment_data:
+    name: nexus-local_postgres_fulfillment_data
+  postgres_notification_data:
+    name: nexus-local_postgres_notification_data
+  postgres_wallet_data:
+    name: nexus-local_postgres_wallet_data

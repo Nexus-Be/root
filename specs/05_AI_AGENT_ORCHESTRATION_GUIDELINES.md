@@ -60,7 +60,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 1 | `AGENTS.md` | Bộ quy tắc làm việc tối thượng, quy chuẩn lỗi, quy tắc GitNexus. |
 | 2 | `specs/00_MASTER_SYSTEM_ARCHITECTURE.md` | Bounded Contexts, kiến trúc C4, các quy tắc phân tách service. |
 | 3 | `specs/01_SERVICE_CATALOG_PORT_MAP.md` | Bảng phân bổ cổng mạng HTTP REST (Gateway `8080`, Backend `8001`-`8008`) và DB (`5433`-`5440`). |
-| 4 | `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md` | Ma trận RESTful đồng bộ vs RabbitMQ MassTransit Saga. |
+| 4 | `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md` | Ma trận RESTful đồng bộ 100%, bãi bỏ RabbitMQ MassTransit Saga. |
 | 5 | `specs/03_SECURITY_RBAC_DATA_GOVERNANCE.md` | Cơ chế xác thực JWT Bearer, phân quyền 6 roles, chuẩn lỗi RFC 9110. |
 | 6 | `specs/04_SHARED_CONTRACTS_REGISTRY.md` | Quy chuẩn REST DTOs và các Domain Events dùng chung. |
 | 7 | `specs/05_AI_AGENT_ORCHESTRATION_GUIDELINES.md` | Tài liệu quy chuẩn vận hành agent hiện tại. |
@@ -71,14 +71,13 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | Thứ tự | File Cần Đọc | Mục Đích & Ngữ Cảnh Nắm Bắt |
 |:---:|:---|:---|
 | 1 | `AGENTS.md` | Rào chắn agent riêng của Gateway và quy chuẩn thông báo lỗi. |
-| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Bounded Context của Gateway: Reverse proxy, port `8080`, 0 DB. |
-| 3 | `specs/01_ARCHITECTURAL_BLUEPRINT.md` | Pipeline 6 bước, Circuit Breaker, Health Prober, Redis Rate Limiting. |
+| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Bounded Context của Gateway: Pure Reverse proxy, port `8080`, 0 DB. |
+| 3 | `specs/01_ARCHITECTURAL_BLUEPRINT.md` | Kiến trúc 3 khối, ForwardAsync Downstream Dispatching, Rate Limiting. |
 | 4 | `specs/02_GATEWAY_CONTROLLERS_ROUTING.md` | Danh mục Controllers, quy tắc viết Action siêu mỏng gọi ForwardAsync. |
-| 5 | `specs/03_GATEWAY_STATE_SECURITY.md` | Phân giải Mode (`Mock` vs `Real`), AuthMode (`Enforce` vs `Bypass`). |
-| 6 | `specs/04_MOCK_ENGINE_SEED_DATA.md` | Cấu trúc dữ liệu Seed Fixtures trong `Seeds/`. |
-| 7 | `MOCK_GUIDE.md` & `DEV_GUIDE.md` | Hướng dẫn phát triển Controller Action và tạo Seed Fixture chuẩn. |
-| 8 | `Nexus.Gateway/Dtos/` | Nguồn sự thật hợp đồng C# DTOs cho các backend microservices. |
-| 9 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Checklist nghiệm thu: `dotnet test ApiGateway.sln -c Release`. |
+| 5 | `specs/03_GATEWAY_STATE_SECURITY.md` | Xác thực JWT và phân quyền RBAC tại Edge. |
+| 6 | `DEV_GUIDE.md` | Hướng dẫn phát triển Controller Action và cấu hình routing downstream. |
+| 7 | `Nexus.Gateway/Dtos/` | Nguồn sự thật hợp đồng C# DTOs cho các backend microservices. |
+| 8 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Checklist nghiệm thu: `dotnet test ApiGateway.sln -c Release`. |
 
 ---
 
@@ -89,7 +88,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Quản lý định danh, JWT, Port `8001`, DB `5433` (`usermanagement_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | 4 tầng Clean Architecture, No-Repository pattern over EF Core. |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Register, Login, VerifyOtp, Profile... |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện RabbitMQ: `SendOtpEmailIntegrationEvent`... |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; gọi REST gửi OTP sang Notification Service. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Users`, `Roles`, `Permissions`, `SellerRegistrations`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 
@@ -99,10 +98,10 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | Thứ tự | File Cần Đọc | Mục Đích & Ngữ Cảnh Nắm Bắt |
 |:---:|:---|:---|
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
-| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Danh mục, sản phẩm, kho ảo, Port `8002`, DB `5434` (`catalog_db`). |
+| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Danh mục, sản phẩm, kho ảo, Port `8002`, DB `5434` (`category_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, DbContext trực tiếp trong Application. |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Categories, Products, Seller Inventory. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện Saga: `StockReservedEvent`, `StockReleasedEvent`. |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; giao tiếp trực tiếp qua REST. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Categories`, `Products`, `Inventories`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 
@@ -112,11 +111,11 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | Thứ tự | File Cần Đọc | Mục Đích & Ngữ Cảnh Nắm Bắt |
 |:---:|:---|:---|
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
-| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Giỏ hàng, đơn hàng, Saga Orchestrator, Port `8003`, DB `5435` (`commerce_db`). |
-| 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Cấu trúc Clean Architecture, MassTransit State Machine. |
+| 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Giỏ hàng, đơn hàng, Port `8003`, DB `5435` (`commerce_db`). |
+| 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Cấu trúc Clean Architecture, xử lý checkout trực tiếp. |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Carts, Orders, Checkout. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Điều phối Checkout Saga: `OrderCreatedEvent`, `OrderCancelledEvent`. |
-| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Carts`, `CartItems`, `Orders`, `OrderItems`, `OrderSagaState`. |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ/Saga; giao tiếp trực tiếp qua REST. |
+| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Carts`, `CartItems`, `Orders`, `SubOrders`, `SubOrderItems`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 
 ---
@@ -126,10 +125,10 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 |:---:|:---|:---|
 | 1 | `AGENTS.md` | Hướng dẫn GitNexus và quy chuẩn thông báo lỗi. |
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Append-only logs, Port `8004`, DB `5436` (`log_db`). |
-| 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, xử lý Batching log hiệu năng cao. |
+| 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, xử lý ghi log hiệu năng cao. |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Ghi log, truy vấn nhật ký, quản trị Event Types. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Lắng nghe toàn bộ integration events từ RabbitMQ để ghi audit trail. |
-| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `LogEntries` (chỉ INSERT/SELECT, cấm UPDATE/DELETE). |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; nhận log qua REST batch `POST /api/v1/log/batch`. |
+| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Logs`, `LogEventTypes` (chỉ INSERT/SELECT, cấm UPDATE/DELETE). |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 
 ---
@@ -141,8 +140,8 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Đấu giá, bước giá, chốt phiên, Port `8005`, DB `5437` (`auction_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, đồng quy cao trong đặt giá (bidding concurrency). |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: CreateAuction, PlaceBid, CloseAuction. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện: `AuctionCreatedEvent`, `BidPlacedEvent`, `AuctionWonEvent`. |
-| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Auctions`, `Bids`, `AuctionWinners`. |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; trao đổi trực tiếp qua REST. |
+| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Auctions`, `Bids`, `AuctionStates`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 
 ---
@@ -154,8 +153,8 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Kho vật lý, vận đơn, cước phí ship, Port `8006`, DB `5438` (`fulfillment_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, mô hình quản lý kho bãi vật lý. |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: CalculateShipping, CreateShipment, Track. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện: `ShipmentCreatedEvent`, `PackageDeliveredEvent`. |
-| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Warehouses`, `Shipments`, `TrackingMilestones`. |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; trao đổi trực tiếp qua REST. |
+| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Warehouses`, `Shipments`, `InventoryItems`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 
 ---
@@ -167,7 +166,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Thông báo in-app, email SMTP/OTP, Port `8007`, DB `5439` (`notification_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, mẫu gửi thông báo đa kênh. |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: `NotificationsController`, `EmailController`. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Lắng nghe event từ User (`SendOtpEmailIntegrationEvent`) và hệ thống. |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; nhận yêu cầu gửi email qua REST `POST /api/v1/notifications/email`. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Notifications`, `NotificationPreferences`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test: `dotnet test Notification.sln -c Release`. |
 
@@ -180,8 +179,8 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Số dư, ví tiền, không số dư âm, Port `8008`, DB `5440` (`wallet_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, tính toàn vẹn giao dịch tài chính ACID. |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: GetBalance, Deposit, Withdraw, Transfer. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Sự kiện Saga: `PaymentCompletedEvent`, `PaymentFailedEvent`. |
-| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Wallets`, `Transactions`, `BankAccounts`. |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; thực hiện giao dịch thanh toán trực tiếp qua REST. |
+| 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Wallets`, `WalletTransactions`. |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 
 ---
@@ -205,17 +204,17 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
    - **Bảo vệ Secrets & Rào chắn Sandbox**: AI Coding Agent không được tự ý xóa, làm lộ hoặc ghi đè sai lệch các biến môi trường nhạy cảm (JWT Secrets, DB Connection Strings, API Keys...). Lưu ý: Do cơ chế bảo vệ an toàn của sandbox (`secret.basename.env`), việc đọc/ghi trực tiếp file `.env` thực tế có thể bị hệ thống chặn tự động.
    - **Quyền chỉnh sửa khi có chỉ đạo từ Người dùng (Sếp)**: Khi Người dùng (Sếp) có chỉ đạo trực tiếp (ví dụ: *"chỉnh giúp tôi các file env"*, *"cập nhật cấu hình môi trường"*...), AI Agent **ĐƯỢC PHÉP và BẮT BUỘC PHẢI THỰC HIỆN** rà soát, chuẩn hóa các file mẫu `.env.example`, `.env.test`, cấu hình compose, đồng thời đối soát chi tiết và cung cấp block cấu hình rõ ràng để Người dùng cập nhật vào file `.env` thực tế một cách nhanh chóng, chính xác.
    - **Tuyệt đối cấm duplicate keys**: Không để xảy ra tình trạng khai báo trùng lặp biến trong các file môi trường.
-7. **HẠ TẦNG PHỤ TRỢ DÙNG CHUNG TẬP TRUNG (SINGLE SHARED INFRASTRUCTURE) — CẤM KHAI BÁO REDIS/RABBITMQ TRÙNG LẶP**:
-   - **Hạ tầng phụ trợ (Redis In-Memory Store, RabbitMQ Message Bus, Tempo Tracing, Grafana Dashboard) chỉ được khai báo duy nhất 1 lần tại cụm hạ tầng chung**: Toàn bộ hạ tầng chung nằm tại `src/Infrastructure/docker-compose.yml`, `docker-compose.infra.yml`, hoặc Phần 1 (Hạ tầng) của `docker-compose.yml` gốc.
-   - **Tuyệt đối CẤM các microservices con (`src/Services/*`) khai báo container Redis hay RabbitMQ riêng lẻ trong file docker-compose của service đó**: Từng microservice độc lập (như User, ApiGateway...) chỉ định nghĩa duy nhất 1 container ứng dụng của chính service đó (`nexus-{service}`), kết nối vào hạ tầng dùng chung qua bridge network `nexus-network` (`redis:6379`, `rabbitmq:5672`).
+7. **HẠ TẦNG PHỤ TRỢ DÙNG CHUNG TẬP TRUNG (SINGLE SHARED INFRASTRUCTURE)**:
+   - **Hạ tầng phụ trợ (Redis In-Memory Store, Tempo Tracing, Grafana Dashboard) chỉ được khai báo duy nhất 1 lần tại cụm hạ tầng chung**: Toàn bộ hạ tầng chung nằm tại `src/Infrastructure/docker-compose.yml`, `docker-compose.infra.yml`, hoặc Phần 1 (Hạ tầng) của `docker-compose.yml` gốc.
+   - **Tuyệt đối CẤM các microservices con (`src/Services/*`) khai báo container Redis riêng lẻ trong file docker-compose của service đó**: Từng microservice độc lập (như User, ApiGateway...) chỉ định nghĩa duy nhất 1 container ứng dụng của chính service đó (`nexus-{service}`), kết nối vào hạ tầng dùng chung qua bridge network `nexus-network` (`redis:6379`).
    - **Cơ chế phân tách dữ liệu Redis (Shared Redis Multi-Tenancy)**: Toàn hệ thống dùng chung 1 instance Redis (port `6379`, định mức 500MB). Các service sử dụng chung Redis bắt buộc phải phân tách vùng dữ liệu bằng Key Prefix riêng (ví dụ: API Gateway dùng prefix `nexus:gateway:*` cho rate-limiting; User Service dùng prefix `otp:*` cho mã xác thực OTP và `user:*` cho cache người dùng). Tuyệt đối không dựng thêm instance Redis thứ 2 gây lãng phí tài nguyên và xung đột cổng.
 8. **FEATURE-DRIVEN CO-LOCATION & 1-TO-1 CONTROLLER PAIRING (CHUẨN HÓA ĐẶC TẢ `specs/01`)**:
    - **Tầng Application**: Toàn bộ thành phần của một tính năng bắt buộc đặt tại `{Service}.Application/Services/{Feature}/` gồm: `I{Feature}Service.cs`, `{Feature}Service.cs` (inject trực tiếp `I{Service}DbContext`, cấm Repository), `{Feature}Requests.cs`, `{Feature}Responses.cs`, `{Feature}Dtos.cs` (tùy chọn).
    - **Tầng Api**: Ghép cặp 1-to-1 với một thin controller tại `{Service}.Api/Controllers/{Feature}Controller.cs`, chỉ inject duy nhất `I{Feature}Service`.
-9. **CÁCH LY INBOUND CONSUMER THEO SERVICE NGUỒN & DI EXTENSION**:
-   - **Tầng Application**: Consumers nhận sự kiện RabbitMQ bắt buộc đặt tại `{Service}.Application/Consumers/{SourceService}/{EventName}Consumer.cs`.
-   - **Đóng gói đăng ký MassTransit** qua file `{Service}.Application/Consumers/ConsumerExtensions.cs` (extension method `AddApplicationConsumers(this IBusRegistrationConfigurator)`).
-   - **Tầng Infrastructure**: Cấu hình MassTransit chỉ gọi `x.AddApplicationConsumers()` kết hợp với Outbox và RabbitMQ. Cấm đặt Consumer tại tầng Api hoặc rải rác trong Infrastructure.
+9. **GIAO TIẾP LIÊN SERVICE 100% QUA REST CLIENT & BÃI BỎ MESSAGE BROKER**:
+   - Toàn bộ giao tiếp liên service sử dụng **RESTful Web API** trực tiếp (JSON qua HTTP).
+   - Bãi bỏ RabbitMQ Message Broker, MassTransit và Transactional Outbox/Inbox tables.
+   - Các tác vụ gọi liên service (như User gửi OTP email sang Notification) được thực hiện qua typed `HttpClient` khai báo interface tại Application và hiện thực tại Infrastructure.
 10. **QUY CHUẨN BẮT BIẾN KHI PHÁT TRIỂN & KHAI BÁO API MỚI (MANDATORY API RULES)**:
    - **Cấm trùng lặp Route alias (No Duplicate Route Aliases)**: Cấm tuyệt đối khai báo nhiều route attributes trùng lặp (ví dụ `[HttpGet("user")]` và `[HttpGet("users")]`) trên cùng một Action. Mỗi action chỉ có 1 route endpoint chính thức duy nhất.
    - **Quy ước Route Số ít cho User/AdminUser (Singular Route Convention)**: Toàn bộ endpoint liên quan đến User và AdminUser phải dùng danh từ số ít (`/api/v1/user`, `/api/v1/user/{userId}`, `/api/v1/admin/user`, `/api/v1/admin/user/{userId}`, `/api/v1/me`). Giữ danh từ số nhiều cho các collection chuẩn của domain khác (`/api/v1/auctions`, `/api/v1/categories`, `/api/v1/wallets`, `/api/v1/notifications`).
@@ -224,7 +223,6 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
      - Tại Microservice: Kế thừa `ControllerBase`, ghép cặp 1-to-1 với feature service tương ứng.
    - **Phong bì dữ liệu chuẩn (Envelope Standard)**: Mọi endpoint trả dữ liệu đều phải bọc qua `ApiResponse<T>` hoặc `ApiResponse<PagedData<T>>`. Endpoint xóa hoặc không trả dữ liệu body bắt buộc trả HTTP `204 NoContent`. DTOs dùng PascalCase trong C# và camelCase trong JSON serialization.
    - **Chuẩn hóa XML Comment Endpoint**: Chỉ dùng single-line XML `<summary>` ngắn gọn trực tiếp trên từng Action method. Cấm viết class-level remarks, section dividers kẻ ngang hoặc comment dài dòng nhiều dòng.
-   - **Bắt buộc Mock Seed Fixture**: Khi thêm endpoint mới vào Gateway, bắt buộc tạo seed fixture tương ứng tại `Seeds/{service}/{name}.json` để đảm bảo Mock mode luôn hoạt động độc lập và pass 100% test `UserSeedConformanceTests`.
    - **Đồng bộ Tài liệu & Specs**: Khi thêm mới hoặc thay đổi bất kỳ route/DTO nào, bắt buộc cập nhật đồng thời file spec tương ứng (`specs/02_GATEWAY_CONTROLLERS_ROUTING.md`) và tài liệu API Frontend (`docs/FRONTEND_API_ENDPOINT_MAPPING.md`).
 
 ---
@@ -266,20 +264,20 @@ Toàn bộ các Microservice trong hệ thống Nexus (`User`, `Catalog`, `Comme
 ├── {Service}.Application/      # Use cases nghiệp vụ:
 │   ├── Services/{Feature}/     # Chia thư mục theo từng Feature/Module:
 │   │   ├── I{Feature}Service.cs   # Hợp đồng interface
-│   │   ├── {Feature}Service.cs    # Triển khai use case logic
-│   │   └── {Feature}Dtos.cs       # Request DTOs (kèm DataAnnotations validation) & Response DTOs
-│   ├── Contracts/              # Hợp đồng sự kiện dùng chung (Integration Events)
-│   ├── Interfaces/             # Interfaces trừu tượng hóa hạ tầng (I{Service}DbContext...)
+│   │   ├── {Feature}Service.cs    # Triển khai use case logic (inject DbContext)
+│   │   ├── {Feature}Requests.cs   # Request DTOs (kèm DataAnnotations validation)
+│   │   ├── {Feature}Responses.cs  # Response DTOs
+│   │   └── {Feature}Dtos.cs       # Sub-DTOs nội bộ (nếu có)
+│   ├── Interfaces/             # Interfaces trừu tượng hóa hạ tầng & REST clients
 │   └── DependencyInjection.cs  # Đăng ký IoC cho tầng Application
 ├── {Service}.Infrastructure/   # Triển khai kỹ thuật:
 │   ├── Persistence/            # AppDbContext, EntityTypeConfigurations, Migrations
-│   ├── Consumers/              # MassTransit RabbitMQ Event Consumers (IConsumer<T>)
-│   ├── Services/               # Triển khai các dịch vụ hạ tầng kỹ thuật (Redis, Email, External API...)
-│   └── DependencyInjection.cs  # Đăng ký IoC cho tầng Infrastructure (DbContext, Bus, Redis, Consumers)
+│   ├── Services/               # Triển khai các dịch vụ hạ tầng & REST clients liên service
+│   └── DependencyInjection.cs  # Đăng ký IoC cho tầng Infrastructure (DbContext, Redis, HttpClient)
 └── {Service}.Api/              # Cổng giao tiếp Web API (ASP.NET Core Web API):
-    ├── Controllers/            # Thin Controllers (Dispatcher)
+    ├── Controllers/            # Thin Controllers (Dispatcher 1-to-1 với Feature)
     ├── Middleware/             # GlobalExceptionHandlerMiddleware
-    ├── Extensions/             # Swagger, Observability, Authentication extensions
+    ├── Extensions/             # Swagger, Observability extensions
     └── Program.cs              # Nạp DI từ Application & Infrastructure, map middleware & controllers
 ```
 
@@ -293,17 +291,17 @@ Toàn bộ các Microservice trong hệ thống Nexus (`User`, `Catalog`, `Comme
   2. ❌ **CẤM map thực thể Domain sang anonymous object** (`new { id = ..., email = ... }`) trong Controller. Service phải trả về Response DTO rõ ràng, strongly-typed.
   3. ❌ **CẤM định nghĩa class/record DTO bên trong file Controller**. Controller và Application dùng chung Request/Response DTO được định nghĩa trong `Application/Services/{Feature}/`.
 
-### 3. Quy Tắc Giao Tiếp Bất Đồng Bộ (Event-Driven Messaging)
-- **Vị trí Event Contracts**: Đặt tại `{Service}.Application/Contracts/` (hoặc `Nexus.Contracts.Events`). Các sự kiện là immutable records/POCO, chỉ chứa dữ liệu thuần túy (ví dụ: `SendOtpEmailIntegrationEvent`, `SellerApprovedIntegrationEvent`).
-- **Vị trí Consumers**: Đặt tại `{Service}.Infrastructure/Consumers/`.
-  - Triển khai interface `IConsumer<TEvent>` của MassTransit.
-  - Consumer nhận message, inject Application Service hoặc `AppDbContext` để xử lý nghiệp vụ, không chứa business logic phức tạp trực tiếp trong consumer.
-  - Được đăng ký tự động hoặc tường minh trong `{Service}.Infrastructure/DependencyInjection.cs`.
+### 3. Quy Tắc Giao Tiếp Liên Service Qua Typed REST Client (Bãi bỏ RabbitMQ)
+- Bãi bỏ hoàn toàn RabbitMQ, MassTransit, Saga và Outbox/Inbox tables.
+- Khi cần gọi sang service khác (ví dụ: User gọi Notification gửi email OTP, Commerce gọi Wallet thanh toán):
+  - Định nghĩa Interface tại `{Service}.Application/Interfaces/` (ví dụ `IEmailNotificationClient`).
+  - Triển khai `HttpClient` tại `{Service}.Infrastructure/Services/` và đăng ký typed client trong `Infrastructure/DependencyInjection.cs`.
+  - Service gọi trực tiếp qua HTTP REST API có timeout, retry và fallback ghi log an toàn.
 
 ### 4. Quy Tắc Giảm Ràng Buộc & Quản Lý DI (Decoupled Dependency Injection)
 - Mỗi tầng có trách nhiệm tự quản lý và đóng gói các dịch vụ của mình thông qua file `DependencyInjection.cs`:
   - `Application/DependencyInjection.cs`: Đăng ký tất cả Application Services (`AddScoped<I{Feature}Service, {Feature}Service>()`).
-  - `Infrastructure/DependencyInjection.cs`: Đăng ký DbContext, Redis, MassTransit Bus, Consumers, và các Adapter kỹ thuật.
+  - `Infrastructure/DependencyInjection.cs`: Đăng ký DbContext, Redis, Typed REST Clients, và các Adapter kỹ thuật.
 - `Api/Program.cs`: Chỉ gọi `builder.Services.AddApplicationServices()` và `builder.Services.AddInfrastructureServices(builder.Configuration)`. Tuyệt đối không đăng ký lẫn lộn các service của Application hay Infrastructure trực tiếp trong `Program.cs`.
 
 ### 5. Quy Tắc Validate Dữ Liệu (Validation Placement)

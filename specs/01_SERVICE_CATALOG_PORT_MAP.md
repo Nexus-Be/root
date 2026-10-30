@@ -1,8 +1,8 @@
 # 01 — BẢN ĐỒ DỊCH VỤ, CỔNG MẠNG & HẠ TẦNG (SERVICE CATALOG & PORT MAP)
 
-> **Trạng thái triển khai (2026-10-27):** ✅ Đã chuẩn hóa toàn bộ 8 Microservices giao tiếp với ApiGateway qua **HTTP RESTful (`8001`-`8008`)**, loại bỏ hoàn toàn gRPC client/server. Gateway chuyển tiếp qua `RestDownstreamDispatcher` (`ForwardAsync` / `ForwardPagedAsync` / `ForwardNoContentAsync`).
-> **Nguồn sự thật:** code và cấu hình Gateway/Microservices (`PLAN-20261027-1400-GLOBAL-RESTFUL-PIVOT-AND-GATEWAY-DECOUPLING.md`).
-> **Cập nhật lần cuối:** 2026-10-27.
+> **Trạng thái triển khai (2026-10-30):** ✅ Đã chuẩn hóa toàn bộ 8 Microservices giao tiếp với ApiGateway qua **HTTP RESTful (`8001`-`8008`)**, loại bỏ hoàn toàn gRPC client/server. Đã bãi bỏ hoàn toàn RabbitMQ Message Broker và MassTransit, thiết lập cụm Dual-Mode Database (Local PostgreSQL ports 5433-5440 và Remote/Neon DB).
+> **Nguồn sự thật:** code và cấu hình Gateway/Microservices (`PLAN-20261030-0330-REMOVE-RABBITMQ-AND-SETUP-DUAL-DB.md`).
+> **Cập nhật lần cuối:** 2026-10-30.
 
 Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ sở dữ liệu và biến môi trường kết nối cho toàn bộ 8 Microservices, ApiGateway và CheckHealService.
 
@@ -10,17 +10,17 @@ Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ s
 
 ## 1. BẢNG QUY HOẠCH CỔNG GIAO TIẾP & CƠ SỞ DỮ LIỆU
 
-| Service Name | Cổng HTTP REST (Downstream) | Giao Thức Downstream | Database Engine | Cổng DB | DB Name | Cổng Redis / RabbitMQ |
+| Service Name | Cổng HTTP REST (Downstream) | Giao Thức Downstream | Database Engine | Cổng DB | DB Name | Hạ Tầng Phụ Trợ |
 |:---|:---:|:---:|:---:|:---:|:---|:---:|
 | **ApiGateway** | `8080` | HTTP/REST (Edge Proxy) | Redis *(Cache/RateLimit)* | `6379` | `db0` | Redis: `6379` |
-| **UserService** | `8001` | REST (JSON over HTTP) | PostgreSQL | `5433` | `usermanagement_db` | RabbitMQ: `5672` |
-| **CatalogService** | `8002` | REST (JSON over HTTP) | PostgreSQL (Neon Cloud) | `5434` / Cloud | `catalog_db` | RabbitMQ: `5672` |
-| **CommerceService** | `8003` | REST (JSON over HTTP) | PostgreSQL | `5435` | `commerce_db` | RabbitMQ: `5672` |
-| **LogService** | `8004` | REST (JSON over HTTP) | PostgreSQL | `5436` | `log_db` | RabbitMQ: `5672` |
-| **AuctionService** | `8005` | REST (JSON over HTTP) | PostgreSQL | `5437` | `auction_db` | RabbitMQ: `5672` |
-| **FulfillmentService** | `8006` | REST (JSON over HTTP) | PostgreSQL | `5438` | `fulfillment_db` | RabbitMQ: `5672` |
-| **NotificationService** | `8007` | REST (JSON over HTTP) | PostgreSQL (Neon Cloud) | `5439` / Cloud | `notification_db` | RabbitMQ: `5672` |
-| **WalletService** | `8008` | REST (JSON over HTTP) | PostgreSQL | `5440` | `wallet_db` | RabbitMQ: `5672` |
+| **UserService** | `8001` | REST (JSON over HTTP) | PostgreSQL | `5433` | `usermanagement_db` | Redis: `6379` (OTP/Cache) |
+| **CatalogService** | `8002` | REST (JSON over HTTP) | PostgreSQL (Local / Neon) | `5434` / Cloud | `category_db` | N/A |
+| **CommerceService** | `8003` | REST (JSON over HTTP) | PostgreSQL (Local / Remote) | `5435` | `commerce_db` | N/A |
+| **LogService** | `8004` | REST (JSON over HTTP) | PostgreSQL (Local / Remote) | `5436` | `log_db` | N/A |
+| **AuctionService** | `8005` | REST (JSON over HTTP) | PostgreSQL (Local / Remote) | `5437` | `auction_db` | N/A |
+| **FulfillmentService** | `8006` | REST (JSON over HTTP) | PostgreSQL (Local / Remote) | `5438` | `fulfillment_db` | N/A |
+| **NotificationService** | `8007` | REST (JSON over HTTP) | PostgreSQL (Local / Neon) | `5439` / Cloud | `notification_db` | N/A |
+| **WalletService** | `8008` | REST (JSON over HTTP) | PostgreSQL (Local / Remote) | `5440` | `wallet_db` | N/A |
 | **CheckHealService** | `8009` | HTTP Monitoring / Webhook | PostgreSQL Keep-Alive | N/A *(Client)* | Neon / Render | N/A |
 
 ---
@@ -45,16 +45,12 @@ Chạy `dotnet run` **không** dùng port đặc tả trừ khi set `ASPNETCORE_
 
 ## 2. DỊCH VỤ HẠ TẦNG DÙNG CHUNG (INFRASTRUCTURE SERVICES)
 
-### A. RabbitMQ Message Broker
-- **AMQP Port**: `5672` (Giao tiếp Event Bus qua MassTransit).
-- **Management UI Port**: `15672` (Giao diện web quản trị queues/exchanges: `http://localhost:15672`).
-- **Mặc định**: `guest` / `MatkhaucuaTui123@`.
-- **Cấu hình Exchange**:
-  - Dạng Exchange: `fanout` hoặc `topic`.
-  - Tên Exchange: Theo chuẩn kebab-case của MassTransit (`order-submitted`, `send-otp-email-integration-event`, v.v.).
+### A. RabbitMQ Message Broker (ĐÃ BÃI BỎ / DECOMMISSIONED)
+- RabbitMQ và MassTransit đã được loại bỏ hoàn toàn khỏi hệ thống để đơn giản hóa kiến trúc và chuyển dịch 100% sang giao tiếp đồng bộ RESTful HTTP/JSON.
 
 ### B. Cơ Sở Dữ Liệu PostgreSQL (Dải Port 5433 -> 5440)
-- **Tài khoản mặc định**: `postgres` / `MatkhaucuaTui123@`.
+- **Cơ chế Dual-Mode**: Hỗ trợ chạy local độc lập qua cụm container tại `src/Infrastructure/databases/docker-compose.yml` (ports `5433` -> `5440`) hoặc kết nối trực tiếp đến PostgreSQL Remote (Neon Cloud).
+- **Tài khoản mặc định**: `postgres` / `Password123!`.
 - **Dải port ánh xạ host**: Bắt đầu từ `5433` đến `5440`, tránh hoàn toàn xung đột với port PostgreSQL mặc định `5432` trên máy host.
 
 ### C. Redis In-Memory Store (Shared Instance - Cổng 6379, Định mức 500MB)
