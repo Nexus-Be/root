@@ -19,7 +19,7 @@ Tài liệu này là **Bộ Chỉ Dẫn & Đặc Tả Kỹ Thuật Trung Tâm (M
 | [03_SECURITY_RBAC_DATA_GOVERNANCE.md](03_SECURITY_RBAC_DATA_GOVERNANCE.md) | Bảo mật & Chuẩn dữ liệu | JWT Bearer Lifecycle, chuyển tiếp headers qua HTTP sang downstream, ma trận phân quyền **6 roles**, Gateway Pure Reverse Proxy, chuẩn lỗi RFC 9110 / RFC 6585. |
 | [04_SHARED_CONTRACTS_REGISTRY.md](04_SHARED_CONTRACTS_REGISTRY.md) | Hợp đồng giao tiếp chung | Chuẩn hóa RESTful C# DTOs, lịch sử bãi bỏ gRPC Protobuf và RabbitMQ events. |
 | [05_AI_AGENT_ORCHESTRATION_GUIDELINES.md](05_AI_AGENT_ORCHESTRATION_GUIDELINES.md) | Chỉ dẫn cho AI Agents | Quy tắc chống ảo giác (Anti-Hallucination), chuẩn hóa RESTful downstream, quy tắc Clean Architecture, No-Repository pattern. |
-| [06_ARCHITECTURAL_INVARIANTS_AND_CONTRACT_SPECIFICATION.md](06_ARCHITECTURAL_INVARIANTS_AND_CONTRACT_SPECIFICATION.md) | Đặc tả bất biến kiến trúc & Hợp đồng giao tiếp | Ranh giới Edge Gateway vs Core Microservices, Header Trust Matrix, Response Envelope Contract, Anti-Spoofing, Internal API Isolation. |
+| [06_ARCHITECTURAL_INVARIANTS_AND_CONTRACT_SPECIFICATION.md](06_ARCHITECTURAL_INVARIANTS_AND_CONTRACT_SPECIFICATION.md) | Đặc tả bất biến kiến trúc & Hợp đồng giao tiếp | Ranh giới Edge Gateway vs Core Microservices, Header Trust Matrix, Response Envelope Contract, Anti-Spoofing, Internal API tạm hoãn. |
 
 ---
 

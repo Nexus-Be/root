@@ -22,9 +22,9 @@ Tài liệu này xác định ma trận giao tiếp **100% RESTful HTTP/JSON** g
 
 ## 2. MA TRẬN GIAO TIẾP LIÊN SERVICE (COMMUNICATION MATRIX)
 
-### 2.1. Phân Tách Tuyệt Đối Giữa Public API và Internal API
-- **Public APIs (`/api/v1/{resources}`)**: Dành cho Client/Frontend gọi thông qua API Gateway. Nằm tại thư mục `Controllers/Public/` của từng microservice.
-- **Internal APIs (`/api/v1/internal/{resources}`)**: Dành riêng cho giao tiếp trực tiếp giữa các microservice. Nằm tại thư mục `Controllers/Internal/`. Tuyệt đối không mở qua Gateway. Yêu cầu header `X-Internal-Service-Key`.
+### 2.1. Trạng Thái Tạm Khóa Internal API
+- Toàn bộ route liên service dùng đường dẫn công khai `/api/v1/{resources}`, không còn tiền tố `/api/v1/internal`.
+- Không còn thư mục `Controllers/Internal/`. Bảo mật header `X-Internal-Service-Key` đang tạm khóa, đăng ký middleware và handler đã comment.
 
 | Nguồn Gọi (Caller) | Đích Đến (Callee) | Giao Thức | Tên Phương Thức / Route | Phân Loại | Mục Đích Nghiệp Vụ | Trạng thái triển khai |
 |:---|:---|:---:|:---|:---:|:---|:---|
@@ -37,24 +37,25 @@ Tài liệu này xác định ma trận giao tiếp **100% RESTful HTTP/JSON** g
 | **Gateway (YARP)** | `LogService` | REST | `/api/v1/logs/*`, `/api/v1/logs/event-types/*` | Public | Truy vấn nhật ký hệ thống | ✅ Forward qua YARP stream |
 | **Gateway (YARP)** | `WalletService` | REST | `/api/v1/wallets/*`, `/api/v1/admin/wallets/*` | Public | Tra cứu số dư, nạp, rút và chuyển tiền ví | ✅ Forward qua YARP stream |
 | **Gateway (YARP)** | `CheckHealService` | REST | `/api/v1/healthcheck/*`, `/health/*` | Public | Giám sát trạng thái hoạt động và keep-alive hệ sinh thái | ✅ Forward qua YARP stream |
-| **UserService** | `NotificationService`| REST | `POST /api/v1/internal/notifications/email/otp` | Internal | Gửi mã OTP xác thực qua email khi đăng ký / quên mật khẩu | ✅ Triển khai qua `EmailNotificationClient` + `X-Internal-Service-Key` |
-| **CatalogService** | `FulfillmentService`| REST | `POST /api/v1/internal/inventories/initialize` | Internal | Khởi tạo kho và tồn kho vật lý cho SKU sản phẩm mới tạo | ✅ Triển khai qua `FulfillmentInternalClient` + `X-Internal-Service-Key` |
-| **CommerceService**| `WalletService` | REST | `POST /api/v1/internal/wallets/checkout/direct` | Internal | Thanh toán trừ tiền trực tiếp từ ví khi xác nhận đơn | ✅ Triển khai qua `WalletClient` + `X-Internal-Service-Key` |
-| **Các Service** | `LogService` | REST | `POST /api/v1/internal/logs/batch` | Internal | Thu thập và nạp nhật ký kiểm toán tập trung | ✅ Triển khai qua `InternalLogController` + `X-Internal-Service-Key` |
+| **UserService** | `NotificationService`| REST | `POST /api/v1/notifications/email/otp` | Public REST | Gửi mã OTP xác thực qua email khi đăng ký / quên mật khẩu | ✅ Triển khai qua `EmailNotificationClient` |
+| **CatalogService** | `FulfillmentService`| REST | `POST /api/v1/inventories/initialize` | Public REST | Khởi tạo kho và tồn kho vật lý cho SKU sản phẩm mới tạo | ✅ Triển khai qua `FulfillmentClient` |
+| **CommerceService**| `WalletService` | REST | `POST /api/v1/wallets/checkout/direct` | Public REST | Thanh toán trừ tiền trực tiếp từ ví khi xác nhận đơn | ✅ Triển khai qua `WalletClient` |
+| **Các Service** | `LogService` | REST | `POST /api/v1/logs/batch` | Public REST | Thu thập và nạp nhật ký kiểm toán tập trung | ✅ Triển khai qua `LogBatchController` |
 
 ---
 
-## 3. RÀO CHẮN BẢO MẬT GIAO TIẾP NỘI BỘ (INTERNAL API DEFENSE-IN-DEPTH)
+## 3. TRẠNG THÁI TẠM KHÓA BẢO MẬT INTERNAL (TEMPORARY INTERNAL SECURITY DISABLE)
 
-1. **Gateway Ingress Blocker**:
-   - `ClientContextMiddleware` tại Gateway tự động xóa bỏ header `X-Internal-Service-Key` nếu client bên ngoài gửi lên.
-   - Gateway từ chối ngay lập tức mọi request có path bắt đầu bằng `/api/v1/internal` với HTTP 404 Not Found.
-   - YARP ReverseProxy không khai báo route cho bất kỳ đường dẫn internal nào.
-2. **Microservice Ingress Authenticator**:
-   - `InternalServiceAuthMiddleware` chặn mọi request vào `/api/v1/internal/*`.
-   - Bắt buộc header `X-Internal-Service-Key` phải khớp với cấu hình `InternalSecurity:ServiceKey` (hoặc biến môi trường `INTERNAL_SERVICE_SECRET`). Trả về HTTP 403 `FORBIDDEN` nếu thiếu hoặc sai.
-3. **Outbound HttpClient Security**:
-   - Mọi Typed HttpClient gọi liên service đăng ký kèm `InternalServiceAuthHandler` (DelegatingHandler) tự động tiêm `X-Internal-Service-Key` vào request header.
+1. **Gateway**:
+   - Khối chặn `/api/v1/internal` trong `ClientContextMiddleware` đã bị comment từ 2026-10-31.
+   - `SanitizeDocument` không còn xóa path internal khỏi tài liệu OpenAPI.
+   - Các route liên service đi qua Gateway như API thường.
+2. **Microservice**:
+   - `InternalServiceAuthMiddleware` đã comment đăng ký ở toàn bộ service.
+   - Không còn yêu cầu header `X-Internal-Service-Key`.
+3. **Outbound HttpClient**:
+   - `InternalServiceAuthHandler` đã comment khỏi đăng ký DI ở User, Catalog và Commerce.
+   - Bật lại mô hình cũ cần phê duyệt rõ ràng và khôi phục đồng bộ middleware, handler, Gateway và tài liệu.
 
 ---
 

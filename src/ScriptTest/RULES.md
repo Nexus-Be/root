@@ -45,8 +45,8 @@ hoặc `AGENTS.md` của từng service. Khi sửa rule, cập nhật cả bản
 |:---|:---:|:---|:---|
 | ROUTE-001 | ERROR | Đúng một `[Route("api/v1/...")]`, không `/` cuối, không alias | AGENTS.md - REST API & Routing |
 | ROUTE-002 | ERROR | Danh từ collection phải số nhiều; ngoại lệ `auth`, `me`, `health`, `healthcheck`, `vnpay`, `otp`, `password` | AGENTS.md - REST API & Routing |
-| ROUTE-003 | ERROR | Controller phải nằm trong `Controllers/Public/` hoặc `Controllers/Internal/` | AGENTS.md - Internal API Segregation |
-| ROUTE-004 | ERROR | `Internal/*` phải là `api/v1/internal/...`; `Public/*` không được chứa `internal` | AGENTS.md - Internal API Segregation |
+| ROUTE-003 | ERROR | Controller phải nằm trong `Controllers/Public/`; không tạo `Controllers/Internal/` | AGENTS.md - Internal API tạm khóa |
+| ROUTE-004 | ERROR | Route công khai không được chứa `/api/v1/internal` | AGENTS.md - Internal API tạm khóa |
 | ROUTE-005 | ERROR | Mỗi action chỉ một HTTP verb attribute | AGENTS.md - No Duplicate Route Aliases |
 | ROUTE-006 | ERROR | Không trùng cặp `(verb, full path)` trong cùng service | AGENTS.md - No Duplicate Route Aliases |
 | ROUTE-007 | WARN | Route có tham số `{...id...}` phải kiểm tra quyền sở hữu | AGENTS.md - Resource Ownership |

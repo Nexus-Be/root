@@ -441,7 +441,7 @@ HTTP=$(curl -sS -o "$TMP/body" -D "$TMP/headers" -w '%{http_code}' -X POST "$GAT
 BODY=$(cat "$TMP/body")
 expect_error "GW-01" "Spoofed identity header is rejected" 403 FORBIDDEN_HEADER_SPOOFING
 
-call GET /api/v1/internal/notifications/email/otp
+call GET /api/v1/notifications/email/otp
 expect_error "GW-02" "Internal route is hidden from clients" 404 NOT_FOUND
 
 clear_rate_limits

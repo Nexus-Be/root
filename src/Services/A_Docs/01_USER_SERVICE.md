@@ -12,7 +12,7 @@ Tài liệu này đặc tả cấu trúc thư mục, các tầng Clean Architect
 - **Cổng lắng nghe HTTP REST:** `8001`
 - **Cơ sở dữ liệu PostgreSQL:** Cổng `5433` (Container), Database: `usermanagement_db`
 - **Hạ tầng Redis:** Cổng `6379`, key prefix `otp:*` và `user:*`
-- **Giao tiếp liên dịch vụ:** Typed HTTP Client gọi sang `NotificationService` (`POST /api/v1/internal/notifications/email/otp`)
+- **Giao tiếp liên dịch vụ:** Typed HTTP Client gọi sang `NotificationService` (`POST /api/v1/notifications/email/otp`)
 - **Kiểm thử tự động:** `User.Tests` với **216 unit và integration tests passed 100%**
 
 ---
@@ -90,9 +90,9 @@ src/Services/User/
 │   │   ├── Migrations/                # Lịch sử EF Core Migrations (20261030054250_InitialCreate)
 │   │   └── Seeds/UserSeedData.cs      # Dữ liệu mẫu khởi tạo tài khoản cố định (GUID Deterministic)
 │   ├── Services/
-│   │   ├── Common/InternalServiceAuthHandler.cs # DelegatingHandler tự động tiêm X-Internal-Service-Key
+│   │   ├── Common/InternalServiceAuthHandler.cs # Chưa đăng ký: Internal API tạm khóa
 │   │   ├── Jwt/JwtTokenGenerator.cs   # Ký số JWT HS256 với các claims sub, email, role, permission
-│   │   ├── Notification/EmailNotificationClient.cs # Gọi POST /api/v1/internal/notifications/email/otp
+│   │   ├── Notification/EmailNotificationClient.cs # Gọi POST /api/v1/notifications/email/otp
 │   │   └── Redis/RedisOtpService.cs   # Lưu mã OTP với thời gian sống TTL 5 phút
 │   └── DependencyInjection.cs         # Đăng ký DbContext, RedisMultiplexer, HttpClient
 │
@@ -103,7 +103,6 @@ src/Services/User/
 │   │   │   ├── UsersController.cs     # /api/v1/users và /api/v1/me
 │   │   │   ├── AdminUsersController.cs# /api/v1/admin/users
 │   │   │   └── SellerController.cs    # /api/v1/sellers (đăng ký gian hàng, hồ sơ shop)
-│   │   └── Internal/                  # Controllers dành riêng cho giao tiếp liên service
 │   ├── Common/Converters/
 │   │   └── PascalCaseJsonStringEnumConverter.cs # Tuần tự hóa Enum thành chuỗi PascalCase
 │   ├── Extensions/
@@ -111,7 +110,7 @@ src/Services/User/
 │   │   ├── HttpContextExtensions.cs   # Trích xuất an toàn x-user-id, x-user-email, x-user-roles
 │   │   └── ObservabilityExtensions.cs # Tích hợp OpenTelemetry tracing sang Tempo
 │   ├── Middleware/
-│   │   ├── InternalServiceAuthMiddleware.cs # Bảo vệ endpoint /api/v1/internal/* bằng secret key
+│   │   ├── InternalServiceAuthMiddleware.cs # Chưa đăng ký: Internal API tạm khóa
 │   │   └── GlobalExceptionHandlerMiddleware.cs # Xử lý ngoại lệ chuẩn RFC 9110 ProblemDetails
 │   └── Program.cs                     # Điểm khởi động ứng dụng .NET 8
 │

@@ -1,322 +1,643 @@
 # CẨM NANG KIỂM THỬ ĐỘC LẬP RESTFUL API & CHẨN ĐOÁN LỖI TOÀN HỆ THỐNG
 ## (ISOLATED RESTFUL API TESTING & DISTRIBUTED DEBUGGING GUIDE)
 
-> **Trạng thái triển khai (2026-10-30):** ✅ ĐÃ CHUẨN HÓA 100% RESTFUL HTTP/JSON & OPENTELEMETRY TRACING.  
-> **BÃI BỎ MESSAGE BROKER & gRPC**: Toàn bộ hệ thống đã loại bỏ RabbitMQ, MassTransit và gRPC. Mọi giao tiếp đồng bộ đều qua RESTful HTTP/JSON (cổng `8001`-`8008`). Việc chẩn đoán lỗi phân tán được thực hiện 100% qua **Grafana Tempo** với W3C Trace Context (`traceparent`, `X-Trace-Id`).
+> **Trạng thái triển khai (2026-10-31):** ✅ Hệ thống giao tiếp 100% bằng RESTful HTTP/JSON. RabbitMQ, MassTransit, Saga, Outbox/Inbox và gRPC đã bị gỡ bỏ. Internal API đang **tạm khóa**; các service gọi nhau bằng route công khai. Chẩn đoán phân tán dùng **OpenTelemetry + Grafana Tempo**.
+> **Nguồn sự thật:** `src/Services/*/Controllers`, `src/Services/*/Extensions/ObservabilityExtensions.cs`, `src/Services/Gateway/Gateway/` và `docker-compose.infra.yml`. Tài liệu này mô tả code đang chạy, không mô tả thiết kế mong muốn.
+> **Cập nhật lần cuối:** 2026-10-31.
 
-> **Mục tiêu tài liệu**: Cung cấp cẩm nang thực hành chi tiết cho lập trình viên để **kiểm thử độc lập từng Endpoint RESTful HTTP/JSON** bằng Swagger UI, Postman và cURL mà **không cần thông qua API Gateway**, đồng thời hướng dẫn quy trình sử dụng **Grafana Tempo** để định vị chính xác file `.cs` và dòng code bị lỗi khi có sự cố xảy ra.
+> **Mục tiêu tài liệu**: Hướng dẫn kiểm thử từng endpoint RESTful tại backend mà không cần bật toàn bộ hệ thống; kiểm thử một lời gọi liên service mà không cần chạy service gọi; và chẩn đoán lỗi theo 3 tầng: đọc mã lỗi, tra trace trên Grafana Tempo, kiểm tra service đích cùng database.
 
 ---
 
-## 1. BỨC TRANH TỔNG QUAN VỀ KIỂM THỬ ĐỘC LẬP
+## 1. BỨC TRANH TỔNG QUAN
 
-Trong hệ thống Microservices Nexus, khi lập trình viên vừa code xong một tính năng hoặc Endpoint tại một Service (ví dụ: `UserService` hoặc `WalletService`), việc phải bật toàn bộ 9 services cùng API Gateway để kiểm thử qua giao diện là rất cồng kềnh, tốn RAM và khó đặt breakpoint debug.
+### 1.1. Hai đường kiểm thử, ba lớp cần phân biệt
 
-Tuân thủ **Nguyên tắc 4** và **ADR 06**, toàn bộ hệ thống Nexus đã chuẩn hóa kiến trúc:
-1. **Giao thức đồng bộ (Synchronous)**: **100% RESTful HTTP/JSON** (CẤM TUYỆT ĐỐI gRPC & BÃI BỎ MESSAGE BROKER). Mỗi microservice backend sở hữu dải cổng riêng (`8001`-`8008`) và có thể tiếp nhận trực tiếp các request HTTP REST từ Swagger UI, Postman hoặc cURL.
-2. **Quan sát phân tán (Observability)**: Mọi cuộc gọi được gắn `X-Trace-Id` và tự động đẩy Spans về **Grafana Tempo** (`port 4317`) để xem biểu đồ Waterfall.
-
-Hệ thống cho phép bạn chia tách việc kiểm thử độc lập:
+Một request có thể đi theo hai đường:
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                      POSTMAN / cURL / SWAGGER UI / DÒNG LỆNH                     │
-│                                                                                  │
-│   [Kiểm Thử RESTful API Trực Tiếp]          [Kiểm Thử Qua API Gateway]            │
-│   HTTP GET/POST/PUT/PATCH/DELETE           HTTP GET/POST/PUT/PATCH/DELETE        │
-│   (Swagger UI: port 8001-8008)             (Gateway Port 8080: /api/v1/...)       │
-└───────────────┬──────────────────────────────────────────┬───────────────────────┘
-                │ HTTP/1.1 REST (JSON)                     │ ForwardAsync (REST)
-                ▼                                          ▼
-┌───────────────────────────────┐          ┌───────────────────────────────────────┐
-│     MICROSERVICE BACKEND      │          │              API GATEWAY              │
-│   Port: 8001, 8002, 8008...   │          │               Port 8080               │
-│   - Feature Service & DbContext│         │  - JWT Bearer & RBAC Authorization    │
-│   - Swagger UI (/swagger)     │          │  - Rate Limiter (Redis 6379)          │
-│   - Thin Controller           │          │  - Mock / Real Backend Dispatcher     │
-└───────────────┬───────────────┘          └───────────────────┬───────────────────┘
-                │                                              │
-                └───────────────────────┬──────────────────────┘
-                                        │ OTLP Traces (gRPC 4317)
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                 POSTMAN / cURL / SWAGGER UI / DÒNG LỆNH                      │
+│                                                                              │
+│   [Đường A: gọi thẳng backend]          [Đường B: gọi qua Gateway]           │
+│   http://localhost:8001-8009            http://localhost:8080                │
+└───────────────────┬────────────────────────────────────┬─────────────────────┘
+                    │ HTTP/JSON                          │ HTTP/JSON + JWT
+                    ▼                                    ▼
+        ┌───────────────────────┐              ┌───────────────────────────┐
+        │  BACKEND SERVICE      │              │  API GATEWAY (YARP)       │
+        │  Kestrel + Swagger    │              │  JWT, RBAC, Rate Limit,   │
+        │  Feature Service      │              │  Anti-spoofing, Envelope  │
+        │  DbContext            │              └─────────────┬─────────────┘
+        └───────────┬───────────┘                            │ ForwardAsync
+                    │                                        ▼
+                    │                          ┌───────────────────────────┐
+                    │                          │  BACKEND SERVICE          │
+                    │                          │  (nhận x-user-* headers)  │
+                    │                          └─────────────┬─────────────┘
+                    │                                        │
+                    └──────────────────┬─────────────────────┘
+                                       │ REST/JSON (đồng bộ)
+                                       ▼
+                          ┌───────────────────────────┐
+                          │  SERVICE ĐÍCH (nếu có)    │
+                          │  Notification / Wallet /  │
+                          │  Fulfillment / Catalog    │
+                          └─────────────┬─────────────┘
+                                        │ OTLP (4317)
                                         ▼
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                         CHẨN ĐOÁN LỖI: GRAFANA TEMPO                             │
-│       Dán TraceId -> Xem Biểu đồ Waterfall -> Click Span Đỏ -> Thấy File & Dòng   │
-└──────────────────────────────────────────────────────────────────────────────────┘
+                          ┌───────────────────────────┐
+                          │  GRAFANA TEMPO + GRAFANA  │
+                          │  Waterfall, exception,    │
+                          │  HTTP client spans        │
+                          └───────────────────────────┘
 ```
 
+Ba lớp cần phân biệt trước khi bắt đầu:
+
+| Lớp | Câu hỏi | Nguồn dữ liệu |
+| :--- | :--- | :--- |
+| **Edge** | Request có bị chặn trước khi tới service không? | `ClientContextMiddleware`, `AdminAuthorizationGuardMiddleware`, `SensitiveRateLimitMiddleware`, `IdempotencyGuardMiddleware` |
+| **Service** | Nghiệp vụ có ném lỗi không? | `GlobalExceptionHandlerMiddleware` của từng service, `errorCode`, `traceId` |
+| **Downstream** | Service đích có trả lỗi hoặc timeout không? | Span `HttpClient`, log `LogWarning` của typed client, trạng thái database |
+
+### 1.2. Ba khác biệt bắt buộc phải nhớ
+
+| Tiêu chí | Gọi thẳng backend (`8001`-`8009`) | Gọi qua Gateway (`8080`) |
+| :--- | :--- | :--- |
+| **Xác thực** | Không có JWT; tự gửi `x-user-id`, `x-user-roles` | Route bảo vệ cần JWT Bearer; Gateway tiêm header danh tính. Các route công khai (`auth/login`, danh sách sản phẩm) không cần token |
+| **Chống giả mạo header** | Không kiểm tra (đây là môi trường test nội bộ) | Gửi `x-user-*` từ ngoài sẽ bị chặn `403 FORBIDDEN_HEADER_SPOOFING` |
+| **Vỏ phản hồi thành công** | Dữ liệu thô do controller trả về | `ApiResponse<T>` do `ResponseEnvelopeMiddleware` bọc |
+| **Vỏ phản hồi lỗi** | `application/problem+json` của service | Lỗi service đi xuyên qua; lỗi do Gateway sinh ra dùng `ApiErrorResponse` |
+| **`traceId`** | Chỉ có trong body lỗi; không có response header | Có trong body envelope và header `X-Trace-Id` |
+| **Rate limit** | Không áp dụng | Áp dụng cho `register`, `login`, `otp/verify`, `otp/resend` |
+| **RBAC admin** | Do filter `[RequireRole]` của service quyết định | Gateway chặn `/api/v1/admin/**` trước, service kiểm tra lại |
+
+> **Kết luận thực hành:** Khi test thẳng backend, đừng tìm `data` trong JSON và đừng chờ header `X-Trace-Id`. Khi test qua Gateway, đừng gửi `x-user-*`; hãy gửi JWT.
+
 ---
 
-## 2. PHẦN 1: KIỂM THỬ RIÊNG LẺ RESTFUL ENDPOINT CỦA BACKEND MICROSERVICE (ĐỒNG BỘ - CẤM gRPC)
+## 2. PHẦN 1: KIỂM THỬ RIÊNG LẺ ENDPOINT CỦA BACKEND MICROSERVICE
 
-Mỗi backend microservice trong Nexus là một ứng dụng Web API độc lập chạy máy chủ Kestrel. Khi khởi chạy độc lập (qua `dotnet run` hoặc Visual Studio / Rider / Docker), service sẽ lắng nghe tại cổng HTTP đã được quy hoạch cố định và tích hợp sẵn **Swagger UI** (trong môi trường `Development`).
+Mỗi backend là một Web API Kestrel độc lập. Khi chạy bằng `dotnet run`, service dùng đúng port trong `Properties/launchSettings.json` và bật Swagger UI khi `ASPNETCORE_ENVIRONMENT=Development` hoặc `Swagger:Enabled=true`.
 
-### Bảng Cổng RESTful API & Swagger UI Trực Tiếp Các Backend Services
+### 2.1. Bảng port và route tiêu biểu
 
-| Service | Cổng REST Trực Tiếp | Swagger UI Endpoint | Đường Dẫn API Tiêu Biểu |
-| :--- | :---: | :--- | :--- |
-| **API Gateway** | `localhost:8080` | `http://localhost:8080/swagger` | `/api/v1/*` (Reverse Proxy & Điều phối) |
-| **User Service** | `localhost:8001` | `http://localhost:8001/swagger` | `/api/v1/auth/*`, `/api/v1/users/*` |
-| **Catalog Service** | `localhost:8002` | `http://localhost:8002/swagger` | `/api/v1/products/*`, `/api/v1/categories/*` |
-| **Commerce Service**| `localhost:8003` | `http://localhost:8003/swagger` | `/api/v1/carts/*`, `/api/v1/orders/*` |
-| **Log Service** | `localhost:8004` | `http://localhost:8004/swagger` | `/api/v1/logs/*` |
-| **Auction Service** | `localhost:8005` | `http://localhost:8005/swagger` | `/api/v1/auctions/*`, `/api/v1/bids/*` |
-| **Fulfillment Service** | `localhost:8006` | `http://localhost:8006/swagger` | `/api/v1/shipments/*`, `/api/v1/inventory/*` |
-| **Notification Service**| `localhost:8007` | `http://localhost:8007/swagger` | `/api/v1/notifications/*` |
-| **Wallet Service** | `localhost:8008` | `http://localhost:8008/swagger` | `/api/v1/wallets/*`, `/api/v1/transactions/*` |
+| Service | HTTP | Swagger trực tiếp | Route tiêu biểu | Database |
+| :--- | :---: | :--- | :--- | :--- |
+| **API Gateway** | `8080` | `http://localhost:8080/swagger` | `/api/v1/*` (reverse proxy, gộp Swagger của 9 service) | Không có |
+| **User** | `8001` | `http://localhost:8001/swagger` | `/api/v1/auth/*`, `/api/v1/me/*`, `/api/v1/users/*`, `/api/v1/sellers/*` | `usermanagement_db` (`5433`) |
+| **Catalog** | `8002` | `http://localhost:8002/swagger` | `/api/v1/products/*`, `/api/v1/categories/*` | `category_db` (`5434`) |
+| **Commerce** | `8003` | `http://localhost:8003/swagger` | `/api/v1/carts/*`, `/api/v1/orders/*` | `commerce_db` (`5435`) |
+| **Log** | `8004` | `http://localhost:8004/swagger` | `/api/v1/logs/*` | `log_db` (`5436`) |
+| **Auction** | `8005` | `http://localhost:8005/swagger` | `/api/v1/auctions/*` | `auction_db` (`5437`) |
+| **Fulfillment** | `8006` | `http://localhost:8006/swagger` | `/api/v1/shipments/*`, `/api/v1/warehouses/*`, `/api/v1/inventories/*` | `fulfillment_db` (`5438`) |
+| **Notification** | `8007` | `http://localhost:8007/swagger` | `/api/v1/notifications/*`, `/api/v1/notifications/email/*` | `notification_db` (`5439`) |
+| **Wallet** | `8008` | `http://localhost:8008/swagger` | `/api/v1/wallets/*`, `/api/v1/admin/wallets/*` | `wallet_db` (`5440`) |
+| **CheckHeal** | `8009` | `http://localhost:8009/swagger` | `/api/v1/healthcheck/*`, `/health/*` | Không có DB riêng |
 
-> ⚠️ Cả 8 service đều có `GET /health` (trả `{"status":"Healthy","service":"…"}`), nhưng **`/health` không kiểm tra trạng thái kết nối Database**: khi Postgres chết, `/health` vẫn trả 200. Vì vậy, luôn kiểm thử các API nghiệp vụ có thao tác DB thực tế để xác nhận service hoạt động chính xác.
+Lưu ý về route:
 
----
+- Wallet dùng `/api/v1/wallets/me`, **không phải** `/api/v1/wallets/my-balance`.
+- Giao dịch ví nằm dưới `/api/v1/wallets/transactions`, không phải `/api/v1/transactions`.
+- Tồn kho nằm dưới `/api/v1/inventories/*`, không phải `/api/v1/inventory/*`.
+- Bid chỉ có `GET /api/v1/auctions/{auctionId:guid}/bids`; không có `/api/v1/bids` độc lập.
+- Một số route tồn tại trong controller nhưng chưa có route Gateway (`/api/v1/checkouts`, `/api/v1/sub-orders`, `/api/v1/reviews`, `/api/v1/admin/auctions`). Gọi qua Gateway các route này trả `404`; muốn test phải gọi thẳng service hoặc bổ sung route Gateway trước.
 
-### Các Bước Kiểm Thử RESTful Endpoint Độc Lập
+### 2.2. `/health` không chứng minh service hoạt động
 
-#### Cách 1: Sử Dụng Swagger UI Trực Tiếp Của Service (Trực Quan Nhất)
-1. Khởi chạy duy nhất service bạn cần làm việc (ví dụ `UserService`):
-   ```bash
-   cd src/Services/User/User.Api
-   dotnet run
-   ```
-2. Mở trình duyệt truy cập: **`http://localhost:8001/swagger`**.
-3. Chọn API cần test (ví dụ `POST /api/v1/auth/register`) $\rightarrow$ Bấm **Try it out**.
-4. Điền Request Body JSON và bấm **Execute**.
-5. Đặt Breakpoint trong code C# Controller/Handler để dừng và debug trực tiếp.
+Mọi service đều có `GET /health` trả `200` khi process còn sống. Endpoint này **không kiểm tra database, Redis hay downstream**. Vì vậy:
 
-#### Cách 2: Sử Dụng Postman Hoặc File `.http`
-1. Mở Postman, tạo một HTTP Request thông thường (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`).
-2. Điền URL trực tiếp tới backend: ví dụ `http://localhost:8001/api/v1/auth/login`.
-3. Điền Body định dạng `raw` JSON.
+- Muốn xác nhận service xử lý được nghiệp vụ, phải gọi một endpoint có đọc/ghi DB thật.
+- Muốn xác nhận database sống, dùng CheckHeal (`GET /api/v1/healthcheck/status` kèm `X-Api-Key`) hoặc kết nối trực tiếp database của service đó.
+- Một service trả `200 /health` vẫn có thể trả `500` cho mọi API nghiệp vụ nếu connection string sai.
 
-#### Cách 3: Kiểm Thử Bằng Dòng Lệnh Với `curl` (CLI)
+### 2.3. Ba cách gọi thẳng backend
+
+#### Cách 1: Swagger UI của service
+
 ```bash
-# 1. Kiểm tra health check:
+# Chạy duy nhất service cần test; port lấy từ launchSettings.json
+dotnet run --project src/Services/User/User.Api
+# Mở http://localhost:8001/swagger
+```
+
+Với Wallet, chạy `dotnet run --project src/Services/Wallet/Wallet.Api` và mở `http://localhost:8008/swagger`.
+
+Nếu cần xem toàn bộ hợp đồng của 9 service trên một giao diện, chạy Gateway và mở `http://localhost:8080/swagger`. Gateway gộp Swagger downstream qua `/swagger/downstream/{service}/swagger.json`; các service đích phải đang chạy, nếu không tài liệu tương ứng sẽ không tải được.
+
+#### Cách 2: Postman hoặc file `.http`
+
+- Method và URL trỏ thẳng backend, ví dụ `POST http://localhost:8001/api/v1/auth/login`.
+- Body chọn `raw` → `JSON`.
+- Với endpoint cần danh tính, thêm header `x-user-id`, `x-user-roles` thay vì `Authorization: Bearer`.
+
+#### Cách 3: cURL
+
+```bash
+# 1. Health check
 curl -i http://localhost:8001/health
 
-# 2. Gọi API đăng ký tài khoản (User Service):
+# 2. Đăng ký tài khoản (User Service) — đúng hợp đồng RegisterApiRequest
 curl -i -X POST http://localhost:8001/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "buyer01@nexus.local",
     "password": "Password123!",
-    "fullName": "Nguyen Van A",
-    "role": "Buyer"
+    "firstName": "Van A",
+    "lastName": "Nguyen",
+    "username": "buyer01",
+    "phoneNumber": "0900000001"
   }'
 
-# 3. Lấy thông tin sản phẩm (Catalog Service):
-curl -i http://localhost:8002/api/v1/products/01912345-6789-7abc-def0-123456789abc
+# 3. Đăng nhập (User Service)
+curl -i -X POST http://localhost:8001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifier": "buyer01@nexus.local",
+    "password": "Password123!"
+  }'
+
+# 4. Danh sách sản phẩm (Catalog Service)
+curl -i "http://localhost:8002/api/v1/products?page=1&pageSize=10"
 ```
 
----
+`RegisterApiRequest` chỉ nhận `email`, `password`, `firstName`, `lastName`, `phoneNumber`, `username`. Không có trường `fullName` hay `role`; các trường lạ trong JSON bị bỏ qua.
 
-### Giả Lập Header Danh Tính Người Dùng (Identity Propagation / RBAC)
+### 2.4. Giả lập danh tính khi gọi thẳng backend
 
-Khi request đi qua API Gateway, Gateway sẽ xác thực JWT token và tự động gắn các Header định danh vào request chuyển tiếp sang backend microservice:
-- `x-user-id`: Mã UUID của người dùng (`01912345-6789-7abc-def0-123456789abc`)
-- `x-user-roles`: Quyền hạn (`Buyer`, `Seller`, `Staff`, `Admin`, `SuperAdmin`)
-- `x-user-email`: Email của người dùng (`buyer01@nexus.local`)
+Gateway tiêm các header sau vào request downstream:
 
-Khi bạn **kiểm thử độc lập trực tiếp tại backend microservice (không qua Gateway)**, bạn chỉ cần truyền các header này trong Swagger UI, Postman Headers hoặc cURL:
+| Header | Giá trị Gateway gửi xuống | Định dạng khi test thủ công |
+| :--- | :--- | :--- |
+| `x-user-id` | `sub` / NameIdentifier của JWT | GUID hợp lệ, ví dụ `01912345-6789-7abc-def0-123456789abc` |
+| `x-user-email` | `email` của JWT | Email |
+| `x-user-roles` | Danh sách role, **chữ thường**, phân tách bằng dấu phẩy | `buyer`, `seller`, `admin`, `staff` |
+| `x-user-permissions` | Danh sách permission, **chữ in hoa**, phân tách bằng dấu phẩy | `PRODUCT_READ`, `WALLET_WITHDRAW` |
+| `x-client-ip` | IP client do Gateway xác định | Tùy chọn |
+| `x-trace-id` | Trace id của Gateway | Tùy chọn, chỉ để đối chiếu log |
+
+Ví dụ gọi thẳng Wallet và Log:
 
 ```bash
-curl -i -X GET http://localhost:8008/api/v1/wallets/my-balance \
+# Ví của chính người dùng
+curl -i http://localhost:8008/api/v1/wallets/me \
   -H "x-user-id: 01912345-6789-7abc-def0-123456789abc" \
-  -H "x-user-roles: Buyer" \
+  -H "x-user-roles: buyer" \
   -H "x-user-email: buyer01@nexus.local"
+
+# Truy vấn log — LogController yêu cầu role admin hoặc staff
+curl -i "http://localhost:8004/api/v1/logs?page=1&pageSize=20" \
+  -H "x-user-id: 01912345-6789-7abc-def0-123456789abc" \
+  -H "x-user-roles: admin"
 ```
-Hành động này giúp bạn kiểm tra phân quyền RBAC và logic nghiệp vụ theo từng User mà không cần phải thực hiện bước đăng nhập lấy JWT token từ Gateway!
 
----
+Quy tắc RBAC tại service:
 
-### Quy Chuẩn Cấu Trúc Dữ Liệu Trả Về (Response Standards)
+- Thiếu `x-user-id` hoặc GUID không hợp lệ → `401 UNAUTHORIZED`, `detail: "Authentication is required to access this resource."`.
+- Có danh tính nhưng sai role → `403 FORBIDDEN`, `detail` liệt kê role được yêu cầu.
+- `admin` và `staff` được xem là role quản trị trong `RequireRoleAttribute`; nhiều action còn kiểm tra quyền sở hữu tài nguyên bằng `GetUserId()`.
 
-1. **Phản hồi thành công (Success)**: Bọc trong vỏ chuẩn `ApiResponse<T>`:
-   ```json
-   {
-     "success": true,
-     "data": {
-       "id": "01912345-6789-7abc-def0-123456789abc",
-       "email": "buyer01@nexus.local"
-     },
-     "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-     "timestamp": "2026-10-27T14:50:00Z"
-   }
-   ```
-2. **Phản hồi danh sách phân trang (Paged Data)**: Bọc trong `ApiResponse<PagedData<T>>`.
-3. **Phản hồi không nội dung (No Content)**: Trả về mã HTTP `204 NoContent` (không có body).
-4. **Phản hồi lỗi (Error)**: Tuân thủ chuẩn RFC 9110 / ProblemDetails (xem chi tiết tại Phần 4).
+> **Cảnh báo:** Gọi thẳng backend là cách bỏ qua Gateway. Chỉ làm trên máy dev. Không mở port `8001`-`8009` ra Internet khi Internal API còn tạm khóa, vì hiện không có `X-Internal-Service-Key` để bảo vệ các route liên service.
 
----
+### 2.5. Hợp đồng phản hồi: thẳng backend khác Gateway
 
-## 3. PHẦN 2: KIỂM THỬ RIÊNG LẺ EVENT CONSUMER (BẤT ĐỒNG BỘ QUA RABBITMQ)
+**Gọi thẳng backend — thành công:** controller trả dữ liệu thô, không có lớp `success`/`data`.
 
-Khi bạn viết một Consumer (ví dụ: `SendOtpEmailConsumer` gửi email OTP, hoặc `StockReservedConsumer` xử lý trừ tiền ví), làm thế nào để test hàm `Consume()` mà **không cần chạy các service khác**?
-
-Bạn có thể đưa Event giả lập vào thẳng RabbitMQ Broker theo 2 cách:
-
-### Cách 1: Bắn Event Trực Tiếp Trên RabbitMQ Management Web UI (Không Cần Bật Postman)
-1. Mở trình duyệt vào: **`http://localhost:15672`** (đăng nhập: `guest` / `guest`).
-2. Vào tab **Exchanges** $\rightarrow$ Bấm vào tên Exchange tương ứng với Event bạn muốn kích hoạt.
-3. Cuộn xuống mục **Publish message**:
-   - **Routing key**: để trống.
-   - **Headers**: Thêm dòng header:
-     - Name: `Content-Type`
-     - Value: `application/vnd.masstransit+json`
-   - **Payload**: Dán phần ruột JSON của message (xem mẫu payload chi tiết bên dưới).
-4. Bấm nút **Publish message**. Service tương ứng sẽ lập tức nhận được message và thực thi Consumer!
-
----
-
-### Cách 2: Dùng Postman Bắn Event Qua RabbitMQ HTTP REST API
-RabbitMQ cung cấp sẵn bộ REST API trên cổng Management UI (`15672`). Bạn có thể dùng Postman gửi HTTP POST để publish một event giả lập vào thẳng Exchange của MassTransit.
-
-#### Cấu Hình Request Trong Postman:
-1. **Method**: `POST`
-2. **URL**: `http://localhost:15672/api/exchanges/%2f/{ExchangeName}/publish`
-3. **Tab Authorization**:
-   - Type: `Basic Auth`
-   - Username: `guest`
-   - Password: `guest` (hoặc mật khẩu cấu hình trong biến môi trường `RABBITMQ_PASSWORD`)
-4. **Tab Headers**:
-   - `Content-Type`: `application/json`
-
----
-
-### Mẫu Payload JSON Cho Từng Event Phổ Biến
-
-Trong MassTransit, tên Exchange mặc định chính là `Namespace:ContractName`. Dưới đây là các mẫu JSON sẵn dùng:
-
-#### 1. Test Gửi Email OTP (`NotificationService`)
-- **Exchange URL**: `http://localhost:15672/api/exchanges/%2f/Nexus.Contracts.Events:SendOtpEmailIntegrationEvent/publish`
-- **Body (raw JSON)**:
-  ```json
-  {
-    "properties": {
-      "content_type": "application/vnd.masstransit+json"
-    },
-    "routing_key": "",
-    "payload": "{\"messageType\": [\"urn:message:Nexus.Contracts.Events:SendOtpEmailIntegrationEvent\"], \"message\": {\"email\": \"test.dev@gmail.com\", \"fullName\": \"Nguyen Van A\", \"otp\": \"888999\", \"expiresInMinutes\": 5}}",
-    "payload_encoding": "string"
-  }
-  ```
-- **Kết quả kiểm chứng**: `NotificationService` lập tức kích hoạt `SendOtpEmailConsumer.Consume()` và gửi mail qua SMTP.
-
-#### 2. Test Ghi Nhật Ký Hệ Thống (`LogService`)
-- **Exchange URL**: `http://localhost:15672/api/exchanges/%2f/Log.Domain.Events:ILogEventOccurred/publish`
-- **Body (raw JSON)**:
-  ```json
-  {
-    "properties": {
-      "content_type": "application/vnd.masstransit+json"
-    },
-    "routing_key": "",
-    "payload": "{\"messageType\": [\"urn:message:Log.Domain.Events:ILogEventOccurred\"], \"message\": {\"serviceName\": \"OrderService\", \"eventType\": \"ORDER_PAYMENT_SUCCESS\", \"actorUserId\": \"01912345-6789-7abc-def0-123456789abc\", \"logLevel\": \"Information\", \"entityName\": \"Orders\", \"entityId\": \"ORD-999\", \"detailsJson\": \"{\\\"amount\\\": 250000}\"}}",
-    "payload_encoding": "string"
-  }
-  ```
-- **Kết quả kiểm chứng**: `LogService` ghi 1 dòng log vào bảng `LogEntries` trong database `log_db`. Lưu ý: `DetailsJson` là chuỗi JSON chứa chi tiết sự kiện; `actorUserId` là định danh tài khoản thực hiện.
-
-#### 3. Test Khấu Trừ Ví Tiền Saga (`WalletService`)
-- **Exchange URL**: `http://localhost:15672/api/exchanges/%2f/Wallet.Domain.Events:IStockReservedEvent/publish`
-- **Body (raw JSON)**:
-  ```json
-  {
-    "properties": {
-      "content_type": "application/vnd.masstransit+json"
-    },
-    "routing_key": "",
-    "payload": "{\"messageType\": [\"urn:message:Wallet.Domain.Events:IStockReservedEvent\"], \"message\": {\"orderId\": \"ORD-001\", \"reservationId\": \"RES-001\", \"userId\": \"01912345-6789-7abc-def0-123456789abc\", \"totalAmount\": \"150000.00\"}}",
-    "payload_encoding": "string"
-  }
-  ```
-- **Lưu ý kỹ thuật cho Wallet Consumer**:
-  - Exchange chuẩn trong code là `Wallet.Domain.Events:IStockReservedEvent` (interface nằm ở `Wallet.Domain.Events`).
-  - `totalAmount` là chuỗi `string` (ví dụ `"150000.00"`), không phải số thực.
-  - `userId` bắt buộc phải là chuỗi định dạng **Guid hợp lệ** (`Guid.TryParse`) và tương ứng với một ví đã tồn tại trong database `wallet_db`.
-
-👉 **Mẹo Debug**: Trước khi bấm **Send** trên Postman hoặc **Publish** trên RabbitMQ UI, hãy đặt Breakpoint tại dòng đầu tiên của hàm `Consume(ConsumeContext<T> context)` trong IDE (Visual Studio / Rider). IDE sẽ lập tức dừng đúng vị trí để bạn kiểm tra từng biến!
-
----
-
-## 4. PHẦN 3: KIỂM THỬ KẾT HỢP (RESTFUL API ĐỒNG BỘ + PHÁT TÁN EVENT BẤT ĐỒNG BỘ)
-
-Nhiều tính năng nghiệp vụ có tính chất kết hợp: Client gửi HTTP POST/PUT vào RESTful API $\rightarrow$ Service ghi nhận vào Database $\rightarrow$ Đồng thời bắn Event lên RabbitMQ (ví dụ: `POST /api/v1/auth/register` vừa lưu User vừa bắn Event gửi email OTP).
-
-### Quy Trình Kiểm Thử 2 Mắt Xích:
-1. **Bước 1 (Kích hoạt RESTful API)**:
-   - Gửi request `POST http://localhost:8001/api/v1/auth/register` qua Swagger UI, Postman hoặc cURL.
-   - Nhận Response `200 OK` hoặc `201 Created` kèm payload JSON.
-2. **Bước 2 (Kiểm tra Event được bắn ra trên RabbitMQ Broker)**:
-   - Mở trình duyệt vào RabbitMQ Management: `http://localhost:15672/#/queues`.
-   - Tìm queue nhận (ví dụ: `send-otp-email`). Bạn sẽ thấy:
-     - Biểu đồ **Message rates** nhảy lên `1 msg/s`.
-     - Nếu `NotificationService` đang chạy, message sẽ được consume ngay lập tức (`Unacked: 0`, `Ready: 0`).
-     - Nếu `NotificationService` chưa bật, message sẽ nằm chờ an toàn trong hàng đợi ở trạng thái `Ready: 1`.
-
----
-
-## 5. PHẦN 4: CHẨN ĐOÁN LỖI CHUYÊN SÂU: LỖI Ở ĐÂU, LỖI GÌ, SỬA NHƯ THẾ NÀO?
-
-Khi một API bị lỗi trong môi trường Microservices, hãy làm theo quy trình chẩn đoán 3 tầng dưới đây:
-
-### Tầng 1: Đọc Mã Lỗi & ProblemDetails Ngay Tại Response (Dưới 3 Giây)
-Mọi phản hồi lỗi từ hệ thống Nexus đều chuẩn hóa theo RFC 9110 / RFC 7807:
 ```json
 {
-  "type": "https://httpstatuses.com/400",
-  "title": "Bad Request",
-  "status": 400,
-  "errorCode": "VAL_INVALID_INPUT",
-  "detail": "Email is already registered in the system.",
-  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "timestamp": "2026-10-27T14:50:00Z"
+  "userId": "01912345-6789-7abc-def0-123456789abc",
+  "email": "buyer01@nexus.local",
+  "otpExpiresIn": 300
 }
 ```
-- `errorCode`: Cho biết danh mục lỗi nghiệp vụ viết hoa theo `SCREAMING_SNAKE_CASE` (ví dụ: `VAL_INVALID_INPUT`, `USER_NOT_FOUND`, `INSUFFICIENT_BALANCE`, `DOWNSTREAM_UNHEALTHY`).
-- `detail`: Lý do bị từ chối bằng 100% tiếng Anh Sentence case theo đúng **Nguyên tắc 5**.
-- `traceId`: Chìa khóa định danh duy nhất để tra cứu xuyên suốt hệ thống tại Tầng 2.
+
+**Gọi thẳng backend — lỗi:** `application/problem+json` do `GlobalExceptionHandlerMiddleware` sinh ra.
+
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Business rule violation",
+  "status": 400,
+  "errorCode": "EMAIL_ALREADY_EXISTS",
+  "detail": "Email is already registered in the system.",
+  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+}
+```
+
+**Gọi qua Gateway — thành công:** `ResponseEnvelopeMiddleware` bọc payload 2xx vào `ApiResponse<T>`.
+
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "message": "Operation completed successfully.",
+  "data": {
+    "userId": "01912345-6789-7abc-def0-123456789abc",
+    "email": "buyer01@nexus.local",
+    "otpExpiresIn": 300
+  },
+  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "timestamp": "2026-10-31T05:56:00Z"
+}
+```
+
+**Gọi qua Gateway — lỗi do service:** Gateway **không** bọc lại response lỗi. Body vẫn là `problem+json` của service, chỉ khác là client nhận thêm header `X-Trace-Id`.
+
+**Gọi qua Gateway — lỗi do Gateway:** dùng `ApiErrorResponse`, không có `detail`, chỉ có `message`.
+
+```json
+{
+  "success": false,
+  "statusCode": 403,
+  "errorCode": "FORBIDDEN_HEADER_SPOOFING",
+  "message": "Security violation: Untrusted identity header detected in external request.",
+  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "timestamp": "2026-10-31T05:56:00Z"
+}
+```
+
+**Phân trang:** service trả `PagedData<T>` với `items` và `pagination`; Gateway bọc nguyên khối vào `data`.
+
+```json
+{
+  "items": [],
+  "pagination": {
+    "pageIndex": 1,
+    "pageSize": 20,
+    "totalCount": 0,
+    "totalPages": 0,
+    "hasPreviousPage": false,
+    "hasNextPage": false
+  }
+}
+```
+
+**204 NoContent:** endpoint xóa hoặc không có body trả `204`; Gateway giữ nguyên `204`, không tạo envelope.
+
+**Enum:** mọi enum trong JSON đầu ra là chuỗi PascalCase (`"Active"`, `"Pending"`, `"Delivered"`). Đầu vào chấp nhận chuỗi PascalCase, case-insensitive và SCREAMING_SNAKE_CASE (dấu gạch dưới được chuẩn hóa); số nguyên bị từ chối.
 
 ---
 
-### Tầng 2: Mở Grafana Tempo Định Vị Tên File & Số Dòng Code Bị Crash
+## 3. PHẦN 2: KIỂM THỬ MỘT LỜI GỌI LIÊN SERVICE QUA REST
 
-Nếu API trả về `500 Internal Server Error` hoặc lỗi không rõ nguyên nhân:
+Không còn event consumer, không còn RabbitMQ. Một "consumer" cũ tương đương với một endpoint REST mà service khác gọi vào. Muốn test luồng này, có hai cách:
 
-1. **Lấy mã `TraceId`**: Copy chuỗi `traceId` từ response JSON hoặc từ Response Header `X-Trace-Id`.
-2. **Mở Grafana Tempo**: Truy cập `http://localhost:3000/explore` (đã bật sẵn Anonymous Admin, không cần mật khẩu).
-3. **Tra cứu Trace**: Đảm bảo datasource chọn **Tempo**, dán mã `TraceId` vào ô tìm kiếm và bấm **Run query**.
-4. **Đọc biểu đồ Waterfall**:
-   - Toàn bộ cây thực thi từ Gateway $\rightarrow$ HTTP REST call $\rightarrow$ EF Core SQL $\rightarrow$ MassTransit Publish/Consume sẽ hiện ra.
-   - Thanh Span nào bị crash hoặc ném Exception sẽ **chuyển sang màu ĐỎ RỰC**.
-5. **Xem chi tiết lỗi**: Bấm chuột vào thanh màu đỏ đó. Bảng thông số bên phải sẽ hiển thị:
-   - `exception.type`: Loại Exception (ví dụ: `Npgsql.PostgresException`, `NullReferenceException`).
-   - `exception.message`: Nội dung lỗi chi tiết.
-   - **`exception.stacktrace`**: **Hiển thị trực tiếp tên file C# và số dòng bị lỗi** (ví dụ: `AuthService.cs:line 42`).
-   - `db.statement`: Câu lệnh SQL gây lỗi cùng các giá trị tham số (`@p0`, `@p1`).
+1. **Test service đích độc lập:** gọi thẳng endpoint của service đích bằng cURL/Postman, không cần chạy service gọi.
+2. **Test service gọi:** chạy service gọi và service đích, kích hoạt nghiệp vụ ở service gọi, rồi đối chiếu response, log và trace.
+
+### 3.1. Ma trận lời gọi đang tồn tại trong code
+
+| Caller | Callee | Method và path | Biến cấu hình | Timeout |
+| :--- | :--- | :--- | :--- | :---: |
+| User | Notification | `POST /api/v1/notifications/email/otp` | `NOTIFICATION_SERVICE_URL` | `10s` |
+| Catalog | Fulfillment | `POST /api/v1/inventories/initialize` | `FULFILLMENT_SERVICE_URL` | `10s` |
+| Commerce | Wallet | `POST /api/v1/wallets/checkout/direct` | `WALLET_SERVICE_URL` | `10s` |
+| Commerce | Catalog | `POST /api/v1/products/reserve` | `CATALOG_SERVICE_URL` | `10s` |
+| Các service | Log | `POST /api/v1/logs/batch` | `LOG_SERVICE_URL` | — |
+| CheckHeal | 8 service | `GET /health` | `HealthCheck:Services:*` | `5s` |
+
+`POST /api/v1/logs/batch` đã có controller nhưng hiện chưa có caller thường trực trong code. Các target của CheckHeal mặc định tắt; phải bật qua API toggle trước khi dùng để chẩn đoán.
+
+### 3.2. Test từng service đích bằng cURL
+
+#### A. Notification — gửi email OTP
+
+```bash
+curl -i -X POST http://localhost:8007/api/v1/notifications/email/otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "buyer01@nexus.local",
+    "fullName": "Nguyen Van A",
+    "otpCode": "888999",
+    "expiresInMinutes": 5
+  }'
+```
+
+Kết quả mong đợi:
+
+- `200 OK` với `{ "success": true, "message": "...", "data": { ... } }` khi SMTP gửi thành công.
+- `400 VAL_INVALID_EMAIL` khi email rỗng hoặc sai định dạng.
+- `400 VAL_INVALID_OTP` khi thiếu `otpCode`.
+- `500 EMAIL_SEND_FAILED` khi SMTP từ chối hoặc timeout; đọc log Notification để xem lỗi SMTP gốc.
+
+Endpoint này không yêu cầu JWT và không kiểm tra `x-user-id`; nó là route liên service đang dùng đường dẫn công khai.
+
+#### B. Fulfillment — khởi tạo tồn kho
+
+```bash
+curl -i -X POST http://localhost:8006/api/v1/inventories/initialize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "skuId": "01912345-6789-7abc-def0-123456789abc",
+    "warehouseId": null,
+    "initialQuantity": 100
+  }'
+```
+
+`skuId` phải là GUID. `warehouseId` có thể null. `initialQuantity` mặc định `0`. Kết quả mong đợi là `200 OK` kèm `InventoryItemResponse`.
+
+#### C. Wallet — thanh toán trực tiếp từ ví
+
+`CheckoutDirectCommand` yêu cầu đủ `orderId`, `amount`, `gateway`, `returnUrl`; `userId` lấy từ header `x-user-id`, không lấy từ body.
+
+```bash
+curl -i -X POST http://localhost:8008/api/v1/wallets/checkout/direct \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: 01912345-6789-7abc-def0-123456789abc" \
+  -H "Idempotency-Key: 3f1c2b4a-1111-4a2b-9c3d-1234567890ab" \
+  -d '{
+    "orderId": "01912345-6789-7abc-def0-123456789abd",
+    "amount": 150000.00,
+    "gateway": "VnPay",
+    "bankCode": null,
+    "returnUrl": "https://example.com/payment/return"
+  }'
+```
+
+Hành vi cần biết khi đọc kết quả:
+
+- Endpoint tạo giao dịch `Pending` và trả `paymentUrl`, **chưa trừ số dư**. Việc trừ tiền xảy ra ở luồng IPN/return của VNPay.
+- `amount` phải lớn hơn `0`; `orderId` phải là GUID.
+- `x-user-id` phải là GUID và tương ứng với ví đã tồn tại, nếu không trả `404 WALLET_NOT_FOUND`.
+- Gọi lại cùng `orderId` với cùng `amount` và cùng `gateway` sẽ trả lại giao dịch `Pending` cũ; khác amount/gateway sẽ bị từ chối `400`. Đây là cơ chế chống trùng theo `ReferenceId == orderId`.
+- Test sai `x-user-id` sẽ nhận `400 VAL_INVALID_USER_ID`; thiếu `gateway` hoặc `returnUrl` sẽ nhận `400 VAL_INVALID_INPUT` do validation của MediatR.
+
+#### D. Log — nhận batch log
+
+```bash
+curl -i -X POST http://localhost:8004/api/v1/logs/batch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [
+      {
+        "serviceName": "user-service",
+        "eventType": "USER_REGISTERED",
+        "logLevel": "Information",
+        "entityName": "Users",
+        "entityId": "01912345-6789-7abc-def0-123456789abc"
+      }
+    ]
+  }'
+```
+
+Endpoint nhận `object` và trả `202 Accepted` với `{ "success": true, "message": "Log batch accepted for processing." }`. Hiện implementation chỉ ghi log tiếp nhận và trả `202`, chưa persist từng entry vào bảng log; đừng dùng endpoint này để kiểm chứng dữ liệu log đã ghi. Muốn kiểm chứng persistence, dùng `GET /api/v1/logs` sau khi có luồng ghi log thật.
+
+### 3.3. Test service gọi và service đích cùng lúc
+
+Ví dụ luồng `User → Notification` khi đăng ký:
+
+1. Chạy User và Notification.
+2. Gọi `POST http://localhost:8001/api/v1/auth/register`.
+3. Kiểm tra response User: `201 Created` kèm `userId`, `email`, `otpExpiresIn`.
+4. Kiểm tra log User: có dòng `[OTP DISPATCH]` chứa mã OTP và dòng `Dispatched OTP email via REST Notification client`.
+5. Kiểm tra log Notification: có dòng `[REST Email] Dispatching OTP email to ...`.
+6. Nếu Notification chết, User **vẫn đăng ký thành công**: `EmailNotificationClient` bắt exception, trả `false`, và User ghi `LogWarning` với OTP fallback. Đây là graceful fallback có chủ đích, không phải lỗi đăng ký.
+7. Nếu cần OTP để test tiếp, đọc mã trong log User hoặc Redis (`otp:*`), không phụ thuộc email thật.
+
+Ví dụ luồng `Catalog → Fulfillment` khi tạo sản phẩm:
+
+1. Chạy Catalog và Fulfillment.
+2. Gọi `POST http://localhost:8002/api/v1/products` với `x-user-id` và `x-user-roles: seller`.
+3. Catalog gọi `POST /api/v1/inventories/initialize` sang Fulfillment.
+4. Kiểm tra response Catalog, log `FulfillmentClient`, rồi gọi `GET http://localhost:8006/api/v1/inventories/{skuId}` để xác nhận tồn kho đã tạo.
+
+### 3.4. Hai lệch hợp đồng đang tồn tại
+
+Hai lỗi dưới đây là lỗi hợp đồng giữa các service, không phải lỗi hạ tầng. Đừng chẩn đoán nhầm thành "service chết" hoặc "network lỗi":
+
+| Luồng | Hiện trạng | Triệu chứng khi bật luồng |
+| :--- | :--- | :--- |
+| Commerce → Wallet | `WalletClient` gửi `{ orderId, userId, amount }`, thiếu `gateway` và `returnUrl` | Wallet trả `400 VAL_INVALID_INPUT` |
+| Commerce → Catalog | `CatalogClient` gọi `POST /api/v1/products/reserve`, nhưng `ProductsController` chưa có action này | Catalog trả `404` |
+
+Hai lệch này được ghi nhận chi tiết tại `docs/SERVICE_CONNECTIVITY_GUIDE.md` mục 5.1. Khi sửa code, cập nhật lại cả hai tài liệu.
+
+### 3.5. Trạng thái Internal API (2026-10-31)
+
+- Không còn route `/api/v1/internal/**`.
+- Không còn thư mục `Controllers/Internal/`.
+- `InternalServiceAuthMiddleware` và `InternalServiceAuthHandler` chỉ còn file, chưa đăng ký trong pipeline.
+- Các route liên service dùng đường dẫn công khai: `/api/v1/notifications/email/otp`, `/api/v1/notifications/email/send`, `/api/v1/wallets/checkout/direct`, `/api/v1/inventories/initialize`, `/api/v1/inventories/{skuId}`, `/api/v1/logs/batch`.
+- Gateway không chặn path internal, nhưng các route trên đi qua Gateway như API thường.
+
+Hệ quả khi test: không cần gửi `X-Internal-Service-Key`. Đồng thời, bất kỳ ai gọi được các route này đều có thể gửi OTP, tạo giao dịch ví `Pending` hoặc khởi tạo tồn kho. Chỉ test trên môi trường dev hoặc mạng nội bộ.
 
 ---
 
-### Tầng 3: Chẩn Đoán Lỗi Event Bất Đồng Bộ Qua Dead-Letter Queue (`*_error`)
-Nếu luồng RESTful HTTP đã xong nhưng tác vụ ngầm bị thất bại (ví dụ: Consumer gửi email OTP bị sai mật khẩu SMTP, hoặc worker ghi log bị lỗi kết nối DB):
+## 4. PHẦN 3: KIỂM THỬ KẾT HỢP GATEWAY → SERVICE → DOWNSTREAM → DATABASE
 
-1. Mở **RabbitMQ UI**: `http://localhost:15672/#/queues`.
-2. Tìm các Queue có hậu tố **`_error`** (MassTransit tự động gom các message lỗi vào đây sau khi đã retry hết số lần quy định, ví dụ: `send-otp-email_error`).
-3. Nhấp vào queue `_error` đó $\rightarrow$ Kéo xuống mục **Get messages**:
-   - Chọn `Ack mode: Nack message (requeue false)`
-   - Bấm nút **Get Message(s)**.
-4. RabbitMQ sẽ hiển thị toàn bộ chi tiết:
-   - `Payload`: Dữ liệu JSON ban đầu được gửi đi.
-   - `MT-Fault-Message`: Chuỗi thông báo lỗi ném ra từ Consumer.
-   - `MT-Fault-StackTrace`: Toàn bộ call stack và dòng code bị crash trong Consumer.
-5. Sau khi sửa code xong, bạn có thể bấm **Move messages** trên giao diện RabbitMQ để đẩy lại message vào queue chính xử lý lại mà không bị mất dữ liệu!
+Phần này kiểm tra toàn bộ mắt xích mà người dùng thật đi qua. Ví dụ luồng đăng ký:
+
+### 4.1. Luồng đăng ký và xác thực OTP
+
+**Bước 1 — Đăng ký qua Gateway.** Gateway áp rate limit `5 request / 300 giây / IP` cho `POST /api/v1/auth/register`.
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "buyer01@nexus.local",
+    "password": "Password123!",
+    "firstName": "Van A",
+    "lastName": "Nguyen",
+    "username": "buyer01"
+  }'
+```
+
+Kết quả mong đợi: `201 Created` với envelope `success: true`, `data.userId`, `data.email`, `data.otpExpiresIn`. Nếu gọi quá nhanh: `429 RATE_LIMIT_EXCEEDED` kèm header `Retry-After`.
+
+**Bước 2 — Lấy OTP.** OTP được lưu Redis 5 phút và ghi log User. Nếu Notification đang chạy và SMTP đúng, email sẽ tới hộp thư; nếu không, đọc log User hoặc Redis.
+
+**Bước 3 — Xác thực OTP qua Gateway.**
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/auth/otp/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email":"buyer01@nexus.local","otp":"888999"}'
+```
+
+**Bước 4 — Đăng nhập và lấy JWT.**
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"identifier":"buyer01@nexus.local","password":"Password123!"}'
+```
+
+**Bước 5 — Gọi API bảo vệ bằng JWT.**
+
+```bash
+curl -i http://localhost:8080/api/v1/wallets/me \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Bước 6 — Đối chiếu trạng thái thật.**
+
+- User DB: bản ghi `Users` chuyển `PendingVerification` → `Active`; `EmailVerifiedAt` được điền.
+- User DB: `UserRoles` có role `Buyer`; `ReputationScores` có điểm khởi tạo `50`.
+- Redis: key OTP bị đánh dấu consumed sau khi xác thực.
+- Wallet DB: nếu gọi `/wallets/me` trả `404 WALLET_NOT_FOUND`, ví chưa được tạo cho user đó; đây là lỗi nghiệp vụ, không phải lỗi Gateway.
+
+### 4.2. Checklist xác nhận một luồng kết hợp
+
+- [ ] Response của service gọi thành công (`2xx`) và đúng envelope khi đi qua Gateway.
+- [ ] Response của service đích xuất hiện trong span `HttpClient` hoặc log typed client.
+- [ ] Dữ liệu đã ghi đúng database của service sở hữu.
+- [ ] Nếu service đích chết, service gọi vẫn xử lý được theo graceful fallback đã thiết kế (ví dụ OTP email).
+- [ ] Không có `x-user-*` nào do client tự gửi khi đi qua Gateway.
+- [ ] `traceId` của request được lưu lại để tra Tempo khi cần.
+
+---
+
+## 5. PHẦN 4: CHẨN ĐOÁN LỖI THEO 3 TẦNG
+
+### 5.1. Tầng 1 — Đọc đúng loại phản hồi lỗi
+
+Có ba nguồn lỗi khác nhau; đọc sai nguồn sẽ chẩn đoán sai:
+
+| Nguồn | Content-Type | Trường nhận diện | Ý nghĩa |
+| :--- | :--- | :--- | :--- |
+| **Gateway** | `application/json` | `success: false`, `statusCode`, `errorCode`, `message`, `traceId`, `timestamp` | Bị chặn ở biên: spoofing, admin guard, rate limit, idempotency key, exception của Gateway |
+| **Service** | `application/problem+json` | `type`, `title`, `status`, `errorCode`, `detail`, `traceId` | Validation, domain exception, lỗi nghiệp vụ, lỗi hạ tầng của service |
+| **Hạ tầng / YARP** | Có thể không theo chuẩn | `502`, `504`, body text hoặc HTML | Không kết nối được destination, timeout proxy |
+
+Mã lỗi thường gặp:
+
+| HTTP | errorCode | Nguồn | Điều kiện |
+| :---: | :--- | :--- | :--- |
+| `400` | `VAL_INVALID_INPUT` | Gateway hoặc service | Model binding/validation thất bại; `Idempotency-Key` rỗng hoặc dài quá 128 ký tự |
+| `400` | `VAL_INVALID_EMAIL` | User / Notification | Email sai định dạng |
+| `400` | `VAL_INVALID_OTP` | Notification / User | Thiếu hoặc sai OTP |
+| `400` | `OTP_EXPIRED` | User | OTP hết hạn hoặc không tồn tại |
+| `400` | `OTP_INVALID` | User | OTP không khớp |
+| `400` | `OTP_ALREADY_USED` | User | OTP đã được dùng |
+| `400` | `EMAIL_ALREADY_EXISTS` | User | Email đã đăng ký và đang active |
+| `400` | `USERNAME_ALREADY_EXISTS` | User | Username đã tồn tại |
+| `400` | `VAL_INVALID_USER_ID` | Wallet | Thiếu hoặc sai `x-user-id` |
+| `400` | `VAL_INVALID_ORDER_ID` | Wallet | `orderId` không phải UUID |
+| `400` | `INSUFFICIENT_BALANCE` | Wallet | Số dư không đủ |
+| `401` | `UNAUTHORIZED` | Gateway hoặc service | Thiếu JWT/danh tính ở route yêu cầu xác thực |
+| `403` | `FORBIDDEN` | Gateway hoặc service | Sai role, không phải admin/staff |
+| `403` | `FORBIDDEN_HEADER_SPOOFING` | Gateway | Client gửi `x-user-*` hoặc `x-internal-service-key` |
+| `404` | `WALLET_NOT_FOUND` | Wallet | User chưa có ví |
+| `404` | `SERVICE_NOT_FOUND` | CheckHeal | Target health không tồn tại |
+| `429` | `RATE_LIMIT_EXCEEDED` | Gateway | Vượt rate limit auth |
+| `500` | `INTERNAL_SERVER_ERROR` | Gateway hoặc service | Exception không được xử lý |
+| `500` | `EMAIL_SEND_FAILED` | Notification | SMTP gửi thất bại |
+
+Quy ước thông báo: 100% tiếng Anh, **sentence case** ở `detail`/`message`, `errorCode` là `SCREAMING_SNAKE_CASE`.
+
+### 5.2. Tầng 2 — Tra trace trên Grafana Tempo
+
+#### Bước 1: Lấy trace id
+
+- **Qua Gateway:** đọc header `X-Trace-Id` hoặc trường `traceId` trong body.
+- **Gọi thẳng service:** trường `traceId` trong body lỗi; response thành công không có header trace.
+- **Chủ động:** gửi header W3C `traceparent` khi test để tất cả service dùng chung một trace id:
+
+```bash
+curl -i http://localhost:8001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -H "traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" \
+  -d '{"identifier":"buyer01@nexus.local","password":"Password123!"}'
+```
+
+Giá trị `traceId` trong code là `Activity.Current.Id`, nên có thể là chuỗi W3C đầy đủ dạng `00-<32 hex trace-id>-<16 hex span-id>-01`. Khi tìm trong Tempo, dùng **32 ký tự hex ở giữa**, ví dụ `4bf92f3577b34da6a3ce929d0e0e4736`.
+
+#### Bước 2: Mở Grafana
+
+1. Truy cập `http://localhost:3000/explore`.
+2. Chọn datasource **Tempo**.
+3. Dán trace id vào ô tìm kiếm, chạy query.
+4. Mở **Waterfall**.
+
+#### Bước 3: Đọc waterfall đúng thực tế instrumentation
+
+Code hiện tại chỉ bật hai instrumentation:
+
+```csharp
+t.AddAspNetCoreInstrumentation()   // span HTTP request vào service
+ .AddHttpClientInstrumentation();  // span HTTP client gọi service khác
+```
+
+Vì vậy:
+
+- **Có** span request đến từng service và span gọi REST liên service.
+- **Có thể có** exception event trên span bị lỗi (`exception.type`, `exception.message`, `exception.stacktrace`), nhưng chỉ khi exception thoát khỏi pipeline instrumentation. Vì mỗi service có `GlobalExceptionHandlerMiddleware` bắt exception để trả `problem+json`, không phải lỗi nghiệp vụ nào cũng hiện thành span đỏ. Luôn đối chiếu thêm `errorCode`, log service và response body.
+- **Không có** span SQL/EF Core vì chưa bật `AddEntityFrameworkCoreInstrumentation` hoặc `AddNpgsql`. Đừng tìm `db.statement` trong Tempo; muốn có, phải bổ sung instrumentation vào `ObservabilityExtensions.cs` của service tương ứng.
+- **Gateway không xuất span** vì Gateway không cấu hình OpenTelemetry exporter. Tempo chỉ chứa span của backend service. Khi cần đối chiếu request ở biên, dùng `X-Trace-Id` và log Gateway.
+- Tempo lưu trace cục bộ với retention `48h` (cấu hình `infra/tempo/tempo.yaml`). Trace cũ hơn sẽ không tra được.
+
+#### Bước 4: Xác định điểm lỗi
+
+- Span đỏ ở service nào → xem exception event nếu có, rồi đối chiếu `errorCode` và log service đó để lấy file `.cs`/số dòng.
+- Span `HttpClient` đỏ hoặc có duration gần timeout → lỗi nằm ở service đích hoặc mạng, không phải logic service gọi.
+- Không thấy span nào → kiểm tra `OTEL_EXPORTER_OTLP_ENDPOINT`; nếu sai, service không gửi được trace về Tempo.
+- Trace có nhưng thiếu span downstream → service gọi không thực hiện request, hoặc request bị chặn trước khi ra ngoài.
+
+### 5.3. Tầng 3 — Chẩn đoán lời gọi liên service thất bại
+
+Các typed client hiện tại không ném lỗi ra controller: `EmailNotificationClient`, `WalletClient`, `CatalogClient` trả `bool`, `FulfillmentClient` trả `null`, và mọi client chỉ ghi log. Vì vậy API của service gọi có thể vẫn trả `2xx` dù downstream thất bại. Quy trình kiểm tra:
+
+1. **Đọc log service gọi.** Tìm `LogWarning` của typed client, ví dụ `[REST Wallet Client] Checkout payment failed ... Status: 400, Details: ...`. Log này chứa status và body lỗi thật của service đích.
+2. **Đọc trace.** Span `HttpClient` cho biết thời gian và status; nếu duration xấp xỉ `10s`, đó là timeout mặc định.
+3. **Gọi lại service đích độc lập** bằng cURL theo mục 3.2 để tái hiện lỗi mà không qua service gọi.
+4. **Kiểm tra service đích còn sống.** `GET /health` chỉ chứng minh process sống; dùng CheckHeal để kiểm tra sâu hơn:
+
+```bash
+curl -i http://localhost:8009/api/v1/healthcheck/status \
+  -H "X-Api-Key: <HealthCheck__ApiKey>"
+```
+
+Nếu target đang tắt, bật bằng `PUT /api/v1/healthcheck/services/{serviceName}/toggle` (gọi thẳng `8009`, nhớ gửi `X-Api-Key`) với body `{"enabled":true,"url":"http://localhost:8001/health"}`. CheckHeal mặc định tắt target; phải bật mới có dữ liệu.
+
+5. **Kiểm tra database.** Nếu service đích trả `500` khi thao tác DB, xem log service đích và kết nối đúng database của nó (`5433`-`5440`). Không kiểm tra database của service khác.
+6. **Thử lại an toàn.** Không có retry tự động. Chỉ retry thao tác idempotent:
+   - Wallet chống trùng theo `ReferenceId == orderId`.
+   - Có thể gửi `Idempotency-Key` (UUIDv4, tối đa 128 ký tự) khi gọi qua Gateway; Gateway chỉ chuyển tiếp header nếu hợp lệ.
+   - Với thao tác không idempotent, phải kiểm tra trạng thái thật trước khi gọi lại.
+
+### 5.4. Bảng lỗi thường gặp khi test
+
+| Hiện tượng | Nguyên nhân thường gặp | Cách xử lý |
+| :--- | :--- | :--- |
+| `Connection refused` | Service chưa chạy hoặc sai port | Kiểm tra process và `launchSettings.json` |
+| `404` khi gọi Gateway | Route chưa khai báo trong `Gateway/appsettings.json` | Gọi thẳng service hoặc bổ sung route |
+| `401 UNAUTHORIZED` | Thiếu JWT (qua Gateway) hoặc thiếu `x-user-id` (gọi thẳng) | Gửi đúng header |
+| `403 FORBIDDEN_HEADER_SPOOFING` | Client tự gửi `x-user-*` qua Gateway | Bỏ các header đó; để Gateway tiêm |
+| `403 FORBIDDEN` | Sai role hoặc không phải `admin`/`staff` | Dùng tài khoản đúng role |
+| `429 RATE_LIMIT_EXCEEDED` | Vượt giới hạn auth | Chờ theo `Retry-After` |
+| `400 VAL_INVALID_INPUT` | DTO hai bên lệch hợp đồng hoặc validation thất bại | Đối chiếu mục 3.4 và Swagger của service đích |
+| `502` hoặc timeout | Destination chết hoặc chậm quá `10s` | Kiểm tra service đích, log typed client |
+| API trả `2xx` nhưng nghiệp vụ không xảy ra | Typed client trả `false` và chỉ ghi log | Đọc log service gọi và kiểm tra service đích |
+| Trace không tìm thấy trên Tempo | Sai `OTEL_EXPORTER_OTLP_ENDPOINT`, trace cũ hơn 48h, hoặc đang tìm full `traceparent` thay vì 32 hex | Sửa endpoint; dùng đúng 32 hex trace id |
 
 ---
 
 ## 6. TÓM TẮT MA TRẬN CÔNG CỤ TEST & DEBUG
 
-| Nhiệm Vụ | Công Cụ | Cách Thực Hiện | Lợi Ích |
+| Nhiệm vụ | Công cụ | Cách thực hiện | Lợi ích |
 | :--- | :--- | :--- | :--- |
-| **Test 1 Endpoint RESTful** | **Swagger UI / Postman / cURL** | Truy cập `localhost:800x/swagger` hoặc gọi HTTP trực tiếp. | Không cần import proto, có UI trực quan, test độc lập từng service. |
-| **Test 1 Event Consumer** | **Postman REST $\rightarrow$ RabbitMQ API** | Gửi HTTP POST tới `:15672/api/exchanges/.../publish`. | Kích hoạt worker ngầm mà không cần chạy các service nguồn. |
-| **Test Kết Hợp REST + Event** | **Swagger/Postman + RabbitMQ UI** | Gửi request REST, kiểm tra Queue trên RabbitMQ UI (`:15672`). | Xác nhận cả 2 mắt xích đồng bộ & bất đồng bộ đều thông suốt. |
-| **Bắt lỗi Code & Dòng Crash** | **Grafana Tempo** | Dán `TraceId` vào `:3000/explore`, bấm vào Span đỏ. | Chỉ rõ file `.cs`, số dòng code bị lỗi và câu lệnh SQL gây lỗi. |
-| **Bắt lỗi Worker ngầm** | **RabbitMQ Dead-Letter** | Xem các queue `*_error` trên `:15672`. | Xem nguyên nhân crash của Consumer và replay lại message dễ dàng. |
+| **Test một endpoint độc lập** | Swagger UI, Postman, cURL | Gọi `http://localhost:8001`-`8009` trực tiếp | Không cần Gateway, đặt breakpoint dễ |
+| **Test hợp đồng qua Gateway** | Postman, cURL | Gọi `http://localhost:8080` kèm JWT | Kiểm tra đúng đường người dùng thật đi |
+| **Test service đích của một lời gọi liên service** | cURL/Postman | Gọi thẳng Notification, Fulfillment, Wallet, Log | Không cần chạy service gọi |
+| **Test service gọi** | Swagger/Postman + log | Kích hoạt nghiệp vụ, đọc `LogWarning` của typed client | Phát hiện lỗi fallback và lệch hợp đồng |
+| **Tra cứu lỗi theo trace** | Grafana Tempo | `http://localhost:3000/explore`, dán 32 hex trace id | Xem waterfall, exception, span HTTP client |
+| **Kiểm tra sâu service và database** | CheckHeal | `GET /api/v1/healthcheck/status` kèm `X-Api-Key` | Phát hiện DB chết dù `/health` vẫn 200 |
+| **Kiểm tra mạng và port** | `getent`, `nc`, `curl` | DNS → TCP → health → API | Loại trừ lỗi hạ tầng trước khi đọc code |
+
+---
+
+## 7. CHECKLIST TRƯỚC KHI KẾT LUẬN MỘT ENDPOINT ĐÃ HOẠT ĐỘNG
+
+- [ ] Gọi thẳng service trả đúng dữ liệu hoặc đúng `204`.
+- [ ] Gọi qua Gateway trả đúng envelope và đúng `statusCode`.
+- [ ] Trường hợp lỗi trả đúng `errorCode` và message tiếng Anh sentence case.
+- [ ] Danh tính lấy từ `x-user-id`/JWT, không lấy từ query hoặc body.
+- [ ] Enum trả về là chuỗi PascalCase.
+- [ ] Phân trang do service tính, có `items` và `pagination`.
+- [ ] Typed client gọi downstream có timeout và xử lý fallback rõ ràng.
+- [ ] Có trace id và tìm được span tương ứng trên Tempo (nếu bật tracing).
+- [ ] Đã kiểm tra dữ liệu thật trong database của service sở hữu.
+- [ ] Không có secret, connection string hoặc `.env` bị đưa vào tài liệu hay commit.

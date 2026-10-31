@@ -11,7 +11,7 @@ Tài liệu này đặc tả cấu trúc thư mục, kiến trúc 4 tầng và c
 - **Solution:** `Notification.sln`
 - **Cổng lắng nghe HTTP REST:** `8007`
 - **Cơ sở dữ liệu PostgreSQL:** Cổng `5439` (Container), Database: `notification_db`
-- **Giao tiếp liên dịch vụ nội bộ (Inbound):** Tiếp nhận yêu cầu gửi email OTP từ `UserService` qua `POST /api/v1/internal/notifications/email/otp` và email hệ thống qua `POST /api/v1/internal/notifications/email/send`, bảo vệ bằng `X-Internal-Service-Key`
+- **Giao tiếp liên dịch vụ nội bộ (Inbound):** Tiếp nhận yêu cầu gửi email OTP từ `UserService` qua `POST /api/v1/notifications/email/otp` và email hệ thống qua `POST /api/v1/notifications/email/send`, hiện không yêu cầu header nội bộ vì Internal API tạm khóa
 - **Xử lý nền (Background Processing):** `EmailBackgroundWorker` xử lý hàng đợi email bất đồng bộ qua `IEmailBackgroundQueue` (System.Threading.Channels)
 - **Kiểm thử tự động:** `Notification.Tests` với **13 unit và integration tests passed 100%**
 
@@ -94,8 +94,6 @@ src/Services/Notification/
     │   │       # PATCH  /api/v1/notifications/me/read         (Đánh dấu đã đọc hàng loạt)
     │   │       # GET    /api/v1/admin/notifications           (Quản trị viên tra cứu lịch sử)
     │   │       # GET    /api/v1/admin/health/broker           (Kiểm tra trạng thái broker/hàng đợi)
-    │   └── Internal/                  # Controllers nội bộ liên service
-    │       └── InternalEmailController.cs # [Route("api/v1/internal/notifications/email")]
     │           # POST /otp  (Gửi email mã OTP xác thực đồng bộ)
     │           # POST /send (Gửi email HTML chung đồng bộ)
     ├── Common/Converters/
@@ -107,7 +105,7 @@ src/Services/Notification/
     │   ├── ObservabilityExtensions.cs # OpenTelemetry tracing
     │   └── SwaggerExtensions.cs       # Đăng ký bảo mật và tài liệu Swagger
     ├── Middleware/
-    │   ├── InternalServiceAuthMiddleware.cs # Bảo vệ /api/v1/internal/* bằng secret key
+    │   ├── InternalServiceAuthMiddleware.cs # Chưa đăng ký: Internal API tạm khóa
     │   └── GlobalExceptionHandlerMiddleware.cs # Bắt lỗi trả về ProblemDetails
     └── Program.cs                     # Điểm khởi động ứng dụng .NET 8
 ```
@@ -118,9 +116,9 @@ src/Services/Notification/
 
 1. **Quy chuẩn 100% Số Nhiều:** Endpoint collections sử dụng danh từ số nhiều `/api/v1/notifications`, `/api/v1/notifications/devices`, `/api/v1/notifications/preferences`.
 2. **Không Dùng Repository Pattern:** Inject trực tiếp `INotificationDbContext` vào `UserNotificationService` và `EmailNotificationService`.
-3. **Phân Tách Public API và Internal API:**
-   - Xem thông báo, quản lý thiết bị và cài đặt thông báo là Public API (`Controllers/Public/NotificationsController.cs`).
-   - Gửi email OTP và email hệ thống là Internal API (`Controllers/Internal/InternalEmailController.cs`), bảo vệ bắt buộc bằng `InternalServiceAuthMiddleware` và header `X-Internal-Service-Key`.
-   - Cấm mở endpoint gửi email trực tiếp ra bên ngoài qua Gateway để ngăn chặn nguy cơ spam và lạm dụng thư điện tử.
+3. **Trạng Thái Public API và Internal API (Internal API tạm khóa từ 2026-10-31):**
+   - Xem thông báo, quản lý thiết bị và cài đặt thông báo đặt trong `Controllers/Public/NotificationsController.cs`.
+   - Gửi email OTP và email hệ thống đặt trong `Controllers/Public/EmailController.cs`. Không còn `Controllers/Internal/` và không yêu cầu header `X-Internal-Service-Key`, vì `InternalServiceAuthMiddleware` chưa đăng ký.
+   - Hệ quả cần kiểm soát: route gửi email hiện đi qua Gateway như API thường. Phải bổ sung xác thực thật hoặc giới hạn tần suất trước khi mở lưu lượng thật để tránh lạm dụng thư điện tử.
 4. **Bảo Vệ Danh Tính Người Nhận:** Lấy danh sách thông báo và cập nhật tùy chọn nhận tin bắt buộc trích xuất `userId` từ `HttpContext.GetUserId()`. Cấm truyền `userId` qua query hoặc body.
 5. **Định Dạng Email Tiêu Chuẩn:** Mọi nội dung email OTP đều bao gồm mã OTP rõ ràng, thời hạn hiệu lực tính bằng phút và tên người nhận.

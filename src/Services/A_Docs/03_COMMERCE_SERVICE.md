@@ -11,7 +11,7 @@ Tài liệu này đặc tả cấu trúc thư mục, kiến trúc 4 tầng và c
 - **Solution:** `Commerce.sln`
 - **Cổng lắng nghe HTTP REST:** `8003`
 - **Cơ sở dữ liệu PostgreSQL:** Cổng `5435` (Container), Database: `commerce_db`
-- **Giao tiếp liên dịch vụ:** Typed HTTP Client gọi sang `WalletService` (`POST /api/v1/internal/wallets/checkout/direct`) để thực hiện trừ tiền thanh toán đơn hàng trực tiếp
+- **Giao tiếp liên dịch vụ:** Typed HTTP Client gọi sang `WalletService` (`POST /api/v1/wallets/checkout/direct`) để thực hiện trừ tiền thanh toán đơn hàng trực tiếp
 - **Bảo vệ quyền sở hữu:** Bắt buộc kiểm tra `currentUserId == buyerId` hoặc vai trò `admin`/`staff`
 
 ---
@@ -80,8 +80,8 @@ src/Services/Commerce/
 │   │   ├── Migrations/                # Migrations EF Core (20261030054355_InitialCreate)
 │   │   └── Seeds/CommerceSeedData.cs  # Dữ liệu khởi tạo đơn hàng và giỏ hàng mẫu
 │   ├── Services/
-│   │   ├── Common/InternalServiceAuthHandler.cs # Tự động tiêm X-Internal-Service-Key
-│   │   ├── Wallet/WalletClient.cs     # Gọi POST /api/v1/internal/wallets/checkout/direct
+│   │   ├── Common/InternalServiceAuthHandler.cs # Chưa đăng ký: Internal API tạm khóa
+│   │   ├── Wallet/WalletClient.cs     # Gọi POST /api/v1/wallets/checkout/direct
 │   │   └── Catalog/CatalogClient.cs   # Gọi sang Catalog Service
 │   └── DependencyInjection.cs         # Đăng ký DbContext và Typed HttpClients
 │
@@ -90,7 +90,6 @@ src/Services/Commerce/
     │   ├── Public/                    # Controllers phục vụ người dùng qua Gateway
     │   │   ├── CartsController.cs     # /api/v1/carts (lấy giỏ hàng active)
     │   │   └── OrdersController.cs    # /api/v1/orders (chi tiết đơn, danh sách theo buyer)
-    │   └── Internal/                  # Controllers nội bộ liên service
     ├── Common/Converters/
     │   └── PascalCaseJsonStringEnumConverter.cs # Tuần tự hóa Enum thành PascalCase
     ├── Extensions/
@@ -98,7 +97,7 @@ src/Services/Commerce/
     │   ├── HttpContextExtensions.cs   # Trích xuất x-user-id và role
     │   └── ObservabilityExtensions.cs # OpenTelemetry tracing
     ├── Middleware/
-    │   ├── InternalServiceAuthMiddleware.cs # Bảo vệ /internal/* bằng secret key
+    │   ├── InternalServiceAuthMiddleware.cs # Chưa đăng ký: Internal API tạm khóa
     │   └── GlobalExceptionHandlerMiddleware.cs # Bắt lỗi trả về ProblemDetails
     └── Program.cs                     # Điểm khởi động ứng dụng .NET 8
 ```
@@ -111,5 +110,5 @@ src/Services/Commerce/
    - Trong `CartsController.cs`: Lấy `currentUserId = HttpContext.GetUserId()`. Cấm đọc giỏ hàng của người khác nếu không có quyền `admin` hoặc `staff`.
    - Trong `OrdersController.cs`: Kiểm tra `order.BuyerId == currentUserId`. Nếu không khớp, trả về HTTP 403 `FORBIDDEN`.
 2. **Quy chuẩn 100% Số Nhiều:** Tuyệt đối dùng `/api/v1/carts`, `/api/v1/orders`, `/api/v1/sub-orders`, `/api/v1/checkouts`. Cấm dùng route số ít `/cart` hay `/order`.
-3. **Thanh toán đồng bộ qua REST:** Bãi bỏ Saga state machine và RabbitMQ. `WalletClient` gọi trực tiếp endpoint nội bộ `POST /api/v1/internal/wallets/checkout/direct` kèm header `X-Internal-Service-Key` và `Idempotency-Key`.
+3. **Thanh toán đồng bộ qua REST:** Bãi bỏ Saga state machine và RabbitMQ. `WalletClient` gọi trực tiếp endpoint nội bộ `POST /api/v1/wallets/checkout/direct` kèm header `Idempotency-Key`.
 4. **Không Repository Pattern:** Inject trực tiếp `ICommerceDbContext` vào `OrderService` và `CartService`.

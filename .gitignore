@@ -18,9 +18,17 @@ appsettings*.json
 # Local tools & config
 .tools/
 nuget.config
+*.zip
 
-# .agent
-.agents
+# .agent: track governance and skills, keep local plans and history private
+.agents/*
+!.agents/AGENTS.md
+!.agents/rules/
+!.agents/rules/**
+!.agents/skills/
+!.agents/skills/**
+.agents/plan/
+.agents/history/
 .claude
 .cursor
 .claude/super-board/active

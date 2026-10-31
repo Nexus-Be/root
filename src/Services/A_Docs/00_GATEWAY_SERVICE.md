@@ -74,7 +74,7 @@ src/Services/Gateway/
 - `ClientContextMiddleware.cs`: 
   - Khởi tạo mã truy vết W3C `TraceId` và lấy địa chỉ `ClientIp` thực tế.
   - Quét case-insensitive 7 header cấm kỵ (`x-user-id`, `x-user-email`, `x-user-roles`, `x-user-role`, `x-user-permissions`, `x-user-permission`, `x-internal-service-key`). Nếu client bên ngoài gửi lên, ngắt pipeline ngay lập tức và trả về HTTP 403 `FORBIDDEN_HEADER_SPOOFING`.
-  - Chặn đứng mọi yêu cầu có đường dẫn bắt đầu bằng `/api/v1/internal` hoặc chứa `/internal/` với HTTP 404 `NOT_FOUND`.
+  - Khối chặn path `/api/v1/internal` và `/internal/` đang tạm hoãn: khối lệnh đã bị comment, request đi qua như API thường. Khôi phục cần phê duyệt rõ ràng.
 - `GlobalExceptionMiddleware.cs`: Bắt toàn bộ lỗi chưa xử lý từ mọi tầng, ghi log và trả về cấu trúc lỗi `ApiErrorResponse` chuẩn RFC 9110.
 - `ResponseEnvelopeMiddleware.cs`: Đệm luồng kết quả (buffer body stream) từ downstream microservice. Nếu phản hồi là JSON có mã HTTP 200/201 thô, tự động bọc vào vỏ `ApiResponse<T>`. Nếu là HTTP 204 `NoContent` hoặc phản hồi đã có thuộc tính `success`, chuyển tiếp trực tiếp mà không bọc lồng.
 

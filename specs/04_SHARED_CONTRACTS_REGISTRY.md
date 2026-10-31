@@ -40,8 +40,7 @@ Quy trình phát triển API mới chuẩn mực chạy trực tiếp qua YARP R
            │         Inject trực tiếp I{Service}DbContext và DbSet<T> (CẤM Repository pattern)
            │
            ▼ (Bước 3) Triển khai Thin REST Controller:
-           │         Public: src/Services/{Service}/{Service}.Api/Controllers/Public/{Feature}Controller.cs
-           │         Internal: src/Services/{Service}/{Service}.Api/Controllers/Internal/Internal{Feature}Controller.cs
+           │         src/Services/{Service}/{Service}.Api/Controllers/Public/{Feature}Controller.cs (Internal API tạm khóa)
            │
            ▼ (Bước 4) Cấu hình định tuyến Reverse Proxy tại Gateway (nếu là Public API):
            │         src/Services/Gateway/Gateway/appsettings.json (Thêm Route & Cluster matching)

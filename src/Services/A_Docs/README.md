@@ -52,17 +52,16 @@ Chín microservices backend (`User`, `Catalog`, `Commerce`, `Log`, `Auction`, `F
 │   │   ├── Migrations/            # EF Core Migrations & ModelSnapshot
 │   │   └── Seeds/                 # Dữ liệu khởi tạo (Deterministic GUIDs)
 │   ├── Services/
-│   │   ├── Common/                # InternalServiceAuthHandler (tiêm X-Internal-Service-Key)
+│   │   ├── Common/                # InternalServiceAuthHandler (chưa đăng ký)
 │   │   └── {Downstream}/          # Typed HttpClient gọi dịch vụ khác qua REST
 │   └── DependencyInjection.cs     # Đăng ký DbContext và HttpClients
 │
 ├── {Service}.Api/                 # Tầng Giao Tiếp HTTP (RESTful API Boundary)
 │   ├── Controllers/
-│   │   ├── Public/                # Tiếp nhận lưu lượng từ Gateway (/api/v1/{resources})
-│   │   └── Internal/              # Giao tiếp liên service (/api/v1/internal/{resources})
+│   │   └── Public/                # Toàn bộ controller, kể cả route liên service (/api/v1/{resources})
 │   ├── Common/Converters/         # PascalCaseJsonStringEnumConverter
 │   ├── Extensions/                # ServiceDefaults, Observability, HttpContextExtensions
-│   ├── Middleware/                # InternalServiceAuthMiddleware, GlobalExceptionMiddleware
+│   ├── Middleware/                # GlobalExceptionMiddleware; InternalServiceAuthMiddleware chỉ còn file, chưa đăng ký
 │   └── Program.cs                 # Điểm khởi động ứng dụng
 │
 └── {Service}.Tests/               # Tầng Kiểm Thử Tự Động (xUnit, FluentAssertions)
@@ -76,7 +75,7 @@ Mọi kỹ sư và AI Coding Agent khi làm việc trong các thư mục này b�
 1. **Không dùng Repository Pattern bọc ngoài EF Core:** Tầng Application inject trực tiếp `I{Service}DbContext` và truy vấn `DbSet<T>`. Tuyệt đối cấm tạo `IRepository<T>`, `GenericRepository`, hoặc `UnitOfWork`.
 2. **Không dùng MediatR / CQRS:** Toàn bộ logic nghiệp vụ đặt tập trung trong Feature Services (`Services/{Feature}/`). Không chia tách thành các file Command/Query/Handler phân tán.
 3. **100% Giao tiếp qua RESTful HTTP/JSON:** Cấm hoàn toàn gRPC, Protobuf, RabbitMQ, MassTransit và bảng Outbox/Inbox. Giao tiếp liên dịch vụ chuyển sang gọi đồng bộ bằng Typed HttpClient.
-4. **Phân tách Public API và Internal API:**
-   - Public API đặt trong `Controllers/Public/` với route số nhiều `/api/v1/{resources}`.
-   - Internal API đặt trong `Controllers/Internal/` với route `/api/v1/internal/{resources}`, bảo vệ bằng header `X-Internal-Service-Key`.
+4. **Trạng thái Public API và Internal API:**
+   - Toàn bộ endpoint đặt trong `Controllers/Public/` với route số nhiều `/api/v1/{resources}`, kể cả các cuộc gọi liên service.
+   - Internal API tạm khóa từ 2026-10-31. Không tạo `Controllers/Internal/` và không thêm route `/api/v1/internal/{resources}`. Không yêu cầu header `X-Internal-Service-Key`.
 5. **Cơ sở dữ liệu độc lập (Database-per-service):** Mỗi dịch vụ sở hữu cơ sở dữ liệu PostgreSQL riêng biệt. Cấm truy vấn chéo giữa các cơ sở dữ liệu.

@@ -11,7 +11,7 @@ Tài liệu này đặc tả cấu trúc thư mục, kiến trúc 4 tầng và c
 - **Solution:** `Catalog.sln`
 - **Cổng lắng nghe HTTP REST:** `8002`
 - **Cơ sở dữ liệu PostgreSQL:** Cổng `5434` (Container), Database: `category_db`
-- **Giao tiếp liên dịch vụ:** Typed HTTP Client gọi sang `FulfillmentService` (`POST /api/v1/internal/inventories/initialize`) để khởi tạo tồn kho vật lý cho SKU sản phẩm mới
+- **Giao tiếp liên dịch vụ:** Typed HTTP Client gọi sang `FulfillmentService` (`POST /api/v1/inventories/initialize`) để khởi tạo tồn kho vật lý cho SKU sản phẩm mới
 - **Quy chuẩn phân trang:** Phân trang tại cơ sở dữ liệu và trả về cấu trúc chuẩn `PagedData<ProductDto>`
 
 ---
@@ -52,7 +52,7 @@ src/Services/Catalog/
 │   │   └── Models/PagedData.cs            # Cấu trúc phong bì phân trang chuẩn PagedData<T>
 │   ├── Interfaces/
 │   │   ├── ICatalogDbContext.cs       # Hợp đồng truy cập CSDL catalog_db
-│   │   └── IFulfillmentInternalClient.cs # Hợp đồng gọi sang Fulfillment Service
+│   │   └── IFulfillmentClient.cs         # Hợp đồng gọi sang Fulfillment Service
 │   ├── Services/
 │   │   ├── Category/                  # Tính năng Danh Mục Hàng Hóa
 │   │   │   ├── ICategoryService.cs, CategoryService.cs, CategoryRequests.cs, CategoryResponses.cs, CategoryDtos.cs
@@ -67,8 +67,8 @@ src/Services/Catalog/
 │   │   ├── Migrations/                # Migrations EF Core (20261030054329_InitialCreate)
 │   │   └── Seeds/CatalogSeedData.cs   # Dữ liệu hạt giống cho danh mục và sản phẩm mẫu
 │   ├── Services/
-│   │   ├── Common/InternalServiceAuthHandler.cs # Tự động tiêm X-Internal-Service-Key
-│   │   └── Fulfillment/FulfillmentInternalClient.cs # Gọi POST /api/v1/internal/inventories/initialize
+│   │   ├── Common/InternalServiceAuthHandler.cs # Chưa đăng ký: Internal API tạm khóa
+│   │   └── Fulfillment/FulfillmentClient.cs # Gọi POST /api/v1/inventories/initialize
 │   └── DependencyInjection.cs         # Đăng ký DbContext và Typed HttpClient
 │
 └── Catalog.Api/                       # 4. TẦNG GIAO DIỆN RESTful HTTP API
@@ -76,7 +76,6 @@ src/Services/Catalog/
     │   ├── Public/                    # Controllers phục vụ người dùng qua Gateway
     │   │   ├── CategoriesController.cs# /api/v1/categories
     │   │   └── ProductsController.cs  # /api/v1/products (trả về PagedData<ProductDto>)
-    │   └── Internal/                  # Controllers nội bộ liên service
     ├── Common/Converters/
     │   └── PascalCaseJsonStringEnumConverter.cs # Tuần tự hóa Enum thành PascalCase
     ├── Extensions/
@@ -84,7 +83,7 @@ src/Services/Catalog/
     │   ├── HttpContextExtensions.cs   # Trích xuất x-user-id và role
     │   └── ObservabilityExtensions.cs # OpenTelemetry tracing
     ├── Middleware/
-    │   ├── InternalServiceAuthMiddleware.cs # Bảo vệ /internal/* bằng secret key
+    │   ├── InternalServiceAuthMiddleware.cs # Chưa đăng ký: Internal API tạm khóa
     │   └── GlobalExceptionHandlerMiddleware.cs # Bắt lỗi trả về ProblemDetails
     └── Program.cs                     # Điểm khởi động ứng dụng .NET 8
 ```
@@ -97,4 +96,4 @@ src/Services/Catalog/
 2. **Không Repository Pattern:** Inject trực tiếp `ICatalogDbContext` vào `ProductService` và `CategoryService`.
 3. **Phân trang tại Database:** `ProductService.ListAsync` bắt buộc chạy `await _dbContext.Products.CountAsync()` và trả về `PagedData<ProductDto>`.
 4. **Bảo vệ danh tính Seller:** Khi tạo sản phẩm mới, `SellerId` phải được trích xuất từ `this.GetUserId()`, không tin tưởng tham số do client gửi lên.
-5. **Khởi tạo kho đồng bộ:** Khi sản phẩm được tạo, service tự động gọi `FulfillmentInternalClient` để khởi tạo bản ghi tồn kho vật lý với khóa bảo mật `X-Internal-Service-Key`.
+5. **Khởi tạo kho đồng bộ:** Khi sản phẩm được tạo, service tự động gọi `FulfillmentClient` để khởi tạo bản ghi tồn kho vật lý không kèm khóa bảo mật nội bộ.

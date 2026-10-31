@@ -44,10 +44,10 @@ check() {
 }
 
 check "User"         POST "$GATEWAY/api/v1/auth/refresh" "" '{}'
-check "Wallet"       POST "http://localhost:8008/api/v1/internal/wallets/checkout/direct" "X-Internal-Service-Key: $INTERNAL_KEY" '[{'
-check "Notification" POST "http://localhost:8007/api/v1/internal/notifications/email/otp" "X-Internal-Service-Key: $INTERNAL_KEY" '[{'
-check "Log"          POST "http://localhost:8004/api/v1/internal/logs/batch" "X-Internal-Service-Key: $INTERNAL_KEY" '[{'
-check "Fulfillment"  POST "http://localhost:8006/api/v1/internal/inventories/initialize" "X-Internal-Service-Key: $INTERNAL_KEY" '[{'
+check "Wallet"       POST "http://localhost:8008/api/v1/wallets/checkout/direct" "X-Internal-Service-Key: $INTERNAL_KEY" '[{'
+check "Notification" POST "http://localhost:8007/api/v1/notifications/email/otp" "X-Internal-Service-Key: $INTERNAL_KEY" '[{'
+check "Log"          POST "http://localhost:8004/api/v1/logs/batch" "X-Internal-Service-Key: $INTERNAL_KEY" '[{'
+check "Fulfillment"  POST "http://localhost:8006/api/v1/inventories/initialize" "X-Internal-Service-Key: $INTERNAL_KEY" '[{'
 check "Catalog"      GET  "http://localhost:8002/api/v1/products?page=abc" "" ""
 check "Auction"      GET  "http://localhost:8005/api/v1/auctions?page=abc" "" ""
 check "CheckHeal"    PUT  "http://localhost:8009/api/v1/healthcheck/bulk-toggle" "X-Api-Key: $CHECKHEAL_KEY" '[{'

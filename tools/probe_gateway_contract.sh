@@ -45,7 +45,7 @@ else
 fi
 
 # 3. Internal service routes are unreachable through the gateway.
-code=$(status "${GATEWAY_URL}/api/v1/internal/wallets/checkout/direct")
+code=$(status "${GATEWAY_URL}/api/v1/wallets/checkout/direct")
 if [ "$code" = "404" ]; then
   pass "internal path blocked at gateway"
 else

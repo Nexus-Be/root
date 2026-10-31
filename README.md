@@ -78,16 +78,15 @@ Repo con dùng chung container name với stack root, nên chỉ chạy một tr
 Toàn bộ tài liệu kỹ thuật được chuẩn hóa và lưu trữ tại thư mục **`docs/`**:
 
 ### 📘 Cẩm Nang Phát Triển (Developer Guides):
-- **[Hướng Dẫn Cầm Tay Chỉ Việc: Ghép Nối API & Tích Hợp Liên Microservice (SERVICE_INTEGRATION_GUIDE.md)](SERVICE_INTEGRATION_GUIDE.md)** *(Đọc khi ghép luồng Gateway - REST Downstream - Typed Clients)*
-- **[Cẩm Nang Phát Triển & Kiểm Thử Độc Lập 1 Service (docs/INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)](docs/INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)** *(Đọc trước khi code service)*
+- **[Hướng Dẫn Kết Nối Dịch Vụ Toàn Hệ Thống (docs/SERVICE_CONNECTIVITY_GUIDE.md)](docs/SERVICE_CONNECTIVITY_GUIDE.md)** *(Đọc khi ghép luồng Gateway - REST Downstream - Typed Clients và khi deploy nhiều máy chủ)*
 - **[Quy Chuẩn Kiến Trúc Clean Architecture 4 Tầng Cho Microservices (docs/CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)](docs/CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)**
-- **[Hướng Dẫn Tạo Mock API, Chuyển Đổi Runtime, Bypass Auth & Health Check (docs/GUIDE_MOCK_DATA_GATEWAY.md)](docs/GUIDE_MOCK_DATA_GATEWAY.md)**
-- **[Đặc Tả Kiến Trúc & Cẩm Nang 15 Thư Mục API Gateway (docs/GATEWAY_ARCHITECTURE_AND_FOLDERS.md)](docs/GATEWAY_ARCHITECTURE_AND_FOLDERS.md)**
-- **[Lộ Trình Các Bước Kế Tiếp & Checklist Triển Khai (docs/NEXT_STEPS_AND_CHECKLIST.md)](docs/NEXT_STEPS_AND_CHECKLIST.md)**
+- **[Đặc Tả Kiến Trúc API Gateway (docs/GATEWAY_ARCHITECTURE_AND_FOLDERS.md)](docs/GATEWAY_ARCHITECTURE_AND_FOLDERS.md)**
+- **[Cẩm Nang Kiểm Thử Độc Lập RESTful API & Chẩn Đoán Lỗi (docs/ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)](docs/ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)**
 - **[Đặc Tả Danh Mục Entity & Enum Chuẩn Form Cho Frontend (docs/FRONTEND_ENTITY_AND_ENUM_CATALOG.md)](docs/FRONTEND_ENTITY_AND_ENUM_CATALOG.md)**
+- **[Danh Mục API Frontend (docs/api/README.md)](docs/api/README.md)**
 - **Cẩm Nang Riêng Của Từng Service**:
   - [UserService](src/Services/User/README.md) | [CatalogService](src/Services/Catalog/README.md) | [CommerceService](src/Services/Commerce/README.md) | [AuctionService](src/Services/Auction/README.md)
-  - [FulfillmentService](src/Services/Fulfillment/README.md) | [NotificationService](src/Services/Notification/README.md) | [LogService](src/Services/Log/README.md) | [WalletService](src/Services/Wallet/README.md) | [ApiGateway](src/Services/ApiGateway/README.md)
+  - [FulfillmentService](src/Services/Fulfillment/README.md) | [NotificationService](src/Services/Notification/README.md) | [LogService](src/Services/Log/README.md) | [WalletService](src/Services/Wallet/README.md) | [Gateway](src/Services/Gateway/README.md)
 
 ### 🛠️ Cẩm Nang Hạ Tầng Kỹ Thuật Chuyên Biệt (Infrastructure Guides):
 - **[Hướng Dẫn Hạ Tầng Redis: Rate Limiting & Mã OTP (docs/infra/REDIS_GUIDE.md)](docs/infra/REDIS_GUIDE.md)**
@@ -95,7 +94,6 @@ Toàn bộ tài liệu kỹ thuật được chuẩn hóa và lưu trữ tại t
 - **[Hướng Dẫn 8 Cơ Sở Dữ Liệu PostgreSQL & EF Core Migrations (docs/infra/POSTGRES_DATABASES_GUIDE.md)](docs/infra/POSTGRES_DATABASES_GUIDE.md)**
 
 ### 🏛️ Quyết Định Kiến Trúc & Quy Chuẩn Hệ Thống:
-- **[Hệ Thống 15 Quyết Định Kiến Trúc Toàn Hệ Thống (docs/adr/ADR.md)](docs/adr/ADR.md)**
-- **[Kiến Trúc Health Prober & Chiến Lược Log Tập Trung (docs/HEALTH_AND_LOGGING_ARCHITECTURE.md)](docs/HEALTH_AND_LOGGING_ARCHITECTURE.md)**
+- **[Hệ Thống Quyết Định Kiến Trúc Toàn Hệ Thống (docs/adr/ADR.md)](docs/adr/ADR.md)**
 - **[Bộ Đặc Tả Kỹ Thuật Trung Tâm (specs/README.md)](specs/README.md)**
 - **[Trung Tâm Điều Hướng Tài Liệu Tổng Thể (docs/README.md)](docs/README.md)**

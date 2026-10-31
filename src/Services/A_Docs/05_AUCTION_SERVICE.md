@@ -73,7 +73,6 @@ src/Services/Auction/
     │   ├── Public/                    # Controllers phục vụ người dùng qua Gateway
     │   │   ├── AuctionsController.cs  # /api/v1/auctions (danh sách phiên active PagedData, chi tiết)
     │   │   └── BidsController.cs      # /api/v1/auctions/{auctionId:guid}/bids (lịch sử đặt giá)
-    │   └── Internal/                  # Controllers nội bộ liên service
     ├── Common/Converters/
     │   └── PascalCaseJsonStringEnumConverter.cs # Tuần tự hóa Enum thành PascalCase
     ├── Extensions/
@@ -81,7 +80,7 @@ src/Services/Auction/
     │   ├── HttpContextExtensions.cs   # Trích xuất x-user-id và role
     │   └── ObservabilityExtensions.cs # OpenTelemetry tracing
     ├── Middleware/
-    │   ├── InternalServiceAuthMiddleware.cs # Bảo vệ /internal/* bằng secret key
+    │   ├── InternalServiceAuthMiddleware.cs # Chưa đăng ký: Internal API tạm khóa
     │   └── GlobalExceptionHandlerMiddleware.cs # Bắt lỗi trả về ProblemDetails
     └── Program.cs                     # Điểm khởi động ứng dụng .NET 8
 ```

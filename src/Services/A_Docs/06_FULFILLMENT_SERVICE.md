@@ -11,7 +11,7 @@ Tài liệu này đặc tả cấu trúc thư mục, kiến trúc 4 tầng và c
 - **Solution:** `Fulfillment.sln`
 - **Cổng lắng nghe HTTP REST:** `8006`
 - **Cơ sở dữ liệu PostgreSQL:** Cổng `5438` (Container), Database: `fulfillment_db`
-- **Giao tiếp liên dịch vụ nội bộ (Inbound):** Tiếp nhận yêu cầu khởi tạo tồn kho SKU từ `CatalogService` qua endpoint `POST /api/v1/internal/inventories/initialize` bảo vệ bằng `X-Internal-Service-Key`
+- **Giao tiếp liên dịch vụ nội bộ (Inbound):** Tiếp nhận yêu cầu khởi tạo tồn kho SKU từ `CatalogService` qua endpoint `POST /api/v1/inventories/initialize` hiện không yêu cầu header nội bộ vì Internal API tạm khóa
 - **Chuẩn hóa phản hồi lỗi:** Đã bổ sung đầy đủ mã lỗi `WAREHOUSE_NOT_FOUND` và `SHIPMENT_NOT_FOUND`
 
 ---
@@ -75,8 +75,6 @@ src/Services/Fulfillment/
     │   ├── Public/                    # Controllers phục vụ người dùng qua Gateway
     │   │   ├── WarehousesController.cs# /api/v1/warehouses (danh sách kho active, chi tiết)
     │   │   └── ShipmentsController.cs # /api/v1/shipments (tra cứu tracking, theo orderId)
-    │   └── Internal/                  # Controllers nội bộ liên service
-    │       └── InternalInventoriesController.cs # [Route("api/v1/internal/inventories")]
     │                                  # POST /initialize (Khởi tạo tồn kho SKU mới từ Catalog)
     │                                  # GET  /{skuId}    (Tra cứu số dư tồn kho cho Checkout)
     ├── Common/Converters/
@@ -86,7 +84,7 @@ src/Services/Fulfillment/
     │   ├── HttpContextExtensions.cs   # Trích xuất x-user-id và role
     │   └── ObservabilityExtensions.cs # OpenTelemetry tracing
     ├── Middleware/
-    │   ├── InternalServiceAuthMiddleware.cs # Bảo vệ /api/v1/internal/* bằng secret key
+    │   ├── InternalServiceAuthMiddleware.cs # Chưa đăng ký: Internal API tạm khóa
     │   └── GlobalExceptionHandlerMiddleware.cs # Bắt lỗi trả về ProblemDetails
     └── Program.cs                     # Điểm khởi động ứng dụng .NET 8
 ```
@@ -97,7 +95,7 @@ src/Services/Fulfillment/
 
 1. **Quy chuẩn 100% Số Nhiều:** Tuyệt đối dùng `/api/v1/shipments`, `/api/v1/warehouses`, `/api/v1/inventories`. Cấm dùng route số ít `/shipment` hay `/warehouse`.
 2. **Không Repository Pattern:** Inject trực tiếp `IFulfillmentDbContext` vào `WarehouseService`, `ShipmentService`, `InventoryService`.
-3. **Phân tách Public API và Internal API:**
-   - Tra cứu kho và mã tracking vận đơn là Public API (`Controllers/Public/`).
-   - Khởi tạo và điều chỉnh số lượng tồn kho vật lý là Internal API (`Controllers/Internal/InternalInventoriesController.cs`), bảo vệ bắt buộc bằng `InternalServiceAuthMiddleware` và header `X-Internal-Service-Key`.
+3. **Trạng thái Public API và Internal API (Internal API tạm khóa từ 2026-10-31):**
+   - Tra cứu kho và mã tracking vận đơn đặt trong `Controllers/Public/`.
+   - Khởi tạo và điều chỉnh số lượng tồn kho cũng đặt trong `Controllers/Public/` (`InventoriesController`). Không còn `Controllers/Internal/` và không yêu cầu header `X-Internal-Service-Key`, vì `InternalServiceAuthMiddleware` chưa đăng ký. Cần bổ sung xác thực thật trước khi dùng cho lưu lượng thật.
 4. **Bảo vệ quyền sở hữu thông tin vận chuyển:** Tra cứu chi tiết vận đơn theo `orderId` chỉ dành cho người mua sở hữu đơn hàng, người bán gửi hàng hoặc tài khoản `admin`/`staff`.

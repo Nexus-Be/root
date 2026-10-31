@@ -127,7 +127,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Append-only logs, Port `8004`, DB `5436` (`log_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, xử lý ghi log hiệu năng cao. |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Ghi log, truy vấn nhật ký, quản trị Event Types. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; nhận log qua REST batch `POST /api/v1/internal/logs/batch`. |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; nhận log qua REST batch `POST /api/v1/logs/batch`. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Logs`, `LogEventTypes` (chỉ INSERT/SELECT, cấm UPDATE/DELETE). |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 

@@ -70,9 +70,7 @@ src/Services/Log/
     │   │                              # GET  /api/v1/logs/{id}       (Chi tiết bản ghi theo GUID)
     │   │                              # GET  /api/v1/logs/event-types (Danh mục loại sự kiện)
     │   │                              # PUT  /api/v1/logs/event-types/{code} (Bật/tắt loại sự kiện)
-    │   └── Internal/                  # Controllers nội bộ liên service
-    │       └── InternalLogController.cs # [Route("api/v1/internal/logs")]
-    │                                  # POST /api/v1/internal/logs/batch (Nạp lô nhật ký nội bộ)
+    │                                  # POST /api/v1/logs/batch (Nạp lô nhật ký nội bộ)
     ├── Common/Converters/
     │   └── PascalCaseJsonStringEnumConverter.cs # Tuần tự hóa Enum thành PascalCase
     ├── Extensions/
@@ -80,7 +78,7 @@ src/Services/Log/
     │   ├── HttpContextExtensions.cs   # Trích xuất x-user-id và role
     │   └── ObservabilityExtensions.cs # OpenTelemetry tracing
     ├── Middleware/
-    │   ├── InternalServiceAuthMiddleware.cs # Bảo vệ /api/v1/internal/logs/batch bằng secret key
+    │   ├── InternalServiceAuthMiddleware.cs # Chưa đăng ký: Internal API tạm khóa
     │   └── GlobalExceptionHandlerMiddleware.cs # Bắt lỗi trả về ProblemDetails
     └── Program.cs                     # Điểm khởi động ứng dụng .NET 8
 ```
@@ -91,5 +89,5 @@ src/Services/Log/
 
 1. **Tuyệt đối không sửa đổi hoặc xóa bản ghi log (Append-only):** Bảng `Logs` chỉ chấp nhận thao tác `INSERT` và `SELECT`. Tuyệt đối cấm tạo API sửa (`PUT/PATCH`) hay xóa (`DELETE`) bản ghi log.
 2. **Quy chuẩn 100% Số Nhiều:** Route chính thức là `/api/v1/logs`. Cấm khai báo route trùng lặp `admin/logs` trên cùng một action.
-3. **Bảo vệ API nạp log nội bộ:** Endpoint `POST /api/v1/internal/logs/batch` bắt buộc đi qua `InternalServiceAuthMiddleware` kiểm tra header `X-Internal-Service-Key`. Gateway chặn đứng mọi truy cập mạng ngoài tới endpoint này.
+3. **Bảo vệ API nạp log liên service:** Endpoint `POST /api/v1/logs/batch` hiện không đi qua `InternalServiceAuthMiddleware` và không yêu cầu header `X-Internal-Service-Key`, vì Internal API tạm khóa. Cần bổ sung xác thực thật trước khi dùng cho lưu lượng thật.
 4. **Phân trang tại Database:** `LogService.QueryLogsAsync` tính toán phân trang qua `.Skip((page - 1) * pageSize).Take(pageSize)` và `.CountAsync()` trực tiếp trên PostgreSQL.

@@ -46,7 +46,7 @@ src/Services/{Service}/
 │   │       └── PagedResultDto.cs               # DTO phân trang chuẩn
 │   ├── Interfaces/                             # Toàn bộ DbContext và Typed Client Interfaces
 │   │   ├── I{Service}DbContext.cs              # Interface trừu tượng hóa EF Core context
-│   │   └── I{Sibling}InternalClient.cs         # Interfaces giao tiếp ngoài (vd: IEmailNotificationClient, IFulfillmentInternalClient)
+│   │   └── I{Sibling}Client.cs                 # Interfaces giao tiếp ngoài (vd: IEmailNotificationClient, IFulfillmentClient)
 │   ├── Services/                               # Feature Co-location (Nghiệp vụ đồng bộ)
 │   │   ├── {FeatureA}/
 │   │   │   ├── I{FeatureA}Service.cs
@@ -70,15 +70,13 @@ src/Services/{Service}/
 │   └── DependencyInjection.cs                  # Cấu hình DB, HttpClient, Redis
 │
 └── {Service}.Api/
-    ├── Controllers/                            # REST Controllers (Phân tách Public vs Internal)
-    │   ├── Public/                             # API phục vụ người dùng qua Gateway (/api/v1/{resources})
-    │   │   ├── {FeatureA}Controller.cs         # Chỉ inject I{FeatureA}Service
-    │   │   └── {FeatureB}Controller.cs
-    │   └── Internal/                           # API phục vụ liên service nội bộ (/api/v1/internal/{resources})
-    │       └── Internal{Feature}Controller.cs  # Yêu cầu header X-Internal-Service-Key
+    ├── Controllers/                            # REST Controllers (Internal API tạm khóa từ 2026-10-31)
+    │   └── Public/                             # Toàn bộ endpoint, kể cả liên service (/api/v1/{resources})
+    │       ├── {FeatureA}Controller.cs         # Chỉ inject I{FeatureA}Service
+    │       └── {FeatureB}Controller.cs
     ├── Middlewares/
     │   ├── GlobalExceptionHandlerMiddleware.cs
-    │   └── InternalServiceAuthMiddleware.cs    # Kiểm tra X-Internal-Service-Key cho /api/v1/internal/*
+    │   └── InternalServiceAuthMiddleware.cs    # Chỉ còn file, chưa đăng ký trong pipeline
     ├── appsettings.json
     └── Program.cs                              # Bootstrap DI, Middlewares, Map Controllers
 ```
@@ -143,32 +141,30 @@ public class EmailNotificationClient : IEmailNotificationClient
 
 ### 4.3. Đăng ký Typed HttpClient tại Infrastructure DI
 ```csharp
-services.AddTransient<InternalServiceAuthHandler>();
 services.AddHttpClient<IEmailNotificationClient, EmailNotificationClient>(client =>
 {
     client.BaseAddress = new Uri(configuration["NotificationService:BaseUrl"] ?? "http://localhost:8007");
     client.Timeout = TimeSpan.FromSeconds(5);
-}).AddHttpMessageHandler<InternalServiceAuthHandler>();
+});
 ```
 
-### 4.4. Tự Động Tiêm Khóa Bí Mật Nội Bộ Qua DelegatingHandler
-Mọi HttpClient gọi sang Internal API của service khác bắt buộc phải đăng ký kèm `InternalServiceAuthHandler` (kế thừa `DelegatingHandler`) để tự động tiêm header `X-Internal-Service-Key`.
+### 4.4. Xác Thực Nội Bộ Đang Tạm Khóa
+`InternalServiceAuthHandler` chỉ còn file tại `Services/Common/`, không đăng ký trong DI và không tiêm header `X-Internal-Service-Key`. Route liên service dùng đường dẫn công khai. Bật lại cần phê duyệt rõ ràng và đồng bộ với Gateway, middleware và tài liệu.
 
 ---
 
-## 5. QUY CHUẨN CONTROLLER VÀ PHÂN TÁCH PUBLIC / INTERNAL TẠI TẦNG API
+## 5. QUY CHUẨN CONTROLLER VÀ TRẠNG THÁI INTERNAL API TẠI TẦNG API
 
-Mỗi Controller ở `{Service}.Api/Controllers/` thuộc 1 trong 2 nhóm phân lập:
+Mỗi Controller ở `{Service}.Api/Controllers/` nằm trong `Public/`:
 1. **Public Controllers (`{Service}.Api/Controllers/Public/`)**:
    - Ghép cặp 1-to-1 với feature service tương ứng.
-   - Nhận yêu cầu từ người dùng thông qua API Gateway.
+   - Nhận yêu cầu từ người dùng thông qua API Gateway, và hiện cả các cuộc gọi liên service.
    - Đường dẫn: `/api/v1/{resources}` sử dụng RFC 9110 HTTP Verbs.
    - Controller siêu mỏng, chỉ làm nhiệm vụ: (1) Nhận HTTP request, (2) Trích xuất claim/header nếu cần, (3) Gọi `I{Feature}Service`, (4) Trả về HTTP status code phù hợp.
-2. **Internal Controllers (`{Service}.Api/Controllers/Internal/`)**:
-   - Chỉ phục vụ các cuộc gọi trực tiếp từ backend microservice anh em.
-   - Bắt buộc tiền tố: `/api/v1/internal/{resources}`.
-   - Bắt buộc kiểm tra bảo mật qua `InternalServiceAuthMiddleware` với header `X-Internal-Service-Key`.
-   - Tuyệt đối không khai báo route cho Gateway và Gateway chủ động chặn 404 với mọi request chứa `/api/v1/internal`.
+2. **Internal Controllers (tạm khóa từ 2026-10-31)**:
+   - Không tạo mới thư mục `Controllers/Internal/` và không thêm route `/api/v1/internal/{resources}`.
+   - `InternalServiceAuthMiddleware` chỉ còn file, chưa đăng ký trong pipeline.
+   - Gateway không khai báo route cho `/internal/*`, và khối chặn path nội bộ đang bị comment.
 
 ---
 

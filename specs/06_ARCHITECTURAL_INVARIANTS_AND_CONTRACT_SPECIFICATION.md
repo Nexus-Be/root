@@ -19,7 +19,7 @@ Hệ thống Nexus phân định ranh giới trách nhiệm tuyệt đối giữ
 ═══════════════════════════════════════════════════════════════════════════
  [GATEWAY BIÊN - EDGE] (Microsoft YARP Reverse Proxy - Port 8080)
  1. Bóc tách & chặn đứng Header giả mạo (Anti-Header-Spoofing -> 403)
- 2. Chặn đứng truy cập vào endpoint nội bộ (/internal/* -> 404)
+ 2. Tạm hoãn chặn endpoint nội bộ (/internal/*); request đi qua như API thường
  3. Xác thực chữ ký số JWT Bearer Token tại biên (Edge Authentication)
  4. Khống chế tần suất nhạy cảm (Sensitive Rate Limiting qua Redis 6379)
  5. Phân quyền Admin thô tại biên (/api/v1/admin/** -> 401/403)
@@ -36,7 +36,7 @@ Hệ thống Nexus phân định ranh giới trách nhiệm tuyệt đối giữ
  │ 3. Thực thi nghiệp vụ thuần túy bằng 4-Layer Clean Architecture        │
  │ 4. Truy vấn CSDL độc lập qua DbContext (CẤM Repository / gRPC / Broker)│
  │ 5. Phân trang 100% tại SQL Query (Skip.Take, CountAsync -> PagedData<T>)│
- │ 6. Xác thực liên service cho /internal/* qua InternalServiceAuthMiddleware│
+ │ 6. Internal API tạm khóa; chỉ còn xác thực JWT và RBAC theo vai trò       │
  │ 7. Trả về DTO nghiệp vụ thô (200/201) hoặc 204 NoContent                │
  │ 8. Trả mã lỗi RFC 9110, message Sentence-case tiếng Anh 100%           │
  └────────────────────────────────────────────────────────────────────────┘
@@ -74,9 +74,10 @@ Hệ thống Nexus phân định ranh giới trách nhiệm tuyệt đối giữ
      ```
    - **Hệ quả kiến trúc**: Không một client bên ngoài nào có thể gửi header giả mạo tới backend services. Mọi header `x-user-*` đến service đều là header TIN CẬY 100% do Gateway xác thực và tiêm vào.
 
-3. **Rào chắn cô lập Internal REST APIs (Strict Internal Route Isolation)**:
-   - Gateway từ chối ngay lập tức mọi request bên ngoài có đường dẫn bắt đầu bằng `/api/v1/internal` hoặc chứa `/internal/` với HTTP `404 Not Found` (`errorCode: "NOT_FOUND"`).
-   - Cấu hình YARP ReverseProxy (`Gateway/appsettings.json`) TUYỆT ĐỐI CẤM khai báo route cho bất kỳ đường dẫn nội bộ nào chứa `/internal/`.
+3. **Tạm Hoãn Cô Lập Internal REST APIs (Internal Route Isolation Postponed)**:
+   - Từ 2026-10-31, khối chặn path `/api/v1/internal` và `/internal/` trong `ClientContextMiddleware` đã bị comment. Request đi qua như API thường và không trả `404`.
+   - Cấu hình YARP ReverseProxy (`Gateway/appsettings.json`) vẫn TUYỆT ĐỐI CẤM khai báo route cho bất kỳ đường dẫn nội bộ nào chứa `/internal/`.
+   - Bật lại khối chặn cần phê duyệt rõ ràng của Người dùng và cập nhật đồng bộ code, test, docs.
 
 4. **Cơ chế Lan Truyền Danh Tính Tin Cậy (Zero-Trust Identity Propagation)**:
    - Gateway giải mã token JWT Bearer tại biên, kiểm tra chữ ký với `Jwt:Signature`.
@@ -125,7 +126,7 @@ Hệ thống Nexus phân định ranh giới trách nhiệm tuyệt đối giữ
    - `{Service}.Domain`: Pure Domain Entities, Value Objects, Domain Enums, Domain Exceptions. Zero external library dependencies.
    - `{Service}.Application`: Use cases, Interface `I{Service}DbContext`, Request/Response records, typed client interfaces (`Interfaces/`).
    - `{Service}.Infrastructure`: Triển khai `AppDbContext`, EF Core Fluent Configurations, Migrations, Seeds, Typed HTTP Clients.
-   - `{Service}.Api`: Thin Controllers (`Public/` & `Internal/`), Middlewares, Extensions, DI composition root (`Program.cs`).
+   - `{Service}.Api`: Thin Controllers (`Public/`), Middlewares, Extensions, DI composition root (`Program.cs`).
 
 2. **Feature Co-Location (Bắt buộc tại Application Layer)**:
    Toàn bộ mã nguồn của một tính năng phải đặt tập trung tại `{Service}.Application/Services/{Feature}/`:
@@ -147,12 +148,11 @@ Hệ thống Nexus phân định ranh giới trách nhiệm tuyệt đối giữ
    - 🛑 **CẤM Message Brokers (RabbitMQ, MassTransit, Saga, Outbox/Inbox tables)**: Toàn bộ giao tiếp liên service chuyển sang gọi đồng bộ bằng Typed HttpClient qua `IHttpClientFactory`.
    - 🛑 **CẤM truy vấn chéo cơ sở dữ liệu**: Mỗi service sở hữu database độc lập trên Neon Cloud.
 
-5. **Phân Tách Public REST API và Internal Service REST API**:
-   - Thư mục Controller tại `{Service}.Api/Controllers/` bắt buộc chia thành 2 thư mục con độc lập:
-     * `Controllers/Public/`: Tiếp nhận lưu lượng từ Gateway (`/api/v1/{resources}`).
-     * `Controllers/Internal/`: Tiếp nhận lưu lượng liên service trực tiếp (`/api/v1/internal/{resources}`).
-   - Endpoint nội bộ bắt buộc kích hoạt `InternalServiceAuthMiddleware`, kiểm tra header `X-Internal-Service-Key` khớp với cấu hình `InternalSecurity:ServiceKey` (hoặc biến môi trường `INTERNAL_SERVICE_SECRET`). Thiếu hoặc sai key lập tức trả về HTTP 403 `FORBIDDEN`.
-   - Outbound HttpClient gọi service khác (ví dụ: Catalog gọi Fulfillment khởi tạo kho, Commerce gọi Wallet thanh toán, User gọi Notification gửi OTP email) phải đăng ký kèm `InternalServiceAuthHandler` (DelegatingHandler) để tự động gắn header `X-Internal-Service-Key`.
+5. **Trạng Thái Internal API (Tạm Khóa Từ 2026-10-31)**:
+   - Không tạo mới thư mục `Controllers/Internal/` và không thêm route `/api/v1/internal/{resources}`.
+   - `InternalServiceAuthMiddleware` và `InternalServiceAuthHandler` chỉ còn file. Đăng ký pipeline và DI đã bị comment.
+   - Route liên service dùng đường dẫn công khai như `POST /api/v1/notifications/email/otp`, `POST /api/v1/wallets/checkout/direct`, `POST /api/v1/inventories/initialize`, `POST /api/v1/logs/batch`.
+   - Không yêu cầu header `X-Internal-Service-Key`. Không thêm dữ liệu nhạy cảm mới vào các route này khi chưa có xác thực.
 
 6. **Quy Chuẩn Định Danh Route: 100% SỐ NHIỀU (100% Plural Route Convention)**:
    - Toàn bộ danh từ tài nguyên dùng danh từ số nhiều viết thường: `/api/v1/users`, `/api/v1/products`, `/api/v1/categories`, `/api/v1/carts`, `/api/v1/orders`, `/api/v1/shipments`, `/api/v1/wallets`, `/api/v1/auctions`, `/api/v1/notifications`, `/api/v1/logs`.
@@ -216,7 +216,7 @@ Hệ thống Nexus phân định ranh giới trách nhiệm tuyệt đối giữ
 | `x-client-ip` | Gateway tiêm | Ghi đè bằng IP kết nối thực tế từ RemoteIpAddress | Đọc nếu cần audit trail | ⭐⭐⭐⭐⭐ TIN CẬY 100% |
 | `x-trace-id` | Gateway tiêm | Sinh mã W3C TraceId nếu thiếu, gắn vào response | Ghi log OpenTelemetry / Tempo | ⭐⭐⭐⭐⭐ TIN CẬY 100% |
 | `X-Internal-Service-Key` | Client ngoài | 🛑 CHẶN ĐỨNG VÀ TRẢ 403 `FORBIDDEN_HEADER_SPOOFING` | Không thể đến được Microservice | ❌ KHÔNG TIN CẬY |
-| `X-Internal-Service-Key` | Service gọi | Bỏ qua (không qua Gateway) | `InternalServiceAuthMiddleware` kiểm tra khớp secret key | ⭐⭐⭐⭐⭐ TIN CẬY 100% |
+| `X-Internal-Service-Key` | Service gọi | Bỏ qua (không qua Gateway) | Không kiểm tra: `InternalServiceAuthMiddleware` đang tắt | ⚠️ KHÔNG XÁC THỰC |
 | `Idempotency-Key` | Client ngoài | Validate độ dài <= 128 chars, chuyển tiếp | Đọc kiểm tra duplicate transaction | ⭐⭐⭐⭐ ĐƯỢC CHỨNG THỰC |
 
 ---

@@ -15,7 +15,7 @@ Tài liệu này đặc tả cấu trúc thư mục, kiến trúc phân tầng v
   - 8 Microservices qua HTTP GET `/health`
   - 8 Database PostgreSQL qua truy vấn nhẹ `SELECT 1;` (`NpgsqlConnection`)
 - **Cơ chế chống ngủ đông (Keep-Alive):** `KeepAliveBackgroundWorker` chạy chu kỳ định kỳ 60 giây gửi lệnh giữ kết nối cơ sở dữ liệu (Neon, Supabase, Render)
-- **Bảo mật truy cập:** Xác thực qua header `X-Api-Key` (`ApiKeyAuthMiddleware`) và `X-Internal-Service-Key` (`InternalServiceAuthMiddleware`)
+- **Bảo mật truy cập:** Xác thực qua header `X-Api-Key` (`ApiKeyAuthMiddleware`). `InternalServiceAuthMiddleware` chỉ còn file, chưa đăng ký vì Internal API tạm khóa.
 - **Kiểm thử tự động:** `CheckHeal.Tests` với **20 unit và integration tests passed 100%**
 
 ---
@@ -75,12 +75,11 @@ src/Services/CheckHeal/
     │   │       # POST /databases/{serviceName}/check (Kích hoạt truy vấn SELECT 1; thủ công)
     │   │       # PUT  /bulk-toggle                (Bật/tắt giám sát hàng loạt theo nhóm hoặc tất cả)
     │   │       # GET  /incidents                  (Tra cứu lịch sử sự cố gần nhất)
-    │   └── Internal/                  # Controllers nội bộ liên service
     ├── Common/Converters/
     │   └── PascalCaseJsonStringEnumConverter.cs # Tuần tự hóa Enum thành PascalCase
     ├── Middleware/
     │   ├── ApiKeyAuthMiddleware.cs    # Xác thực header X-Api-Key cho các endpoint điều khiển
-    │   ├── InternalServiceAuthMiddleware.cs # Bảo vệ /internal/* bằng secret key
+    │   ├── InternalServiceAuthMiddleware.cs # Chưa đăng ký: Internal API tạm khóa
     │   └── ExceptionHandlingMiddleware.cs # Xử lý ngoại lệ tập trung chuẩn ProblemDetails
     └── Program.cs                     # Điểm khởi động ứng dụng .NET 8, map probes /health, /health/live, /health/ready
 ```

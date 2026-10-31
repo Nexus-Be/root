@@ -15,20 +15,16 @@
 | Catalog | [ProductsController](Catalog/ProductsController.md) | 3 | 0 |
 | Commerce | [CartsController](Commerce/CartsController.md) | 1 | 0 |
 | Commerce | [OrdersController](Commerce/OrdersController.md) | 2 | 0 |
-| Log | [InternalLogController](Log/InternalLogController.md) | 1 | 0 |
 | Log | [LogController](Log/LogController.md) | 4 | 0 |
 | Auction | [AuctionsController](Auction/AuctionsController.md) | 2 | 0 |
 | Auction | [BidsController](Auction/BidsController.md) | 1 | 0 |
-| Fulfillment | [InternalInventoriesController](Fulfillment/InternalInventoriesController.md) | 2 | 0 |
 | Fulfillment | [ShipmentsController](Fulfillment/ShipmentsController.md) | 2 | 0 |
 | Fulfillment | [WarehousesController](Fulfillment/WarehousesController.md) | 2 | 0 |
-| Notification | [InternalEmailController](Notification/InternalEmailController.md) | 2 | 0 |
 | Notification | [AdminHealthController](Notification/AdminHealthController.md) | 1 | 0 |
 | Notification | [AdminNotificationsController](Notification/AdminNotificationsController.md) | 1 | 0 |
 | Notification | [NotificationsController](Notification/NotificationsController.md) | 6 | 0 |
-| Wallet | [InternalWalletsController](Wallet/InternalWalletsController.md) | 1 | 0 |
 | Wallet | [AdminWalletsController](Wallet/AdminWalletsController.md) | 2 | 0 |
-| Wallet | [WalletsController](Wallet/WalletsController.md) | 7 | 0 |
+| Wallet | [WalletsController](Wallet/WalletsController.md) | 8 | 0 |
 | CheckHeal | [HealthCheckController](CheckHeal/HealthCheckController.md) | 11 | 0 |
 
 **Total open violations: 0**

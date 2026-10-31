@@ -343,7 +343,7 @@ Bằng chứng nghiệm thu: `tools/auth_e2e_test.sh` (70/70 case PASS qua Gatew
 | [`[POST] /api/v1/admin/wallets/{walletId}/adjustments`](./B_none/Wallet/R185_POST_ADMIN_WALLETS_ADJUSTMENTS.md) | `` | Admin điều chỉnh số dư ví thủ công (Cộng/Trừ tiền kèm kiểm toán) |
 | [`[POST] /api/v1/wallets/transfers`](./B_none/Wallet/R186_POST_WALLETS_TRANSFERS.md) | `` | Chuyển tiền nội bộ giữa hai ví, ghi hai bút toán TransferOut/TransferIn |
 | [`[GET] /api/v1/wallets/vnpay/return`](./B_none/Wallet/R187_GET_WALLETS_VNPAY_RETURN.md) | `` | Browser return callback từ VNPay sau khi thanh toán |
-| [`[POST] /api/v1/internal/wallets/checkout/direct`](./B_none/Wallet/R188_POST_INTERNAL_WALLETS_CHECKOUT_DIRECT.md) | `` | Thanh toán trực tiếp cho đơn hàng từ ví (nội bộ, `X-Internal-Service-Key`) |
+| [`[POST] /api/v1/wallets/checkout/direct`](./B_none/Wallet/R188_POST_WALLETS_CHECKOUT_DIRECT.md) | `` | Thanh toán trực tiếp cho đơn hàng từ ví (liên service, route công khai, Internal API tạm khóa) |
 | [`[POST] /api/v1/payments/webhook`](./B_none/Wallet/R81_POST_PAYMENTS_WEBHOOK.md) | `` | ⚠️ `SUPERSEDED` — endpoint không tồn tại; dùng R180 thay thế |
 ### Notification Service (11 endpoints)
 

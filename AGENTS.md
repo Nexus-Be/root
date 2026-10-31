@@ -87,6 +87,7 @@ Khi bắt đầu phiên làm việc tại bất kỳ repository nào, AI Agent *
      - Khi một Function trong service bổ sung mã lỗi mới hoặc exception mới, BẮT BUỘC phải cập nhật ngay vào bảng Error Matrix của file doc tương ứng để Frontend luôn nắm bắt chính xác.
    - **Chuẩn hóa XML Comment Endpoint**: Chỉ dùng single-line XML `<summary>` ngắn gọn trực tiếp trên từng Action method. Cấm viết class-level remarks, section dividers kẻ ngang hoặc comment dài dòng nhiều dòng.
    - **Đồng bộ Tài liệu & Specs**: Khi thêm mới hoặc thay đổi bất kỳ route/DTO nào, bắt buộc cập nhật đồng thời file spec tương ứng (`specs/02_GATEWAY_CONTROLLERS_ROUTING.md`) và tài liệu API Frontend (`docs/FRONTEND_API_ENDPOINT_MAPPING.md`).
+   - **Skill thực thi Endpoint**: Trước khi thêm hoặc sửa bất kỳ endpoint nào, bắt buộc đọc và làm theo checklist tại `.agents/skills/new-feature-endpoint/SKILL.md`; khi làm việc trong service repo thì dùng overlay `.agents/skills/new-feature-endpoint/SKILL.md` của chính service đó.
    - **Quy trình Bắt buộc khi Triển khai & Đóng gói 1 API (API Implementation & Documentation Lifecycle)**:
      Khi thực hiện bất kỳ 1 API nào (mới hoặc refactor):
      1. Tầng Application: Hoàn thiện `I{Feature}Service.cs`, `{Feature}Service.cs`, `{Feature}Requests.cs`, `{Feature}Responses.cs` (riêng `WalletService` dùng Command/Query + Handler theo CQRS).
@@ -137,26 +138,21 @@ Khi bắt đầu phiên làm việc tại bất kỳ repository nào, AI Agent *
         - Mọi mật khẩu mẫu cho tài khoản seed bắt buộc phải hash bằng BCrypt có salt trước khi đưa vào cấu hình seed (`$2a$11$...`), không lưu plain text.
      7. **Bảo vệ Bí mật và Chuỗi kết nối Database**:
         - Tuyệt đối CẤM commit mật khẩu thật, connection string thực tế vào mã nguồn hay git. Mọi thông tin nhạy cảm phải đọc từ biến môi trường.
-   - **12. QUY CHUẨN BẮT BIẾN: PHÂN TÁCH PUBLIC REST API VÀ INTERNAL SERVICE REST API (INTERNAL API SEGREGATION & SECURITY GOVERNANCE)**:
-     Toàn bộ hệ thống Nexus áp dụng mô hình phân tách tuyệt đối giữa Public API và Internal Service-to-Service API với 5 rào chắn bất biến không thể thương lượng:
-     1. **Cấu trúc thư mục Controller phân lập**:
-        - Tầng Api của mỗi service bắt buộc phải phân tách Controller thành hai thư mục con riêng biệt:
-          - `{Service}.Api/Controllers/Public/`: Chứa các controller phục vụ người dùng bên ngoài qua API Gateway (`/api/v1/{resources}`).
-          - `{Service}.Api/Controllers/Internal/`: Chứa các controller phục vụ riêng giao tiếp đồng bộ giữa các backend microservice (`/api/v1/internal/{resources}`).
-        - TUYỆT ĐỐI CẤM gộp chung Action công khai và Action nội bộ vào trong cùng một Controller file.
-     2. **Quy chuẩn Định danh Route nội bộ**:
-        - Tất cả endpoint giao tiếp liên service bắt buộc phải có tiền tố `/api/v1/internal/{resources}` (ví dụ: `/api/v1/internal/inventories/initialize`, `/api/v1/internal/notifications/email/otp`, `/api/v1/internal/wallets/checkout/direct`, `/api/v1/internal/logs/batch`).
-     3. **Rào chắn Edge Proxy tại API Gateway (Gateway Ingress Blocker)**:
-        - `ClientContextMiddleware` tại Gateway bắt buộc bóc tách (strip/remove) header `X-Internal-Service-Key` từ mọi request bên ngoài gửi lên để chống giả mạo danh tính nội bộ.
-        - Gateway chủ động từ chối ngay lập tức mọi request có path bắt đầu bằng `/api/v1/internal` với HTTP `404 Not Found`.
-        - Cấu hình YARP ReverseProxy (`Gateway/appsettings.json`) TUYỆT ĐỐI CẤM khai báo route cho bất kỳ đường dẫn nội bộ nào chứa `/internal/`.
-     4. **Xác thực khóa bí mật nội bộ tại từng Microservice (Microservice Ingress Authenticator)**:
-        - Mọi microservice sở hữu Internal API bắt buộc phải kích hoạt `InternalServiceAuthMiddleware` trong pipeline HTTP request.
-        - Mọi yêu cầu truy cập vào `/api/v1/internal/*` bắt buộc phải có header `X-Internal-Service-Key` và giá trị phải khớp chính xác với `InternalSecurity:ServiceKey` (hoặc biến môi trường `INTERNAL_SERVICE_SECRET`).
-        - Nếu thiếu header hoặc sai khóa, middleware lập tức chặn và trả về HTTP `403 Forbidden` (`errorCode: "FORBIDDEN"`, `message: "Access denied to internal service resource."`).
-     5. **Chuẩn hóa Outbound Typed HttpClient**:
-        - Mọi HttpClient gọi liên service đặt tại `{Service}.Infrastructure/Services/` phải được đăng ký kèm `InternalServiceAuthHandler` (kế thừa `DelegatingHandler`) để tự động tiêm header `X-Internal-Service-Key`.
-        - TUYỆT ĐỐI CẤM AI Coding Agent tự ý xóa, vô hiệu hóa, bypass middleware xác thực nội bộ này hoặc mở public các endpoint nghiệp vụ nội bộ ra ngoài Gateway.
+   - **12. QUY CHUẨN TẠM KHÓA INTERNAL API (INTERNAL API TEMPORARY DISABLE)**:
+     Từ 2026-10-31, hệ thống tạm khóa mô hình Internal API và chuyển giao tiếp liên service sang REST thường:
+     1. **Route liên service dùng tiền tố công khai**:
+        - Gửi OTP email: `POST /api/v1/notifications/email/otp` và `POST /api/v1/notifications/email/send`.
+        - Trừ tiền ví: `POST /api/v1/wallets/checkout/direct`.
+        - Khởi tạo và tra cứu tồn kho: `POST /api/v1/inventories/initialize` và `GET /api/v1/inventories/{skuId:guid}`.
+        - Nạp batch log: `POST /api/v1/logs/batch`.
+        - Cấm đặt lại tiền tố `/api/v1/internal` hoặc tạo thư mục `Controllers/Internal/`.
+     2. **Bảo mật internal đang tạm khóa**:
+        - `InternalServiceAuthMiddleware` và `InternalServiceAuthHandler` chỉ còn file; đăng ký trong pipeline và DI đã bị comment.
+        - Không yêu cầu header `X-Internal-Service-Key` cho các route trên.
+        - Gateway không chặn path internal và không xóa path internal khỏi tài liệu OpenAPI.
+     3. **Hệ quả cần kiểm soát**:
+        - Các route trên đi qua Gateway như API thường. Cấm thêm dữ liệu nhạy cảm mới vào các route này khi chưa có xác thực.
+        - Muốn bật lại mô hình cũ, phải có phê duyệt rõ ràng của Người dùng và khôi phục đồng bộ middleware, handler, Gateway và docs.
    - **13. QUY CHUẨN BẮT BIẾN: BẢO VỆ DANH TÍNH CHỐNG GIẢ MẠO CHỦ ĐỘNG VÀ LAN TRUYỀN CLAIMS (ACTIVE ANTI-SPOOFING & IDENTITY PROPAGATION GOVERNANCE)**:
      Toàn bộ hệ thống Nexus áp dụng cơ chế Zero-Trust Edge Gateway đối với việc xác thực và truyền tải danh tính người dùng:
      1. **Chặn Đứng Tuyệt Đối Header Giả Mạo Từ Bên Ngoài (Active Anti-Header-Spoofing Rejection)**:

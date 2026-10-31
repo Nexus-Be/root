@@ -11,7 +11,7 @@ Tài liệu này đặc tả cấu trúc thư mục, kiến trúc 4 tầng và c
 - **Solution:** `Wallet.sln`
 - **Cổng lắng nghe HTTP REST:** `8008`
 - **Cơ sở dữ liệu PostgreSQL:** Cổng `5440` (Container), Database: `wallet_db`
-- **Giao tiếp liên dịch vụ nội bộ (Inbound):** Tiếp nhận yêu cầu thanh toán trực tiếp từ `CommerceService` qua `POST /api/v1/internal/wallets/checkout/direct`, bảo vệ bằng header `X-Internal-Service-Key`
+- **Giao tiếp liên dịch vụ nội bộ (Inbound):** Tiếp nhận yêu cầu thanh toán trực tiếp từ `CommerceService` qua `POST /api/v1/wallets/checkout/direct`, hiện không yêu cầu header nội bộ vì Internal API tạm khóa
 - **Tích hợp cổng thanh toán:** VNPay Gateway (`TopupVnPayAsync`, webhook `ProcessVnPayIpnAsync`)
 - **Kiểm thử tự động:** `Wallet.Tests` với **19 unit tests passed 100%**
 
@@ -89,8 +89,6 @@ src/Services/Wallet/
     │   │   └── AdminWalletsController.cs # [Route("api/v1/admin/wallets")]
     │   │       # PATCH /withdrawals/{id:guid} (Quản trị viên duyệt hoặc từ chối rút tiền)
     │   │       # POST  /{walletId:guid}/adjustments (Điều chỉnh số dư ví thủ công)
-    │   └── Internal/                  # Controllers nội bộ liên service
-    │       └── InternalWalletsController.cs # [Route("api/v1/internal/wallets")]
     │           # POST /checkout/direct (Trừ tiền ví thanh toán đơn hàng từ CommerceService)
     ├── Common/Converters/
     │   └── PascalCaseJsonStringEnumConverter.cs # Tuần tự hóa Enum thành PascalCase
@@ -99,7 +97,7 @@ src/Services/Wallet/
     │   ├── HttpContextExtensions.cs   # Trích xuất x-user-id và role
     │   └── ObservabilityExtensions.cs # OpenTelemetry tracing
     ├── Middleware/
-    │   ├── InternalServiceAuthMiddleware.cs # Bảo vệ /api/v1/internal/* bằng secret key
+    │   ├── InternalServiceAuthMiddleware.cs # Chưa đăng ký: Internal API tạm khóa
     │   └── GlobalExceptionHandlerMiddleware.cs # Bắt lỗi trả về ProblemDetails
     └── Program.cs                     # Điểm khởi động ứng dụng .NET 8
 ```
@@ -111,8 +109,8 @@ src/Services/Wallet/
 1. **Quy chuẩn 100% Số Nhiều:** Tuyệt đối sử dụng route collections số nhiều `/api/v1/wallets`, `/api/v1/wallets/transactions`, `/api/v1/admin/wallets`.
 2. **Không Repository Pattern:** Inject trực tiếp `IWalletDbContext` vào `WalletService` và `AdminWalletService`.
 3. **Cấm Để Số Dư Âm (Zero Negative Balance):** Mọi thao tác rút tiền, chuyển tiền hoặc trừ tiền thanh toán đơn hàng bắt buộc kiểm tra `Balance >= Amount`. Trường hợp số dư không đủ phải lập tức ném ngoại lệ với mã lỗi `INSUFFICIENT_BALANCE`.
-4. **Phân Tách Public API và Internal API:**
-   - Xem số dư, nạp tiền VNPay và rút tiền là Public API (`Controllers/Public/WalletsController.cs`).
-   - Trừ tiền ví thanh toán đơn hàng trực tiếp là Internal API (`Controllers/Internal/InternalWalletsController.cs`), bảo vệ bắt buộc bằng `InternalServiceAuthMiddleware` và header `X-Internal-Service-Key`.
-   - Cấm mở endpoint trừ tiền ví trực tiếp ra ngoài API Gateway.
+4. **Trạng Thái Public API và Internal API (Internal API tạm khóa từ 2026-10-31):**
+   - Xem số dư, nạp tiền VNPay, rút tiền và `checkout/direct` đều đặt trong `Controllers/Public/WalletsController.cs`.
+   - Không còn `Controllers/Internal/` và không yêu cầu header `X-Internal-Service-Key`, vì `InternalServiceAuthMiddleware` chưa đăng ký.
+   - Hệ quả cần kiểm soát: `POST /api/v1/wallets/checkout/direct` hiện đi qua Gateway như API thường. Phải bổ sung xác thực thật trước khi dùng cho lưu lượng thật.
 5. **Độ Chính Xác Tiền Tệ (Precision 18,2):** Toàn bộ trường số tiền `Amount`, `Balance`, `LockedBalance` đều định dạng kiểu `decimal(18, 2)` trong PostgreSQL.

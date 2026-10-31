@@ -48,7 +48,7 @@ UserService    CatalogService  CommerceService  LogService     AuctionService  F
 3. **Chuẩn Giao Tiếp 100% RESTful HTTP/JSON (CẤM gRPC & BÃI BỎ MESSAGE BROKER)**:
    - Toàn bộ giao tiếp giữa API Gateway $\rightarrow$ Microservices và giữa các Microservices với nhau sử dụng **RESTful Web API** (JSON qua HTTP/1.1 hoặc HTTP/2).
    - Cấm gRPC cho các dịch vụ đồng bộ.
-   - Bãi bỏ RabbitMQ message broker và MassTransit; các tương tác phụ trợ (như gửi OTP email từ User sang Notification) được thực hiện trực tiếp qua REST endpoint nội bộ (`POST /api/v1/internal/notifications/email/otp`).
+   - Bãi bỏ RabbitMQ message broker và MassTransit; các tương tác phụ trợ (như gửi OTP email từ User sang Notification) được thực hiện trực tiếp qua REST endpoint nội bộ (`POST /api/v1/notifications/email/otp`).
 
 4. **Đơn Giản Hóa Luồng Nghiệp Vụ Liên Dịch Vụ**:
    - Loại bỏ cơ chế Saga State Machine phức tạp và Transactional Outbox/Inbox tables.

@@ -48,6 +48,7 @@ SERVICES=(
     "Notification:src/Services/Notification"
     "Wallet:src/Services/Wallet"
     "CheckHeal:src/Services/CheckHeal"
+    "Gateway:src/Services/Gateway"
 )
 
 show_status() {
@@ -127,16 +128,7 @@ else
         echo "  [OK] Root -> .env.$MODE.example -> .env"
     fi
 
-    # 2. Chuyển đổi ApiGateway
-    if [ "$MODE" == "local" ] && [ -f "src/Services/ApiGateway/.env.local.example" ]; then
-        cp "src/Services/ApiGateway/.env.local.example" "src/Services/ApiGateway/.env"
-        echo "  [OK] ApiGateway -> .env.local.example -> .env"
-    elif [ "$MODE" == "server" ] && [ -f "src/Services/ApiGateway/.env.example" ]; then
-        cp "src/Services/ApiGateway/.env.example" "src/Services/ApiGateway/.env"
-        echo "  [OK] ApiGateway -> .env.example -> .env"
-    fi
-
-    # 3. Chuyển đổi 9 Services
+    # 2. Chuyển đổi 10 Services (bao gồm Gateway)
     for item in "${SERVICES[@]}"; do
         NAME="${item%%:*}"
         DIR="${item##*:}"

@@ -1,78 +1,81 @@
 # TRUNG TÂM TÀI LIỆU KỸ THUẬT HỆ THỐNG NEXUS
 ## (NEXUS SYSTEM DOCUMENTATION PORTAL)
 
-> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — bộ tài liệu này mô tả **kiến trúc mục tiêu**, trong khi nhiều tính năng chưa có trong code (5/9 service chưa có điểm vào gRPC, Saga chưa triển khai, `POST /api/v1/internal/logs/batch` không tồn tại). Đọc kèm bảng điểm thực tế tại `docs/plans/SCORECARD.md` và bằng chứng chi tiết tại `docs/plans/audit/`.
-> **Nguồn sự thật:** code trong `src/Services/*` (không phải tài liệu này).
-> **Cập nhật lần cuối:** 2026-10-24.
+> **Trạng thái triển khai (2026-10-31):** ✅ Kiến trúc hiện tại là 100% RESTful HTTP/JSON. gRPC, RabbitMQ, MassTransit, Saga và Outbox đã bị gỡ bỏ. Gateway là YARP reverse proxy thuần, không còn Mock Engine hay chế độ chuyển Mock/Real.
+> **Nguồn sự thật:** code trong `src/Services/*` và cấu hình trong `docker-compose*.yml`. Tài liệu này chỉ là điểm điều hướng, không thay thế code.
+> **Cập nhật lần cuối:** 2026-10-31.
 
-Chào mừng bạn đến với trung tâm tài liệu kỹ thuật toàn diện của hệ sinh thái **Nexus Microservices Backend (.NET 8 LTS, C# 12)**.
-
----
-
-## 1. CẨM NANG DÀNH CHO DEVELOPER (DEVELOPER GUIDES)
-
-Tài liệu thực chiến giúp lập trình viên bắt tay vào làm việc ngay:
-
-* **[Hướng Dẫn Khởi Chạy Gateway Cho Frontend & Intern (FRONTEND_GATEWAY_MOCK_GUIDE.md)](FRONTEND_GATEWAY_MOCK_GUIDE.md)**  
-  👉 **DÀNH CHO FRONTEND DEV & INTERN (TIẾNG ANH):** Hướng dẫn chi tiết cách chỉ cần khởi chạy Gateway và Redis để test toàn bộ giao diện bằng Mock Data (Stateless) và bật Bypass Authentication, không cần chạy 8 microservices hay database.
-
-* **[Cẩm Nang Phát Triển & Kiểm Thử Độc Lập Từng Service (INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)](INDEPENDENT_SERVICE_DEVELOPMENT_GUIDE.md)**  
-  👉 **BẮT BUỘC ĐỌC ĐỐI VỚI DEV:** Hướng dẫn cách một developer chỉ phụ trách 1 service có thể tự code, chạy database riêng và test độc lập với API Gateway mà **KHÔNG CẦN bật toàn bộ 9 services**, tiết kiệm RAM (< 2GB).
-
-* **[Cẩm Nang Kiểm Thử Độc Lập RESTful API, Event Bus & Chẩn Đoán Lỗi (ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)](ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)**  
-  👉 **HƯỚNG DẪN TEST REST, SWAGGER, EVENT BUS & DEBUG:** Chi tiết cách kiểm thử độc lập từng Endpoint RESTful HTTP/JSON qua Swagger UI/Postman/cURL tại cổng 8001-8008, kiểm thử từng Event Consumer qua RabbitMQ Management API, và quy trình 3 tầng chẩn đoán lỗi chuyên sâu bằng Grafana Tempo & Dead-Letter Queues.
-
-* **[Quy Chuẩn Kiến Trúc Clean Architecture 4 Tầng Cho Microservices (CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)](CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)**  
-  👉 Hướng dẫn cấu trúc thư mục 4 tầng (`*.Domain`, `*.Application`, `*.Infrastructure`, `*.Api`): phần nào làm cái nào, Entity viết ở đâu, DbContext cấu hình thế nào, RESTful Controllers/Minimal APIs viết ở đâu, và quy tắc thông báo lỗi 100% tiếng Anh.
-
-* **[Hướng Dẫn Tạo Mock API, Chuyển Đổi Runtime, Bypass Auth & Health Check (GUIDE_MOCK_DATA_GATEWAY.md)](GUIDE_MOCK_DATA_GATEWAY.md)**  
-  👉 Hướng dẫn quy trình 3 bước tạo Mock API chuẩn duy nhất (Controller Action + Seeds/ Fixture), kiến trúc pipeline 6 bước, cách chuyển `Mock` $\leftrightarrow$ `Real`, bật Bypass Auth để test không cần token, và sử dụng Health Prober.
-
-* **[Đặc Tả Kiến Trúc & Cẩm Nang 15 Thư Mục Của API Gateway (GATEWAY_ARCHITECTURE_AND_FOLDERS.md)](GATEWAY_ARCHITECTURE_AND_FOLDERS.md)**  
-  👉 Bức tranh toàn cảnh về Edge API Gateway, giải thích chi tiết chức năng của 15 thư mục mã nguồn và danh mục các tính năng cốt lõi (Fine-grained Rate Limiting, Dual-Runtime, Enum conversion...).
-
-* **[Lộ Trình Các Bước Kế Tiếp & Bộ Checklist Triển Khai Microservices (NEXT_STEPS_AND_CHECKLIST.md)](NEXT_STEPS_AND_CHECKLIST.md)**  
-  👉 Kim chỉ nam hành động: Lộ trình 4 giai đoạn phát triển 8 services theo thứ tự phụ thuộc dữ liệu và checklist 7 bước code service chuẩn.
-
-* **[Đặc Tả Danh Mục Entity & Enum Chuẩn Form Cho Frontend (FRONTEND_ENTITY_AND_ENUM_CATALOG.md)](FRONTEND_ENTITY_AND_ENUM_CATALOG.md)**  
-  👉 Tra cứu **78 Enums** (✅ khớp code) và **86 entity class** trong `*/Domain/Entities` / **87 bảng** trong `dbml/service/*.dbml` (⚠️ trước đây ghi “88 Entities” — không có nguồn nào cho ra 88).
-
-* **[Cẩm Nang Kiến Trúc & Cấu Trúc Thư Mục Cho Từng Service (Service Guides)]**:
-  Mỗi repository của từng service đều có tài liệu `README.md` riêng biệt hướng dẫn chi tiết luồng nghiệp vụ, các thư mục và quy trình phát triển tính năng mới:
-  - **UserService**: [src/Services/User/README.md](../src/Services/User/README.md)
-  - **CatalogService**: [src/Services/Catalog/README.md](../src/Services/Catalog/README.md)
-  - **CommerceService**: [src/Services/Commerce/README.md](../src/Services/Commerce/README.md)
-  - **AuctionService**: [src/Services/Auction/README.md](../src/Services/Auction/README.md)
-  - **FulfillmentService**: [src/Services/Fulfillment/README.md](../src/Services/Fulfillment/README.md)
-  - **NotificationService**: [src/Services/Notification/README.md](../src/Services/Notification/README.md)
-  - **LogService**: [src/Services/Log/README.md](../src/Services/Log/README.md)
-  - **WalletService**: [src/Services/Wallet/README.md](../src/Services/Wallet/README.md)
-  - **ApiGateway**: [src/Services/ApiGateway/README.md](../src/Services/ApiGateway/README.md)
+Chào mừng bạn đến với trung tâm tài liệu kỹ thuật của hệ sinh thái **Nexus Microservices Backend (.NET 8 LTS, C# 12)**.
 
 ---
 
-## 2. HƯỚNG DẪN HẠ TẦNG KỸ THUẬT CHUYÊN BIỆT (INFRASTRUCTURE GUIDES)
+## 1. BẮT ĐẦU TỪ ĐÂU
 
-Bộ tài liệu chuyên sâu về từng thành phần hạ tầng trong thư mục `docs/infra/`:
+Nếu bạn cần biết service A gọi service B như thế nào, hoặc cần deploy hệ thống lên nhiều máy chủ, đọc tài liệu này trước:
 
-* **[Hướng Dẫn Redis: Rate Limiting & Lưu Trữ OTP (infra/REDIS_GUIDE.md)](infra/REDIS_GUIDE.md)**  
-  👉 Bản chất Distributed Rate Limiter tại Gateway, cấu trúc key Rate Limit bucket, cấu trúc key OTP tại UserService, cẩm nang lệnh `redis-cli`, và mẹo xóa key giải phóng hạn mức.
-
-* **[Hướng Dẫn Giám Sát Phân Tán: Grafana & Tempo Traces (infra/OBSERVABILITY_GUIDE.md)](infra/OBSERVABILITY_GUIDE.md)**  
-  👉 Chuẩn W3C OpenTelemetry, cách lấy mã `X-Trace-Id` từ response header dán vào Grafana Explore (`:3000`) để xem biểu đồ Waterfall, phát hiện điểm nghẽn hiệu năng và lỗi SQL N+1.
-
-* **[Hướng Dẫn 8 Cơ Sở Dữ Liệu PostgreSQL & EF Core Migrations (infra/POSTGRES_DATABASES_GUIDE.md)](infra/POSTGRES_DATABASES_GUIDE.md)**  
-  👉 Bản đồ 8 cơ sở dữ liệu độc lập (ports `5433` - `5440`), hướng dẫn kết nối qua DBeaver / pgAdmin, quy trình tạo và cập nhật Code-First Database Migrations bằng EF Core 8.
+- **[Hướng Dẫn Kết Nối Dịch Vụ Toàn Hệ Thống (SERVICE_CONNECTIVITY_GUIDE.md)](SERVICE_CONNECTIVITY_GUIDE.md)**
+  👉 Topology, bảng port, route Gateway, ma trận gọi liên service, biến môi trường, ba cách chạy, deploy nhiều máy chủ, firewall, TLS, timeout và chẩn đoán lỗi.
 
 ---
 
-## 3. QUYẾT ĐỊNH KIẾN TRÚC & ĐẶC TẢ HỆ THỐNG (SYSTEM ARCHITECTURE & ADRS)
+## 2. CẨM NANG PHÁT TRIỂN
 
-* **[Hệ Thống 15 Quyết Định Kiến Trúc Toàn Hệ Thống (docs/adr/ADR.md)](adr/ADR.md)**  
-  👉 Các quyết định kiến trúc bất biến đã được phê duyệt: .NET 8, Clean Architecture, No-Repository, 100% RESTful HTTP/JSON (CẤM gRPC, bãi bỏ RabbitMQ / MassTransit / Saga), Dual-mode Gateway, Zero-validation Controller, Redis Rate Limit...
+- **[Quy Chuẩn Kiến Trúc Clean Architecture 4 Tầng (CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)](CLEAN_ARCHITECTURE_SERVICE_GUIDE.md)**
+  👉 Trách nhiệm từng tầng, Feature Co-location, quy tắc phụ thuộc, ngoại lệ Wallet dùng MediatR, quy chuẩn controller.
 
-* **[Kiến Trúc Health Prober & Chiến Lược Quản Lý Log Tập Trung (HEALTH_AND_LOGGING_ARCHITECTURE.md)](HEALTH_AND_LOGGING_ARCHITECTURE.md)**  
-  👉 Nguyên lý Prober Daemon, State Machine của Health Check, Circuit Breaker Fast-Fail (503), Docker Self-Healing, và chiến lược gom log tập trung về `LogService`.
+- **[Đặc Tả Kiến Trúc API Gateway (GATEWAY_ARCHITECTURE_AND_FOLDERS.md)](GATEWAY_ARCHITECTURE_AND_FOLDERS.md)**
+  👉 Cấu trúc thư mục Gateway, pipeline middleware, YARP, rate limiting, lan truyền danh tính.
 
-* **[Bộ Đặc Tả Kỹ Thuật Trung Tâm (specs/README.md)](../specs/README.md)**  
-  👉 Bao gồm sơ đồ C4 Container ([00_MASTER_SYSTEM_ARCHITECTURE.md](../specs/00_MASTER_SYSTEM_ARCHITECTURE.md)), Bảng quy hoạch cổng mạng ([01_SERVICE_CATALOG_PORT_MAP.md](../specs/01_SERVICE_CATALOG_PORT_MAP.md)), và Hướng dẫn cho AI Agents ([05_AI_AGENT_ORCHESTRATION_GUIDELINES.md](../specs/05_AI_AGENT_ORCHESTRATION_GUIDELINES.md)).
+- **[Cẩm Nang Kiểm Thử Độc Lập RESTful API & Chẩn Đoán Lỗi (ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)](ISOLATED_TESTING_AND_DEBUGGING_GUIDE.md)**
+  👉 Gọi trực tiếp Swagger/Postman/cURL tại `8001`-`8009`, đọc trace trên Grafana Tempo.
+
+- **[Đặc Tả Entity & Enum Cho Frontend (FRONTEND_ENTITY_AND_ENUM_CATALOG.md)](FRONTEND_ENTITY_AND_ENUM_CATALOG.md)**
+  👉 Danh mục enum PascalCase và entity của 8 service nghiệp vụ.
+
+- **[Bảng Đối Chiếu Route API Cho Frontend (FRONTEND_API_ENDPOINT_MAPPING.md)](FRONTEND_API_ENDPOINT_MAPPING.md)**
+  👉 Bảng route Gateway đã kiểm chứng, trỏ tới danh mục API chi tiết.
+
+- **[Danh Mục API Hai Trạng Thái (api/README.md)](api/README.md)**
+  👉 163 hồ sơ API trong `api/B_none/` và `api/A_Active/`, kèm envelope, mã lỗi và RBAC.
+
+---
+
+## 3. HẠ TẦNG
+
+- **[Redis: Rate Limiting & OTP (infra/REDIS_GUIDE.md)](infra/REDIS_GUIDE.md)**
+- **[Grafana & Tempo: Distributed Tracing (infra/OBSERVABILITY_GUIDE.md)](infra/OBSERVABILITY_GUIDE.md)**
+- **[8 Cơ Sở Dữ Liệu PostgreSQL & EF Core Migrations (infra/POSTGRES_DATABASES_GUIDE.md)](infra/POSTGRES_DATABASES_GUIDE.md)**
+
+---
+
+## 4. QUYẾT ĐỊNH KIẾN TRÚC VÀ ĐẶC TẢ
+
+- **[Architecture Decision Records (adr/ADR.md)](adr/ADR.md)**
+- **[Bộ Đặc Tả Kỹ Thuật Trung Tâm (../specs/README.md)](../specs/README.md)**
+- **[Hướng Dẫn Cho AI Agents (../specs/05_AI_AGENT_ORCHESTRATION_GUIDELINES.md)](../specs/05_AI_AGENT_ORCHESTRATION_GUIDELINES.md)**
+
+---
+
+## 5. TÀI LIỆU RIÊNG CỦA TỪNG SERVICE
+
+Mỗi service tự cung cấp README và bộ `specs/` nội bộ. Các tài liệu này tuân thủ nguyên tắc self-contained, không trỏ ra ngoài repo service.
+
+- [UserService](../src/Services/User/README.md)
+- [CatalogService](../src/Services/Catalog/README.md)
+- [CommerceService](../src/Services/Commerce/README.md)
+- [AuctionService](../src/Services/Auction/README.md)
+- [FulfillmentService](../src/Services/Fulfillment/README.md)
+- [NotificationService](../src/Services/Notification/README.md)
+- [LogService](../src/Services/Log/README.md)
+- [WalletService](../src/Services/Wallet/README.md)
+- [CheckHealService](../src/Services/CheckHeal/README.md)
+- [Gateway](../src/Services/Gateway/README.md)
+
+---
+
+## 6. QUY ƯỚC KHI CẬP NHẬT TÀI LIỆU
+
+- Mỗi tài liệu phải có banner trạng thái và ngày cập nhật ở đầu file.
+- Không mô tả tính năng không còn trong code. Nếu một kiến trúc đã bị gỡ, xóa tài liệu đó thay vì giữ lại.
+- Khi route hoặc DTO thay đổi, cập nhật đồng thời `docs/api/`, `docs/FRONTEND_API_ENDPOINT_MAPPING.md` và `docs/SERVICE_CONNECTIVITY_GUIDE.md`.
+- Không đưa API key, mật khẩu hoặc connection string thật vào tài liệu. Dùng placeholder.
