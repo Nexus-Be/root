@@ -58,7 +58,7 @@ Mỗi backend microservice trong Nexus là một ứng dụng Web API độc l�
 | **API Gateway** | `localhost:8080` | `http://localhost:8080/swagger` | `/api/v1/*` (Reverse Proxy & Điều phối) |
 | **User Service** | `localhost:8001` | `http://localhost:8001/swagger` | `/api/v1/auth/*`, `/api/v1/users/*` |
 | **Catalog Service** | `localhost:8002` | `http://localhost:8002/swagger` | `/api/v1/products/*`, `/api/v1/categories/*` |
-| **Commerce Service**| `localhost:8003` | `http://localhost:8003/swagger` | `/api/v1/cart/*`, `/api/v1/orders/*` |
+| **Commerce Service**| `localhost:8003` | `http://localhost:8003/swagger` | `/api/v1/carts/*`, `/api/v1/orders/*` |
 | **Log Service** | `localhost:8004` | `http://localhost:8004/swagger` | `/api/v1/logs/*` |
 | **Auction Service** | `localhost:8005` | `http://localhost:8005/swagger` | `/api/v1/auctions/*`, `/api/v1/bids/*` |
 | **Fulfillment Service** | `localhost:8006` | `http://localhost:8006/swagger` | `/api/v1/shipments/*`, `/api/v1/inventory/*` |

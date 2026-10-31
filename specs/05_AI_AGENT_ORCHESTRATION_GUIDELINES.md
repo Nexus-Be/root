@@ -127,7 +127,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
 | 2 | `specs/00_AGENT_MISSION_GUARDRAILS.md` | Append-only logs, Port `8004`, DB `5436` (`log_db`). |
 | 3 | `specs/01_CLEAN_ARCHITECTURE_LAYERS.md` | Clean Architecture, xử lý ghi log hiệu năng cao. |
 | 4 | `specs/02_API_REST_CONTRACTS.md` | Hợp đồng RESTful API: Ghi log, truy vấn nhật ký, quản trị Event Types. |
-| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; nhận log qua REST batch `POST /api/v1/log/batch`. |
+| 5 | `specs/03_EVENT_MESSAGING.md` | Trạng thái bãi bỏ RabbitMQ; nhận log qua REST batch `POST /api/v1/internal/logs/batch`. |
 | 6 | `specs/04_DATA_PERSISTENCE.md` | Schema bảng `Logs`, `LogEventTypes` (chỉ INSERT/SELECT, cấm UPDATE/DELETE). |
 | 7 | `specs/05_DEV_VERIFICATION_CHECKLIST.md` | Lệnh build & test kiểm chứng service. |
 
@@ -217,7 +217,7 @@ Khi bắt đầu làm việc trên bất kỳ repository nào, AI Agent **BẮT 
    - Các tác vụ gọi liên service (như User gửi OTP email sang Notification) được thực hiện qua typed `HttpClient` khai báo interface tại Application và hiện thực tại Infrastructure.
 10. **QUY CHUẨN BẮT BIẾN KHI PHÁT TRIỂN & KHAI BÁO API MỚI (MANDATORY API RULES)**:
    - **Cấm trùng lặp Route alias (No Duplicate Route Aliases)**: Cấm tuyệt đối khai báo nhiều route attributes trùng lặp (ví dụ `[HttpGet("user")]` và `[HttpGet("users")]`) trên cùng một Action. Mỗi action chỉ có 1 route endpoint chính thức duy nhất.
-   - **Quy ước Route Số ít cho User/AdminUser (Singular Route Convention)**: Toàn bộ endpoint liên quan đến User và AdminUser phải dùng danh từ số ít (`/api/v1/user`, `/api/v1/user/{userId}`, `/api/v1/admin/user`, `/api/v1/admin/user/{userId}`, `/api/v1/me`). Giữ danh từ số nhiều cho các collection chuẩn của domain khác (`/api/v1/auctions`, `/api/v1/categories`, `/api/v1/wallets`, `/api/v1/notifications`).
+   - **Quy ước Route Số nhiều (100% Plural Route Convention)**: Toàn bộ danh từ tài nguyên bộ sưu tập phải dùng dạng số nhiều (`/api/v1/users`, `/api/v1/users/{userId}`, `/api/v1/admin/users`, `/api/v1/admin/users/{userId}`, `/api/v1/sellers`, `/api/v1/products`, `/api/v1/carts`, `/api/v1/orders`, `/api/v1/logs`). Ngoại lệ duy nhất là `/api/v1/me` và `/api/v1/auth`.
    - **Mô hình Thin Controller & Kế thừa đúng chuẩn**:
      - Tại API Gateway: Controller bắt buộc kế thừa `GatewayBaseController`, không chứa business logic, chỉ validate input cơ bản qua `UserValidation` và ủy quyền downstream qua `ForwardAsync` / `ForwardPagedAsync` / `ForwardNoContentAsync`.
      - Tại Microservice: Kế thừa `ControllerBase`, ghép cặp 1-to-1 với feature service tương ứng.

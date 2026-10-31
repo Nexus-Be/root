@@ -9,7 +9,7 @@
 #   docker compose -f docker-compose.infra.yml up -d
 # =============================================================================
 
-name: nexus-be
+name: nexus-infra
 
 services:
 

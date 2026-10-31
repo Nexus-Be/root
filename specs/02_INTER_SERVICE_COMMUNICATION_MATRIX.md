@@ -22,19 +22,39 @@ Tài liệu này xác định ma trận giao tiếp **100% RESTful HTTP/JSON** g
 
 ## 2. MA TRẬN GIAO TIẾP LIÊN SERVICE (COMMUNICATION MATRIX)
 
-| Nguồn Gọi (Caller) | Đích Đến (Callee) | Giao Thức | Tên Phương Thức / Route | Mục Đích Nghiệp Vụ | Trạng thái triển khai |
-|:---|:---|:---:|:---|:---|:---|
-| **ApiGateway** | `UserService` | REST | `/api/v1/auth/*`, `/api/v1/user/*`, `/api/v1/admin/user/*` | Quản lý người dùng, đăng ký, đăng nhập và hồ sơ | ✅ Gateway hỗ trợ Mock/Real qua `ForwardAsync` |
-| **ApiGateway** | `CatalogService` | REST | `/api/v1/products/*`, `/api/v1/categories/*`, `/api/v1/inventory/*` | Truy vấn và cập nhật danh mục, sản phẩm, tồn kho | ✅ Catalog có 13 REST Controllers, Gateway hỗ trợ `ForwardAsync` |
-| **ApiGateway** | `CommerceService` | REST | `/api/v1/cart/*`, `/api/v1/orders/*` | Thao tác giỏ hàng và đặt hàng | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
-| **ApiGateway** | `AuctionService` | REST | `/api/v1/auctions/*` | Tham gia và tạo phòng đấu giá | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
-| **ApiGateway** | `FulfillmentService`| REST | `/api/v1/shipments/*` | Tra cước và vận đơn | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
-| **ApiGateway** | `NotificationService`| REST | `/api/v1/notifications/*`, `/api/v1/notifications/email/*` | Quản lý thông báo người dùng, gửi email OTP/alert | ✅ Notification có `NotificationsController` & `EmailController`, Gateway hỗ trợ `ForwardAsync` |
-| **ApiGateway** | `LogService` | REST | `/api/v1/logs/*`, `/api/v1/log/batch` | Ghi log, truy vấn nhật ký hệ thống | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
-| **ApiGateway** | `WalletService` | REST | `/api/v1/wallet/*` | Tra cứu số dư, nạp, rút và giao dịch ví | ✅ Gateway chuẩn hóa qua `ForwardAsync` |
-| **UserService** | `NotificationService`| REST | `POST /api/v1/notifications/email` | Gửi mã OTP xác thực qua email khi đăng ký / quên mật khẩu | ✅ Triển khai qua `IEmailNotificationClient` |
-| **CommerceService**| `WalletService` | REST | `POST /api/v1/wallet/transactions` | Thanh toán đơn hàng trực tiếp qua API ví | 🎯 Thiết kế REST trực tiếp |
-| **CommerceService**| `CatalogService` | REST | `POST /api/v1/inventory/reserve` | Khóa tồn kho ảo trực tiếp khi xác nhận đơn hàng | 🎯 Thiết kế REST trực tiếp |
+### 2.1. Phân Tách Tuyệt Đối Giữa Public API và Internal API
+- **Public APIs (`/api/v1/{resources}`)**: Dành cho Client/Frontend gọi thông qua API Gateway. Nằm tại thư mục `Controllers/Public/` của từng microservice.
+- **Internal APIs (`/api/v1/internal/{resources}`)**: Dành riêng cho giao tiếp trực tiếp giữa các microservice. Nằm tại thư mục `Controllers/Internal/`. Tuyệt đối không mở qua Gateway. Yêu cầu header `X-Internal-Service-Key`.
+
+| Nguồn Gọi (Caller) | Đích Đến (Callee) | Giao Thức | Tên Phương Thức / Route | Phân Loại | Mục Đích Nghiệp Vụ | Trạng thái triển khai |
+|:---|:---|:---:|:---|:---:|:---|:---|
+| **Gateway (YARP)** | `UserService` | REST | `/api/v1/auth/*`, `/api/v1/users/*`, `/api/v1/admin/users/*`, `/api/v1/sellers/*`, `/api/v1/me` | Public | Quản lý người dùng, đăng ký, đăng nhập và hồ sơ | ✅ Forward qua YARP stream |
+| **Gateway (YARP)** | `CatalogService` | REST | `/api/v1/products/*`, `/api/v1/categories/*` | Public | Truy vấn và tạo sản phẩm, danh mục | ✅ Forward qua YARP stream |
+| **Gateway (YARP)** | `CommerceService` | REST | `/api/v1/carts/*`, `/api/v1/orders/*` | Public | Thao tác giỏ hàng và tra cứu đơn hàng | ✅ Forward qua YARP stream |
+| **Gateway (YARP)** | `AuctionService` | REST | `/api/v1/auctions/*`, `/api/v1/auctions/{id}/bids` | Public | Tham gia và tra cứu phòng đấu giá, đặt giá | ✅ Forward qua YARP stream |
+| **Gateway (YARP)** | `FulfillmentService`| REST | `/api/v1/shipments/*`, `/api/v1/warehouses/*` | Public | Tra cước, thông tin kho và vận đơn | ✅ Forward qua YARP stream |
+| **Gateway (YARP)** | `NotificationService`| REST | `/api/v1/notifications/*` | Public | Quản lý thông báo người dùng, preferences, devices | ✅ Forward qua YARP stream |
+| **Gateway (YARP)** | `LogService` | REST | `/api/v1/logs/*`, `/api/v1/logs/event-types/*` | Public | Truy vấn nhật ký hệ thống | ✅ Forward qua YARP stream |
+| **Gateway (YARP)** | `WalletService` | REST | `/api/v1/wallets/*`, `/api/v1/admin/wallets/*` | Public | Tra cứu số dư, nạp, rút và chuyển tiền ví | ✅ Forward qua YARP stream |
+| **Gateway (YARP)** | `CheckHealService` | REST | `/api/v1/healthcheck/*`, `/health/*` | Public | Giám sát trạng thái hoạt động và keep-alive hệ sinh thái | ✅ Forward qua YARP stream |
+| **UserService** | `NotificationService`| REST | `POST /api/v1/internal/notifications/email/otp` | Internal | Gửi mã OTP xác thực qua email khi đăng ký / quên mật khẩu | ✅ Triển khai qua `EmailNotificationClient` + `X-Internal-Service-Key` |
+| **CatalogService** | `FulfillmentService`| REST | `POST /api/v1/internal/inventories/initialize` | Internal | Khởi tạo kho và tồn kho vật lý cho SKU sản phẩm mới tạo | ✅ Triển khai qua `FulfillmentInternalClient` + `X-Internal-Service-Key` |
+| **CommerceService**| `WalletService` | REST | `POST /api/v1/internal/wallets/checkout/direct` | Internal | Thanh toán trừ tiền trực tiếp từ ví khi xác nhận đơn | ✅ Triển khai qua `WalletClient` + `X-Internal-Service-Key` |
+| **Các Service** | `LogService` | REST | `POST /api/v1/internal/logs/batch` | Internal | Thu thập và nạp nhật ký kiểm toán tập trung | ✅ Triển khai qua `InternalLogController` + `X-Internal-Service-Key` |
+
+---
+
+## 3. RÀO CHẮN BẢO MẬT GIAO TIẾP NỘI BỘ (INTERNAL API DEFENSE-IN-DEPTH)
+
+1. **Gateway Ingress Blocker**:
+   - `ClientContextMiddleware` tại Gateway tự động xóa bỏ header `X-Internal-Service-Key` nếu client bên ngoài gửi lên.
+   - Gateway từ chối ngay lập tức mọi request có path bắt đầu bằng `/api/v1/internal` với HTTP 404 Not Found.
+   - YARP ReverseProxy không khai báo route cho bất kỳ đường dẫn internal nào.
+2. **Microservice Ingress Authenticator**:
+   - `InternalServiceAuthMiddleware` chặn mọi request vào `/api/v1/internal/*`.
+   - Bắt buộc header `X-Internal-Service-Key` phải khớp với cấu hình `InternalSecurity:ServiceKey` (hoặc biến môi trường `INTERNAL_SERVICE_SECRET`). Trả về HTTP 403 `FORBIDDEN` nếu thiếu hoặc sai.
+3. **Outbound HttpClient Security**:
+   - Mọi Typed HttpClient gọi liên service đăng ký kèm `InternalServiceAuthHandler` (DelegatingHandler) tự động tiêm `X-Internal-Service-Key` vào request header.
 
 ---
 

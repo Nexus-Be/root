@@ -79,7 +79,7 @@ Vòng đời trạng thái của một Service được quản lý theo State Ma
 
 ## 4. Hướng Dẫn Dành Cho AI Code Agent & Developer: Gom Log Tập Trung Về `LogService` (Future Roadmap)
 
-> **Trạng thái triển khai (2026-10-24): ❌ Đứt gãy — Gateway đã code phía gửi, LogService chưa có phía nhận.** `ApiGateway/Nexus.Gateway/Logging/GatewayBatchLogSink.cs:50-55` POST `{RemoteEndpoint}/api/v1/log/batch` (mặc định `http://localhost:8004`), nhưng `Log.Api/Program.cs` **chỉ có** `MapGet("/health")` (dòng 66) và `MapGet("/")` (dòng 67) ⇒ mọi batch log nhận **404**, và lỗi bị nuốt bởi `catch { }` rỗng tại `GatewayBatchLogSink.cs:57-60`. Hiện **không có log tập trung nào được ghi** qua đường này; nguồn log thật duy nhất là Serilog của Gateway (stdout + file roll).
+> **Trạng thái triển khai (2026-10-24): ❌ Đứt gãy — Gateway đã code phía gửi, LogService chưa có phía nhận.** `ApiGateway/Nexus.Gateway/Logging/GatewayBatchLogSink.cs:50-55` POST `{RemoteEndpoint}/api/v1/internal/logs/batch` (mặc định `http://localhost:8004`), nhưng `Log.Api/Program.cs` **chỉ có** `MapGet("/health")` (dòng 66) và `MapGet("/")` (dòng 67) ⇒ mọi batch log nhận **404**, và lỗi bị nuốt bởi `catch { }` rỗng tại `GatewayBatchLogSink.cs:57-60`. Hiện **không có log tập trung nào được ghi** qua đường này; nguồn log thật duy nhất là Serilog của Gateway (stdout + file roll).
 > **Nguồn sự thật:** `GatewayBatchLogSink.cs` (phía gửi) + `Log.Api/Program.cs` (phía nhận).
 
 > ⚠️ **LƯU Ý QUAN TRỌNG KHI TRIỂN KHAI `LogService` (PORT 8004, `log_db`):**
@@ -90,7 +90,7 @@ Vòng đời trạng thái của một Service được quản lý theo State Ma
 >    - Toàn bộ log phải được gom vào bộ đệm (Buffer). Chỉ khi nào bộ đệm tích lũy **đủ 1000 dòng log** (hoặc sau một khoảng thời gian FlushTimeout định kỳ, ví dụ 30 giây nếu chưa đủ 1000 dòng) thì mới thực hiện gửi một gói Bulk Payload sang LogService.
 > 2. **Kênh Truyền Tải Được Khuyến Nghị:**
 >    - *Ưu tiên 1 (Asynchronous Event Bus):* Publish event `LogBatchCreatedIntegrationEvent` qua RabbitMQ tới queue `log-service.batch-ingestion`. Cách này đảm bảo Gateway không bị ảnh hưởng nếu LogService bận hoặc khởi động lại.
->    - *Ưu tiên 2 (HTTP REST Bulk API):* Gửi POST payload dạng JSON array tới `POST /api/v1/log/batch` của LogService.
+>    - *Ưu tiên 2 (HTTP REST Bulk API):* Gửi POST payload dạng JSON array tới `POST /api/v1/internal/logs/batch` của LogService.
 
 ---
 

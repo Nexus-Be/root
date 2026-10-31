@@ -12,7 +12,7 @@ Tài liệu này quy chuẩn toàn bộ bản đồ cổng mạng (Ports), cơ s
 
 | Service Name | Cổng HTTP REST (Downstream) | Giao Thức Downstream | Database Engine | Cổng DB | DB Name | Hạ Tầng Phụ Trợ |
 |:---|:---:|:---:|:---:|:---:|:---|:---:|
-| **ApiGateway** | `8080` | HTTP/REST (Edge Proxy) | Redis *(Cache/RateLimit)* | `6379` | `db0` | Redis: `6379` |
+| **Gateway (YARP)** | `8080` | HTTP/REST (Edge Proxy) | Redis *(Cache/RateLimit)* | `6379` | `db0` | Redis: `6379` |
 | **UserService** | `8001` | REST (JSON over HTTP) | PostgreSQL | `5433` | `usermanagement_db` | Redis: `6379` (OTP/Cache) |
 | **CatalogService** | `8002` | REST (JSON over HTTP) | PostgreSQL (Local / Neon) | `5434` / Cloud | `category_db` | N/A |
 | **CommerceService** | `8003` | REST (JSON over HTTP) | PostgreSQL (Local / Remote) | `5435` | `commerce_db` | N/A |

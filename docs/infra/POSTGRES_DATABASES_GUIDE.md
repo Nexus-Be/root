@@ -1,11 +1,9 @@
 # HƯỚNG DẪN 8 CƠ SỞ DỮ LIỆU POSTGRESQL & QUẢN LÝ EF CORE MIGRATIONS
 ## (POSTGRESQL DATABASE CATALOG, DBEAVER SETUP & EF CORE MIGRATION GUIDE)
 
-> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — 8 migration `Initial*` **đã được tạo lại** (Auction `20261024103234`, Catalog `20261024103127`, Commerce `20261024103145`, Fulfillment `20261024103218`, Log `20261024103313`, Notification `20261024103253`, User `20261024103058`, Wallet `20261024103202`) và đã commit, nhưng:
-> 1. **Image `postgres:16-alpine` trên máy dev bị hỏng** (`exec /usr/local/bin/docker-entrypoint.sh: exec format error`, script 0 byte) ⇒ 8 container DB `Restarting (255)`; phải dùng `postgres:15-alpine` hoặc `docker rmi` rồi pull lại.
-> 2. Chưa từng có bằng chứng schema được apply thành công: `Program.cs` migrate trong `try/catch` chỉ `LogWarning("Database migration deferred …")` nên app **vẫn khởi động** khi DB chết, và `/health` vẫn trả 200 (xem `docs/plans/SETUP_PHASE_PLAN.md` §2.4).
-> **Nguồn sự thật:** `*/Migrations/*.cs`, `*/Api/Program.cs`, `docs/plans/audit/logs/smoke-catalog.log`.
-> **Cập nhật lần cuối:** 2026-10-24.
+> **Trạng thái triển khai (2026-10-31):** ✅ Đã chuyển sang Neon Cloud. Mỗi service dùng một database Neon riêng và migration `Initial*` đã apply thành công trên cả 8 database.
+> **Nguồn sự thật:** `src/Services/*/*.Infrastructure/Persistence/Migrations/*.cs`, file `.env` và `appsettings.Development.json` của từng repo.
+> **Cập nhật lần cuối:** 2026-10-31.
 
 > **Mục tiêu tài liệu**: Cung cấp danh mục chi tiết 8 Cơ sở dữ liệu PostgreSQL độc lập theo nguyên tắc **Database-Per-Service (ADR 03)**, hướng dẫn kết nối qua công cụ đồ họa (DBeaver, pgAdmin), và quy trình chuẩn quản lý Code-First Database Migrations bằng Entity Framework Core 8.
 
@@ -16,29 +14,30 @@
 Trong hệ sinh thái Nexus Microservices:
 * **Mỗi Microservice sở hữu 1 Cơ sở dữ liệu PostgreSQL hoàn toàn độc lập.**
 * **TUYỆT ĐỐI KHÔNG TRUY CẬP CHÉO CƠ SỞ DỮ LIỆU**: `UserService` không bao giờ được kết nối vào CSDL của `CatalogService`, và ngược lại.
-* **Không dùng Khóa Ngoại (Foreign Key) liên database**: Mọi liên kết giữa các miền nghiệp vụ được thực hiện thông qua mã định danh chuẩn `Guid` (ví dụ: `Order` lưu `UserId` dạng UUID, nhưng không tạo Foreign Key trỏ sang bảng `Users`). Khi cần lấy thông tin chi tiết, service gọi qua gRPC hoặc lắng nghe Event qua RabbitMQ.
+* **Không dùng Khóa Ngoại (Foreign Key) liên database**: Mọi liên kết giữa các miền nghiệp vụ được thực hiện thông qua mã định danh chuẩn `Guid` (ví dụ: `Order` lưu `UserId` dạng UUID, nhưng không tạo Foreign Key trỏ sang bảng `Users`). Khi cần lấy thông tin chi tiết, service gọi qua typed REST client.
 
 ---
 
-## 2. BẢN ĐỒ CHI TIẾT 8 CƠ SỞ DỮ LIỆU (DATABASE & PORT CATALOG)
+## 2. BẢN ĐỒ 8 DATABASE NEON
 
-Toàn bộ 8 cơ sở dữ liệu đều sử dụng PostgreSQL 16 Alpine. Để tránh xung đột với cổng `5432` mặc định nếu máy tính của lập trình viên đã cài sẵn PostgreSQL, hệ thống quy hoạch các cổng Host từ **`5433` đến `5440`**:
+Mỗi service trỏ tới một database riêng trên Neon Cloud. Tên database trùng với tên miền nghiệp vụ. Connection string đầy đủ nằm trong `.env` của từng repo và không commit.
 
-| STT | Service Sở Hữu | Tên Database | Port Máy Host | Container Docker | Volume Lưu Trữ |
-|:---:| :--- | :--- | :---: | :--- | :--- |
-| **1** | **UserService** | **`usermanagement_db`** | **5433** | `nexus-user-db` | `user_db_data` |
-| **2** | **CatalogService** | **`category_db`** | **5434** | `nexus-catalog-db` | `catalog_db_data` |
-| **3** | **CommerceService** | **`commerce_db`** | **5435** | `nexus-commerce-db` | `commerce_db_data` |
-| **4** | **LogService** | **`log_db`** | **5436** | `nexus-log-db` | `log_db_data` |
-| **5** | **AuctionService** | **`auction_db`** | **5437** | `nexus-auction-db` | `auction_db_data` |
-| **6** | **FulfillmentService** | **`fulfillment_db`** | **5438** | `nexus-fulfillment-db`| `fulfillment_db_data` |
-| **7** | **NotificationService**| **`notification_db`** | **5439** | `nexus-notification-db`| `notification_db_data` |
-| **8** | **WalletService** | **`wallet_db`** | **5440** | `nexus-wallet-db` | `wallet_db_data` |
+| STT | Service | Database | Neon Host | Biến môi trường |
+|:---:| :--- | :--- | :--- | :--- |
+| **1** | **UserService** | **`user`** | `ep-fancy-poetry-a1frv94q-pooler.ap-southeast-1.aws.neon.tech` | `USER_DB_CONNECTION` |
+| **2** | **CatalogService** | **`catalog`** | `ep-snowy-lake-a1b8fywo-pooler.ap-southeast-1.aws.neon.tech` | `CATALOG_DB_CONNECTION` |
+| **3** | **CommerceService** | **`commerce`** | `ep-fancy-poetry-a1frv94q-pooler.ap-southeast-1.aws.neon.tech` | `COMMERCE_DB_CONNECTION` |
+| **4** | **LogService** | **`log`** | `ep-summer-shape-b3m9hy77-pooler.c-4.ap-southeast-1.aws.neon.tech` | `LOG_DB_CONNECTION` |
+| **5** | **AuctionService** | **`auction`** | `ep-summer-shape-b3m9hy77-pooler.c-4.ap-southeast-1.aws.neon.tech` | `AUCTION_DB_CONNECTION` |
+| **6** | **FulfillmentService** | **`fulfillment`** | `ep-quiet-credit-azf5li7q-pooler.c-3.ap-southeast-1.aws.neon.tech` | `FULFILLMENT_DB_CONNECTION` |
+| **7** | **NotificationService**| **`notification`** | `ep-snowy-lake-a1b8fywo-pooler.ap-southeast-1.aws.neon.tech` | `NOTIFICATION_DB_CONNECTION` |
+| **8** | **WalletService** | **`wallet`** | `ep-quiet-credit-azf5li7q-pooler.c-3.ap-southeast-1.aws.neon.tech` | `WALLET_DB_CONNECTION` |
 
-### Thông tin đăng nhập mặc định (Tất cả 8 DB):
-* **Host**: `localhost` (khi chạy từ máy tính của bạn) hoặc `user-db`, `catalog-db`... (khi ở trong mạng Docker `nexus-network`).
-* **User (Tài khoản)**: `postgres`
-* **Password (Mật khẩu)**: `MatkhaucuaTui123@`
+### Thông tin kết nối:
+* **Định dạng**: URI `postgresql://<USERNAME>:<PASSWORD>@<HOST>/<DATABASE>?sslmode=require&channel_binding=require`.
+* **SSL**: bắt buộc. `NormalizeConnectionString` tự thêm `SSL Mode=Require` khi nhận URI.
+* **Nguồn giá trị thật**: file `.env` của từng repo, đã nằm trong `.gitignore`.
+* **Dự phòng offline**: cụm PostgreSQL local trong `src/Infrastructure/databases/docker-compose.yml`, host port `5433` đến `5440`, user `postgres`, password `postgres`.
 
 ---
 
@@ -49,12 +48,7 @@ Khuyên dùng công cụ miễn phí **DBeaver** (hoặc pgAdmin, DataGrip):
 ### Các bước tạo kết nối mới trên DBeaver:
 1. Mở DBeaver $\rightarrow$ Bấm nút **New Database Connection** (biểu tượng phích cắm điện với dấu `+`).
 2. Chọn loại CSDL: **PostgreSQL** $\rightarrow$ Bấm **Next**.
-3. Điền thông tin kết nối (Ví dụ kết nối vào `UserService`):
-   - **Host**: `localhost`
-   - **Port**: `5433` *(Lưu ý: Điền đúng cổng Host của DB tương ứng trong bảng trên)*
-   - **Database**: `usermanagement_db`
-   - **Username**: `postgres`
-   - **Password**: `MatkhaucuaTui123@`
+3. Dán connection string Neon (lấy từ `.env` của service tương ứng) vào ô **URL**, DBeaver tự tách host, port, database, user và password.
 4. Bấm nút **Test Connection**:
    - Nếu DBeaver yêu cầu tải PostgreSQL JDBC Driver, bấm **Download** (tự động 100%).
    - Khi hiện thông báo `Connected` màu xanh lá $\rightarrow$ Bấm **Finish**.
@@ -92,7 +86,7 @@ EF Core sẽ tạo một file C# mới trong thư mục `Persistence/Migrations/
 ---
 
 ### 4.3. Cập nhật Thay Đổi Vào CSDL PostgreSQL (Update Database)
-Đảm bảo container database tương ứng đang chạy, sau đó gõ:
+Đảm bảo database Neon tương ứng đang bật và `.env` của service đã có connection string, sau đó gõ:
 ```bash
 # Áp dụng migration cho UserService:
 dotnet ef database update \

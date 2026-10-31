@@ -1,8 +1,8 @@
 # 04 — ĐĂNG KÝ HỢP ĐỒNG GIAO TIẾP DÙNG CHUNG (SHARED CONTRACTS REGISTRY)
 
-> **Trạng thái triển khai (2026-10-30):** ✅ Đã chuyển dịch toàn diện sang chuẩn hợp đồng **RESTful DTOs (JSON over HTTP)** cho toàn bộ giao tiếp. **BÃI BỎ VÀ LOẠI BỎ HOÀN TOÀN PROTOBUF (`shop.proto`) VÀ RABBITMQ / MASSTRANSIT EVENTS**. Toàn bộ giao tiếp giữa các service chuyển sang gọi trực tiếp RESTful API.
-> **Nguồn sự thật:** code Gateway DTOs (`src/Services/ApiGateway/Nexus.Gateway/Dtos/`) và REST Controllers tại các microservices.
-> **Cập nhật lần cuối:** 2026-10-30.
+> **Trạng thái triển khai (2026-10-31):** ✅ Đã chuyển dịch toàn diện sang chuẩn hợp đồng **RESTful DTOs (JSON over HTTP)** qua **Microsoft YARP Gateway (`src/Services/Gateway`)**. **BÃI BỎ VÀ LOẠI BỎ HOÀN TOÀN PROTOBUF (`shop.proto`) VÀ RABBITMQ / MASSTRANSIT EVENTS**. Toàn bộ giao tiếp giữa các service chuyển sang gọi trực tiếp RESTful API.
+> **Nguồn sự thật:** code YARP Gateway (`src/Services/Gateway/Gateway/`) và REST Controllers tại các microservices.
+> **Cập nhật lần cuối:** 2026-10-31.
 
 Tài liệu này xác định vị trí nguồn sự thật duy nhất (Single Source of Truth) của các bản hợp đồng dữ liệu REST DTOs cho toàn hệ thống.
 
@@ -10,55 +10,56 @@ Tài liệu này xác định vị trí nguồn sự thật duy nhất (Single S
 
 ## 1. HỢP ĐỒNG GIAO TIẾP ĐỒNG BỘ — RESTFUL DTOs (DUY NHẤT)
 
-Kể từ bản kiến trúc tháng 10/2026, Nexus chuẩn hóa giao tiếp đồng bộ giữa ApiGateway và 8 Microservices hoàn toàn bằng **RESTful API (JSON over HTTP)**:
-1. **Vị trí Hợp đồng DTO**:
-   - Phía Gateway: `src/Services/ApiGateway/Nexus.Gateway/Dtos/{Service}/`
-   - Phía Microservice: `src/Services/{Service}/{Service}.Application/DTOs/` hoặc `Api/Controllers/`
+Kể từ bản kiến trúc tháng 10/2026, Nexus chuẩn hóa giao tiếp đồng bộ giữa Gateway và 9 Microservices hoàn toàn bằng **RESTful API (JSON over HTTP)**:
+1. **Vị trí Hợp đồng DTO & Định Tuyến**:
+   - Phía Gateway: Khai báo định tuyến YARP tại `src/Services/Gateway/Gateway/appsettings.json`, tự động bọc phong bì qua `ResponseEnvelopeMiddleware.cs` và lan truyền danh tính qua `IdentityPropagationTransform.cs`.
+   - Phía Microservice: Định nghĩa tại `{Service}.Application/Services/{Feature}/{Feature}Requests.cs` và `{Feature}Responses.cs`.
 2. **Quy chuẩn Casing & Đóng Gói**:
    - HTTP JSON Request/Response: `camelCase`.
    - C# DTO Properties: `PascalCase`.
-   - Enum Serialization: `PascalCaseJsonStringEnumConverter` hoặc `JsonStringEnumConverter`.
-   - Mọi kết quả đơn lẻ bọc trong `ApiResponse<T>`.
-   - Mọi kết quả phân trang bọc trong `ApiResponse<PagedData<T>>`.
-   - Mọi kết quả rỗng (204) bọc trong `ApiResponse<object>`.
-   - Mọi lỗi nghiệp vụ và lỗi hệ thống bọc trong `ApiErrorResponse` (RFC 9110).
+   - Enum Serialization: `PascalCaseJsonStringEnumConverter` (`allowIntegerValues: false`).
+   - Mọi kết quả đơn lẻ trả về từ microservice được Gateway tự động bọc trong `ApiResponse<T>`.
+   - Mọi kết quả phân trang trả về từ microservice (`PagedData<T>`) được Gateway tự động bọc trong `ApiResponse<PagedData<T>>`.
+   - Mọi kết quả xóa hoặc không có body trả về HTTP `204 NoContent` (truyền thẳng không bọc).
+   - Mọi lỗi nghiệp vụ và lỗi hệ thống bọc trong `ApiErrorResponse` (RFC 9110 / RFC 7807).
 
 ---
 
 ## 2. QUY TRÌNH THÊM MỚI HOẶC NÂNG CẤP API ĐỒNG BỘ (RESTFUL WORKFLOW)
 
-Quy trình phát triển API mới chuẩn mực không còn phụ thuộc vào `protoc` hay gRPC compilation, loại bỏ mock engine để chạy trực tiếp:
+Quy trình phát triển API mới chuẩn mực chạy trực tiếp qua YARP Reverse Proxy:
 
 ```
 [ Developer / AI Agent ]
            │
-           ▼ (Bước 1) Khai báo DTOs tại Gateway và Backend Microservice:
-           │         Gateway: src/Services/ApiGateway/Nexus.Gateway/Dtos/{service}/{feature}Dtos.cs
-           │         Backend: src/Services/{Service}/{Service}.Application/Services/{Feature}/{Feature}Requests.cs & Responses.cs
+           ▼ (Bước 1) Khai báo Feature Service DTOs tại Backend Microservice:
+           │         src/Services/{Service}/{Service}.Application/Services/{Feature}/{Feature}Requests.cs & Responses.cs
            │
            ▼ (Bước 2) Triển khai Feature Service tại Microservice backend:
            │         src/Services/{Service}/{Service}.Application/Services/{Feature}/I{Feature}Service.cs & {Feature}Service.cs
+           │         Inject trực tiếp I{Service}DbContext và DbSet<T> (CẤM Repository pattern)
            │
-           ▼ (Bước 3) Triển khai REST Controller tại Microservice backend:
-           │         src/Services/{Service}/{Service}.Api/Controllers/{Feature}Controller.cs
+           ▼ (Bước 3) Triển khai Thin REST Controller:
+           │         Public: src/Services/{Service}/{Service}.Api/Controllers/Public/{Feature}Controller.cs
+           │         Internal: src/Services/{Service}/{Service}.Api/Controllers/Internal/Internal{Feature}Controller.cs
            │
-           ▼ (Bước 4) Viết Gateway Controller Action (Kế thừa GatewayBaseController):
-           │         src/Services/ApiGateway/Nexus.Gateway/Controllers/{Feature}Controller.cs
-           │         Ủy quyền downstream qua ForwardAsync / ForwardPagedAsync / ForwardNoContentAsync
+           ▼ (Bước 4) Cấu hình định tuyến Reverse Proxy tại Gateway (nếu là Public API):
+           │         src/Services/Gateway/Gateway/appsettings.json (Thêm Route & Cluster matching)
            │
            ▼ (Bước 5) Kiểm thử đầu cuối:
            │         - Kiểm thử unit & integration test: dotnet test <Solution>.sln -c Release
-           │         - Kiểm thử gọi API qua Gateway cURL / Swagger: http://localhost:8080/api/v1/...
+           │         - Kiểm thử gọi API qua Gateway: http://localhost:8080/api/v1/...
 ```
 
 ### Nguyên Tắc An Toàn Tương Thích Ngược (Backward Compatibility):
 - **Tính cộng gộp (Additive Changes)**: Luôn cho phép thêm trường mới (nullable hoặc có giá trị mặc định).
 - **Không đổi kiểu hoặc xóa trường đang sử dụng**: Nếu cần deprecate, đánh dấu `[Obsolete]` trên DTO.
-- **Header Định Danh (Identity Propagation)**: Toàn bộ thông tin định danh và ngữ cảnh truy vết được tự động chuyển tiếp qua HTTP Request Headers:
-  - `Authorization: Bearer <JWT>`
-  - `x-user-id`: ID người dùng
-  - `x-user-roles`: Danh sách quyền (ngăn cách bởi dấu phẩy)
+- **Header Định Danh (Identity Propagation)**: Toàn bộ thông tin định danh và ngữ cảnh truy vết được Gateway tự động trích xuất và tiêm an toàn qua HTTP Request Headers:
+  - `x-user-id`: GUID định danh duy nhất của người dùng
   - `x-user-email`: Email người dùng
+  - `x-user-roles`: Danh sách quyền viết thường (ngăn cách bởi dấu phẩy)
+  - `x-user-permissions`: Danh sách quyền viết hoa (ngăn cách bởi dấu phẩy)
+  - `x-client-ip`: IP thực tế của client
   - `x-trace-id` & `traceparent`: Mã truy vết phân tán W3C
 
 ---

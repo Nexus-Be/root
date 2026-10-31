@@ -19,6 +19,7 @@ Tài liệu này là **Bộ Chỉ Dẫn & Đặc Tả Kỹ Thuật Trung Tâm (M
 | [03_SECURITY_RBAC_DATA_GOVERNANCE.md](03_SECURITY_RBAC_DATA_GOVERNANCE.md) | Bảo mật & Chuẩn dữ liệu | JWT Bearer Lifecycle, chuyển tiếp headers qua HTTP sang downstream, ma trận phân quyền **6 roles**, Gateway Pure Reverse Proxy, chuẩn lỗi RFC 9110 / RFC 6585. |
 | [04_SHARED_CONTRACTS_REGISTRY.md](04_SHARED_CONTRACTS_REGISTRY.md) | Hợp đồng giao tiếp chung | Chuẩn hóa RESTful C# DTOs, lịch sử bãi bỏ gRPC Protobuf và RabbitMQ events. |
 | [05_AI_AGENT_ORCHESTRATION_GUIDELINES.md](05_AI_AGENT_ORCHESTRATION_GUIDELINES.md) | Chỉ dẫn cho AI Agents | Quy tắc chống ảo giác (Anti-Hallucination), chuẩn hóa RESTful downstream, quy tắc Clean Architecture, No-Repository pattern. |
+| [06_ARCHITECTURAL_INVARIANTS_AND_CONTRACT_SPECIFICATION.md](06_ARCHITECTURAL_INVARIANTS_AND_CONTRACT_SPECIFICATION.md) | Đặc tả bất biến kiến trúc & Hợp đồng giao tiếp | Ranh giới Edge Gateway vs Core Microservices, Header Trust Matrix, Response Envelope Contract, Anti-Spoofing, Internal API Isolation. |
 
 ---
 
@@ -28,7 +29,7 @@ Mỗi service repository bên trong `src/Services/` là một Git Repository đ�
 
 | STT | Service Repository | Thư Mục | Spec Kit Riêng | Nhiệm Vụ Chính & Bounded Context | Cổng REST | Cổng DB |
 |:---:|:---|:---|:---:|:---|:---:|:---:|
-| 0 | **ApiGateway** | `src/Services/ApiGateway/` | [ApiGateway Spec Kit](../src/Services/ApiGateway/specs/README.md) | Edge Reverse Proxy, REST downstream, JWT/RBAC, Rate Limit. | `8080` | N/A (Redis 6379) |
+| 0 | **Gateway** | `src/Services/Gateway/` | [Gateway Spec Kit](../src/Services/Gateway/specs/01_ARCHITECTURE.md) | Edge Reverse Proxy YARP 2.3.0, Anti-Spoofing, Identity Propagation, Rate Limit. | `8080` | N/A (Redis 6379) |
 | 1 | **UserService** | `src/Services/User/` | [UserService Spec Kit](../src/Services/User/specs/README.md) | Đăng ký, OTP, Login/JWT, User Profile, Quản trị người dùng, Seller onboarding. | `8001` | `5433` |
 | 2 | **CatalogService** | `src/Services/Catalog/` | [CatalogService Spec Kit](../src/Services/Catalog/specs/README.md) | Quản lý danh mục, sản phẩm, kho ảo sẵn sàng bán. | `8002` | `5434` |
 | 3 | **CommerceService** | `src/Services/Commerce/` | [CommerceService Spec Kit](../src/Services/Commerce/specs/README.md) | Quản lý giỏ hàng, đặt hàng, xử lý checkout đồng bộ. | `8003` | `5435` |

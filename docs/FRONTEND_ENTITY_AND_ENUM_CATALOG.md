@@ -521,7 +521,7 @@
 # 8. LOG SERVICE (Port 8004 | `log_db`)
 
 ### 8.1 `CentralAuditAction` — Hành Động Kiểm Toán Hệ Thống
-* **Thuộc tính JSON:** `action` trong `/api/v1/log/logs` (`Create = 0`, `Update = 1`, `Delete = 2`, `Login = 3`, `Logout = 4`, `Approve = 5`, `Reject = 6`, `SoftDelete = 7`, `Export = 8`, `Other = 9`)
+* **Thuộc tính JSON:** `action` trong `/api/v1/logs` (`Create = 0`, `Update = 1`, `Delete = 2`, `Login = 3`, `Logout = 4`, `Approve = 5`, `Reject = 6`, `SoftDelete = 7`, `Export = 8`, `Other = 9`)
 
 ---
 

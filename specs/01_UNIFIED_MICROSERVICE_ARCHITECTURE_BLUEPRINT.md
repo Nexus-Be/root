@@ -22,7 +22,7 @@ Mỗi microservice độc lập chứa đúng 4 project tương ứng 4 tầng C
 
 ### Trách nhiệm từng tầng:
 1. **`{Service}.Domain`**: Chứa Core Entities, Value Objects, Domain Events, Enums, Domain Exceptions. **Không tham chiếu bất kỳ project hay thư viện bên ngoài nào** (zero-dependency, không cài EF Core hay MediatR vào Domain).
-2. **`{Service}.Application`**: Chứa toàn bộ nghiệp vụ ứng dụng, định nghĩa interface `I{Service}DbContext`, Feature Services, DTOs, và Client Interfaces giao tiếp liên service.
+2. **`{Service}.Application`**: Chứa toàn bộ nghiệp vụ ứng dụng, định nghĩa interface `I{Service}DbContext`, Feature Services, DTOs, và Client Interfaces giao tiếp liên service. **Ngoại lệ duy nhất:** `WalletService` dùng classic CQRS qua MediatR tại `Features/{Area}/Commands|Queries/{UseCase}/`, không có Feature Service facade.
 3. **`{Service}.Infrastructure`**: Hiện thực `I{Service}DbContext`, cấu hình EF Core (Fluent API), PostgreSQL Migrations, HTTP REST Clients gọi liên service, và adapters bên ngoài (MailKit, VNPay, Redis).
 4. **`{Service}.Api`**: Điểm vào HTTP duy nhất của service (REST Controllers, Middlewares, DI Bootstrap trong `Program.cs`). **Tuyệt đối không chứa logic nghiệp vụ hay truy vấn database trực tiếp**.
 
@@ -40,12 +40,13 @@ src/Services/{Service}/
 │
 ├── {Service}.Application/
 │   ├── Common/
-│   │   ├── Interfaces/
-│   │   │   └── I{Service}DbContext.cs          # Interface trừu tượng hóa EF Core context
+│   │   ├── Extensions/
+│   │   │   └── EnumExtensions.cs               # Parse enum an toàn & tiện ích chung
 │   │   └── Models/
-│   │       ├── ApiResponse.cs                  # Phong bì dữ liệu chuẩn
-│   │       └── PagedResultDto.cs               # Phong bì phân trang
-│   ├── Interfaces/                             # Interfaces giao tiếp ngoài (vd: IEmailNotificationClient)
+│   │       └── PagedResultDto.cs               # DTO phân trang chuẩn
+│   ├── Interfaces/                             # Toàn bộ DbContext và Typed Client Interfaces
+│   │   ├── I{Service}DbContext.cs              # Interface trừu tượng hóa EF Core context
+│   │   └── I{Sibling}InternalClient.cs         # Interfaces giao tiếp ngoài (vd: IEmailNotificationClient, IFulfillmentInternalClient)
 │   ├── Services/                               # Feature Co-location (Nghiệp vụ đồng bộ)
 │   │   ├── {FeatureA}/
 │   │   │   ├── I{FeatureA}Service.cs
@@ -69,11 +70,15 @@ src/Services/{Service}/
 │   └── DependencyInjection.cs                  # Cấu hình DB, HttpClient, Redis
 │
 └── {Service}.Api/
-    ├── Controllers/                            # REST Controllers (1-to-1 với Feature)
-    │   ├── {FeatureA}Controller.cs             # Chỉ inject I{FeatureA}Service
-    │   └── {FeatureB}Controller.cs             # Chỉ inject I{FeatureB}Service
+    ├── Controllers/                            # REST Controllers (Phân tách Public vs Internal)
+    │   ├── Public/                             # API phục vụ người dùng qua Gateway (/api/v1/{resources})
+    │   │   ├── {FeatureA}Controller.cs         # Chỉ inject I{FeatureA}Service
+    │   │   └── {FeatureB}Controller.cs
+    │   └── Internal/                           # API phục vụ liên service nội bộ (/api/v1/internal/{resources})
+    │       └── Internal{Feature}Controller.cs  # Yêu cầu header X-Internal-Service-Key
     ├── Middlewares/
-    │   └── GlobalExceptionHandlerMiddleware.cs
+    │   ├── GlobalExceptionHandlerMiddleware.cs
+    │   └── InternalServiceAuthMiddleware.cs    # Kiểm tra X-Internal-Service-Key cho /api/v1/internal/*
     ├── appsettings.json
     └── Program.cs                              # Bootstrap DI, Middlewares, Map Controllers
 ```
@@ -138,21 +143,32 @@ public class EmailNotificationClient : IEmailNotificationClient
 
 ### 4.3. Đăng ký Typed HttpClient tại Infrastructure DI
 ```csharp
+services.AddTransient<InternalServiceAuthHandler>();
 services.AddHttpClient<IEmailNotificationClient, EmailNotificationClient>(client =>
 {
     client.BaseAddress = new Uri(configuration["NotificationService:BaseUrl"] ?? "http://localhost:8007");
     client.Timeout = TimeSpan.FromSeconds(5);
-});
+}).AddHttpMessageHandler<InternalServiceAuthHandler>();
 ```
+
+### 4.4. Tự Động Tiêm Khóa Bí Mật Nội Bộ Qua DelegatingHandler
+Mọi HttpClient gọi sang Internal API của service khác bắt buộc phải đăng ký kèm `InternalServiceAuthHandler` (kế thừa `DelegatingHandler`) để tự động tiêm header `X-Internal-Service-Key`.
 
 ---
 
-## 5. QUY CHUẨN 1-TO-1 CONTROLLER TẠI TẦNG API
+## 5. QUY CHUẨN CONTROLLER VÀ PHÂN TÁCH PUBLIC / INTERNAL TẠI TẦNG API
 
-Mỗi Controller ở `{Service}.Api/Controllers/{Feature}Controller.cs` ghép cặp 1-to-1 với một feature tương ứng tại tầng Application:
-- Controller siêu mỏng, chỉ làm nhiệm vụ: (1) Nhận HTTP request, (2) Trích xuất claim/header nếu cần, (3) Gọi `I{Feature}Service`, (4) Trả về HTTP status code phù hợp.
-- Cấm đưa logic nghiệp vụ, tính toán, kiểm tra điều kiện phức tạp vào Controller.
-- Đường dẫn chuẩn RESTful: `/api/v1/{resources}` sử dụng RFC 9110 HTTP Verbs.
+Mỗi Controller ở `{Service}.Api/Controllers/` thuộc 1 trong 2 nhóm phân lập:
+1. **Public Controllers (`{Service}.Api/Controllers/Public/`)**:
+   - Ghép cặp 1-to-1 với feature service tương ứng.
+   - Nhận yêu cầu từ người dùng thông qua API Gateway.
+   - Đường dẫn: `/api/v1/{resources}` sử dụng RFC 9110 HTTP Verbs.
+   - Controller siêu mỏng, chỉ làm nhiệm vụ: (1) Nhận HTTP request, (2) Trích xuất claim/header nếu cần, (3) Gọi `I{Feature}Service`, (4) Trả về HTTP status code phù hợp.
+2. **Internal Controllers (`{Service}.Api/Controllers/Internal/`)**:
+   - Chỉ phục vụ các cuộc gọi trực tiếp từ backend microservice anh em.
+   - Bắt buộc tiền tố: `/api/v1/internal/{resources}`.
+   - Bắt buộc kiểm tra bảo mật qua `InternalServiceAuthMiddleware` với header `X-Internal-Service-Key`.
+   - Tuyệt đối không khai báo route cho Gateway và Gateway chủ động chặn 404 với mọi request chứa `/api/v1/internal`.
 
 ---
 

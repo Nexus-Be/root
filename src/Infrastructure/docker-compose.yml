@@ -6,7 +6,7 @@
 #   docker compose up -d
 # =============================================================================
 
-name: nexus-be
+name: nexus-infra
 
 services:
 

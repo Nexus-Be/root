@@ -52,22 +52,44 @@ Khi bắt đầu phiên làm việc tại bất kỳ repository nào, AI Agent *
 8. **FEATURE-DRIVEN CO-LOCATION & 1-TO-1 CONTROLLER PAIRING (CHUẨN HÓA ĐẶC TẢ `specs/01`)**:
    - Tầng Application: Toàn bộ thành phần của một tính năng đặt tại `{Service}.Application/Services/{Feature}/` gồm: `I{Feature}Service.cs`, `{Feature}Service.cs` (inject trực tiếp `I{Service}DbContext`, cấm Repository), `{Feature}Requests.cs`, `{Feature}Responses.cs`, `{Feature}Dtos.cs` (tùy chọn).
    - Tầng Api: Ghép cặp 1-to-1 với một thin controller tại `{Service}.Api/Controllers/{Feature}Controller.cs`, chỉ inject duy nhất `I{Feature}Service`.
+   - **NGOẠI LỆ DUY NHẤT — `WalletService` (ĐÓNG BĂNG)**: dùng classic CQRS qua MediatR tại `Wallet.Application/Features/{Area}/Commands|Queries/{UseCase}/`, mỗi use case gồm Command/Query, Handler và response record. Controller inject `ISender`, giữ đúng 3 file. Cấm tạo lại `I{Feature}Service` facade, cấm tách controller theo tài nguyên, cấm gỡ MediatR. Chạy `src/Services/Wallet/scripts/verify-wallet-architecture.sh` trước khi sửa. Chi tiết tại `src/Services/Wallet/AGENTS.md`.
 9. **GIAO TIẾP LIÊN DỊCH VỤ 100% QUA TYPED REST CLIENT**:
    - Định nghĩa Interface tại `{Service}.Application/Interfaces/` (ví dụ `IEmailNotificationClient`).
    - Triển khai `HttpClient` tại `{Service}.Infrastructure/Services/` và đăng ký typed client trong `Infrastructure/DependencyInjection.cs`.
    - Các tương tác liên service thực hiện trực tiếp qua HTTP REST API có timeout, retry và graceful fallback.
 10. **QUY CHUẨN BẮT BIẾN KHI PHÁT TRIỂN & KHAI BÁO API MỚI (MANDATORY API RULES)**:
    - **Cấm trùng lặp Route alias (No Duplicate Route Aliases)**: Cấm tuyệt đối khai báo nhiều route attributes trùng lặp (ví dụ `[HttpGet("user")]` và `[HttpGet("users")]`) trên cùng một Action. Mỗi action chỉ có 1 route endpoint chính thức duy nhất.
-   - **Quy ước Route Số ít cho User/AdminUser (Singular Route Convention)**: Toàn bộ endpoint liên quan đến User và AdminUser phải dùng danh từ số ít (`/api/v1/user`, `/api/v1/user/{userId}`, `/api/v1/admin/user`, `/api/v1/admin/user/{userId}`, `/api/v1/me`). Giữ danh từ số nhiều cho các collection chuẩn của domain khác (`/api/v1/auctions`, `/api/v1/categories`, `/api/v1/wallets`, `/api/v1/notifications`).
+   - **Quy chuẩn Định danh Route: 100% SỐ NHIỀU (100% Plural Route Convention)**:
+     - Toàn bộ danh từ tài nguyên bộ sưu tập (Domain Collections) trên toàn bộ hệ thống Nexus BẮT BUỘC dùng danh từ số nhiều viết thường (lowercase plural, kebab-case nếu là từ ghép):
+       - Người dùng & Quản trị: `/api/v1/users`, `/api/v1/users/{userId}`, `/api/v1/admin/users`, `/api/v1/admin/users/{userId}`, `/api/v1/sellers`, `/api/v1/sellers/{sellerId}`.
+       - Danh mục & Sản phẩm: `/api/v1/products`, `/api/v1/products/{productId}`, `/api/v1/categories`, `/api/v1/categories/{categoryId}`, `/api/v1/variants`.
+       - Đơn hàng & Giỏ hàng: `/api/v1/carts`, `/api/v1/carts/items`, `/api/v1/orders`, `/api/v1/orders/{orderId}`, `/api/v1/sub-orders`, `/api/v1/checkouts`.
+       - Kho vận: `/api/v1/shipments`, `/api/v1/warehouses`, `/api/v1/inventories`.
+       - Đấu giá: `/api/v1/auctions`, `/api/v1/bids`.
+       - Ví tiền: `/api/v1/wallets`, `/api/v1/wallets/transactions`, `/api/v1/wallets/withdrawals`.
+       - Thông báo & Nhật ký: `/api/v1/notifications`, `/api/v1/logs`.
+     - **Ngoại lệ duy nhất cho ngữ cảnh đặc thù (Contextual Singleton)**:
+       - `/api/v1/me`: Đại diện cho chính bản thân người dùng đang xác thực (`/api/v1/me`, `/api/v1/me/sessions`, `/api/v1/me/penalties`, `/api/v1/me/reports`).
+       - `/api/v1/auth`: Nhóm hành động xác thực phi tài nguyên (`/api/v1/auth/login`, `/api/v1/auth/register`, `/api/v1/auth/refresh`, `/api/v1/auth/otp/verify`).
+     - TUYỆT ĐỐI CẤM sử dụng các route số ít dạng `/api/v1/cart`, `/api/v1/product`, `/api/v1/user`, `/api/v1/seller`, `/api/v1/order`.
    - **Mô hình Thin Controller & Kế thừa đúng chuẩn**:
      - Tại API Gateway: Controller bắt buộc kế thừa `GatewayBaseController`, không chứa business logic, chỉ validate input cơ bản qua `UserValidation` và ủy quyền downstream qua `ForwardAsync` / `ForwardPagedAsync` / `ForwardNoContentAsync`.
      - Tại Microservice: Kế thừa `ControllerBase`, ghép cặp 1-to-1 với feature service tương ứng.
    - **Phong bì dữ liệu chuẩn (Envelope Standard)**: Mọi endpoint trả dữ liệu đều phải bọc qua `ApiResponse<T>` hoặc `ApiResponse<PagedData<T>>`. Endpoint xóa hoặc không trả dữ liệu body bắt buộc trả HTTP `204 NoContent`. DTOs dùng PascalCase trong C# và camelCase trong JSON serialization.
+   - **Quy chuẩn Phân trang Hệ thống (System Pagination Governance)**:
+     - **Trách nhiệm tính toán phân trang thuộc 100% về Backend Microservices**: Chỉ microservice sở hữu cơ sở dữ liệu mới có quyền thực hiện phân trang qua câu lệnh truy vấn SQL (`OFFSET/LIMIT` hoặc `.Skip((page - 1) * pageSize).Take(pageSize)`) và đếm tổng bản ghi (`SELECT COUNT(*)` hoặc `.CountAsync()`). Microservice chịu trách nhiệm đóng gói cấu trúc phân trang chuẩn `PagedData<T>` (`items` và `pagination: { pageIndex, pageSize, totalCount, totalPages, hasPreviousPage, hasNextPage }`) hoặc DTO phân trang tương đương và trả về trực tiếp trong payload HTTP 200.
+     - **Gateway là Edge Reverse Proxy phi trạng thái (Zero Pagination Calculation at Gateway)**: Gateway tuyệt đối KHÔNG truy cập cơ sở dữ liệu, KHÔNG nhận tập dữ liệu thô lớn không giới hạn về bộ nhớ để tự cắt trang (gây nghẽn mạng và cạn kiệt tài nguyên Gateway). Gateway chỉ đóng vai trò chuyển tiếp downstream qua YARP hoặc bọc vỏ phong bì `ApiResponse<PagedData<T>>`.
+   - **Quy chuẩn Quản lý Hồ sơ Tài liệu API Hai Trạng Thái (Dual-Stage API Documentation Lifecycle)**:
+     - Mọi API trong hệ sinh thái Nexus đều phải có đúng 1 file tài liệu độc lập theo mẫu chuẩn `docs/api/API_DOC_TEMPLATE.md` và được quản lý ở 1 trong 2 thư mục:
+       - `docs/api/B_none/{Service}/{ID}_{FEATURE}.md`: API đang phát triển (WIP), mới lên spec hoặc chưa vượt qua kiểm thử.
+       - `docs/api/A_Active/{Service}/{ID}_{FEATURE}.md`: API đã hoàn tất (100% test pass) và được Người dùng nghiệm thu.
+     - Mỗi file tài liệu phải chứa đầy đủ 7 mục bắt buộc: (1) Mô tả & Routing RBAC, (2) Code Trace chi tiết (Service, Controller, Function, DB Table), (3) Quy chuẩn Validation, (4) Phong bì dữ liệu mẫu, (5) Ma trận mã lỗi RFC 9110, (6) Bảng danh mục Enum liên quan (giá trị int trong DB vs string PascalCase ở API), (7) Checklist hoàn thành.
+     - Khi một Function trong service bổ sung mã lỗi mới hoặc exception mới, BẮT BUỘC phải cập nhật ngay vào bảng Error Matrix của file doc tương ứng để Frontend luôn nắm bắt chính xác.
    - **Chuẩn hóa XML Comment Endpoint**: Chỉ dùng single-line XML `<summary>` ngắn gọn trực tiếp trên từng Action method. Cấm viết class-level remarks, section dividers kẻ ngang hoặc comment dài dòng nhiều dòng.
    - **Đồng bộ Tài liệu & Specs**: Khi thêm mới hoặc thay đổi bất kỳ route/DTO nào, bắt buộc cập nhật đồng thời file spec tương ứng (`specs/02_GATEWAY_CONTROLLERS_ROUTING.md`) và tài liệu API Frontend (`docs/FRONTEND_API_ENDPOINT_MAPPING.md`).
    - **Quy trình Bắt buộc khi Triển khai & Đóng gói 1 API (API Implementation & Documentation Lifecycle)**:
      Khi thực hiện bất kỳ 1 API nào (mới hoặc refactor):
-     1. Tầng Application: Hoàn thiện `I{Feature}Service.cs`, `{Feature}Service.cs`, `{Feature}Requests.cs`, `{Feature}Responses.cs`.
+     1. Tầng Application: Hoàn thiện `I{Feature}Service.cs`, `{Feature}Service.cs`, `{Feature}Requests.cs`, `{Feature}Responses.cs` (riêng `WalletService` dùng Command/Query + Handler theo CQRS).
      2. Tầng Api: Ghép cặp Thin Controller 1-to-1, áp dụng chuẩn Route, Envelope và XML summary.
      3. Kiểm thử tự động: Viết test case và chạy `dotnet test` vượt qua 100%.
      4. Ghi nhận vào Hồ sơ Tài liệu API: Ngay sau khi code và test xong, BẮT BUỘC cập nhật/ghi nhận vào file tài liệu API tương ứng (`docs/api/...`, `docs/api/active/...`, và `specs/02_API_REST_CONTRACTS.md`) đầy đủ:
@@ -115,11 +137,83 @@ Khi bắt đầu phiên làm việc tại bất kỳ repository nào, AI Agent *
         - Mọi mật khẩu mẫu cho tài khoản seed bắt buộc phải hash bằng BCrypt có salt trước khi đưa vào cấu hình seed (`$2a$11$...`), không lưu plain text.
      7. **Bảo vệ Bí mật và Chuỗi kết nối Database**:
         - Tuyệt đối CẤM commit mật khẩu thật, connection string thực tế vào mã nguồn hay git. Mọi thông tin nhạy cảm phải đọc từ biến môi trường.
+   - **12. QUY CHUẨN BẮT BIẾN: PHÂN TÁCH PUBLIC REST API VÀ INTERNAL SERVICE REST API (INTERNAL API SEGREGATION & SECURITY GOVERNANCE)**:
+     Toàn bộ hệ thống Nexus áp dụng mô hình phân tách tuyệt đối giữa Public API và Internal Service-to-Service API với 5 rào chắn bất biến không thể thương lượng:
+     1. **Cấu trúc thư mục Controller phân lập**:
+        - Tầng Api của mỗi service bắt buộc phải phân tách Controller thành hai thư mục con riêng biệt:
+          - `{Service}.Api/Controllers/Public/`: Chứa các controller phục vụ người dùng bên ngoài qua API Gateway (`/api/v1/{resources}`).
+          - `{Service}.Api/Controllers/Internal/`: Chứa các controller phục vụ riêng giao tiếp đồng bộ giữa các backend microservice (`/api/v1/internal/{resources}`).
+        - TUYỆT ĐỐI CẤM gộp chung Action công khai và Action nội bộ vào trong cùng một Controller file.
+     2. **Quy chuẩn Định danh Route nội bộ**:
+        - Tất cả endpoint giao tiếp liên service bắt buộc phải có tiền tố `/api/v1/internal/{resources}` (ví dụ: `/api/v1/internal/inventories/initialize`, `/api/v1/internal/notifications/email/otp`, `/api/v1/internal/wallets/checkout/direct`, `/api/v1/internal/logs/batch`).
+     3. **Rào chắn Edge Proxy tại API Gateway (Gateway Ingress Blocker)**:
+        - `ClientContextMiddleware` tại Gateway bắt buộc bóc tách (strip/remove) header `X-Internal-Service-Key` từ mọi request bên ngoài gửi lên để chống giả mạo danh tính nội bộ.
+        - Gateway chủ động từ chối ngay lập tức mọi request có path bắt đầu bằng `/api/v1/internal` với HTTP `404 Not Found`.
+        - Cấu hình YARP ReverseProxy (`Gateway/appsettings.json`) TUYỆT ĐỐI CẤM khai báo route cho bất kỳ đường dẫn nội bộ nào chứa `/internal/`.
+     4. **Xác thực khóa bí mật nội bộ tại từng Microservice (Microservice Ingress Authenticator)**:
+        - Mọi microservice sở hữu Internal API bắt buộc phải kích hoạt `InternalServiceAuthMiddleware` trong pipeline HTTP request.
+        - Mọi yêu cầu truy cập vào `/api/v1/internal/*` bắt buộc phải có header `X-Internal-Service-Key` và giá trị phải khớp chính xác với `InternalSecurity:ServiceKey` (hoặc biến môi trường `INTERNAL_SERVICE_SECRET`).
+        - Nếu thiếu header hoặc sai khóa, middleware lập tức chặn và trả về HTTP `403 Forbidden` (`errorCode: "FORBIDDEN"`, `message: "Access denied to internal service resource."`).
+     5. **Chuẩn hóa Outbound Typed HttpClient**:
+        - Mọi HttpClient gọi liên service đặt tại `{Service}.Infrastructure/Services/` phải được đăng ký kèm `InternalServiceAuthHandler` (kế thừa `DelegatingHandler`) để tự động tiêm header `X-Internal-Service-Key`.
+        - TUYỆT ĐỐI CẤM AI Coding Agent tự ý xóa, vô hiệu hóa, bypass middleware xác thực nội bộ này hoặc mở public các endpoint nghiệp vụ nội bộ ra ngoài Gateway.
+   - **13. QUY CHUẨN BẮT BIẾN: BẢO VỆ DANH TÍNH CHỐNG GIẢ MẠO CHỦ ĐỘNG VÀ LAN TRUYỀN CLAIMS (ACTIVE ANTI-SPOOFING & IDENTITY PROPAGATION GOVERNANCE)**:
+     Toàn bộ hệ thống Nexus áp dụng cơ chế Zero-Trust Edge Gateway đối với việc xác thực và truyền tải danh tính người dùng:
+     1. **Chặn Đứng Tuyệt Đối Header Giả Mạo Từ Bên Ngoài (Active Anti-Header-Spoofing Rejection)**:
+        - `ClientContextMiddleware` tại API Gateway chủ động kiểm tra (không phân biệt hoa thường) toàn bộ các header định danh nhạy cảm gửi từ bên ngoài (`x-user-id`, `x-user-email`, `x-user-roles`, `x-user-role`, `x-user-permissions`, `x-user-permission`, `x-internal-service-key`).
+        - Nếu phát hiện bất kỳ header nào trong danh sách cấm, Gateway BẮT BUỘC ngắt pipeline ngay lập tức, ghi log cảnh báo bảo mật kèm Client IP, và trả về HTTP `403 Forbidden` (`errorCode: "FORBIDDEN_HEADER_SPOOFING"`, `message: "Security violation: Untrusted identity header detected in external request."`). TUYỆT ĐỐI CẤM âm thầm bỏ qua hay cho phép request đi tiếp.
+     2. **Lan Truyền Danh Tính Tin Cậy từ JWT Bearer Token (Edge Identity Propagation)**:
+        - Gateway giải mã và xác thực chữ ký số JWT Bearer token tại biên.
+        - `IdentityPropagationTransform` của YARP Reverse Proxy trích xuất các claims: `sub` (User ID), `email`, `role`/`roles`, `permission`/`permissions`, và tiêm an toàn vào downstream request headers (`x-user-id`, `x-user-email`, `x-user-roles`, `x-user-permissions`).
+     3. **Phân Quyền Chi Tiết Tại Backend Microservices (Microservice Fine-Grained Authorization)**:
+        - Các microservice backend (`8001`-`8008`) đọc thông tin `x-user-id` và `x-user-roles` từ HttpContext để kiểm tra quyền sở hữu tài nguyên (Resource Ownership) và thực thi nghiệp vụ.
+   - **14. QUY CHUẨN BẮT BIẾN: PHÂN QUYỀN TINH VÀ BẢO VỆ QUYỀN SỞ HỮU TÀI NGUYÊN (RESOURCE OWNERSHIP & FINE-GRAINED AUTHORIZATION GOVERNANCE)**:
+     1. **Trách nhiệm bảo vệ quyền sở hữu thuộc 100% về Microservices Backend**: Gateway chỉ kiểm tra chữ ký token và phân quyền thô cho route Admin. Từng microservice sở hữu dữ liệu phải chịu trách nhiệm phân quyền chi tiết.
+     2. **Cấm tin tưởng tham số định danh từ Client**: Tuyệt đối CẤM tin tưởng các tham số `buyerId`, `userId`, `sellerId` truyền qua Query string (`[FromQuery]`) hoặc Route path (`[FromRoute]`).
+     3. **Xác thực quyền sở hữu bắt buộc**: Controller hoặc Service bắt buộc lấy `currentUserId` từ `HttpContext.GetUserId()` và so sánh:
+        - Nếu `currentUserId != targetId` và người dùng không có vai trò `admin` hoặc `staff` (`!HttpContext.HasRole("admin") && !HttpContext.HasRole("staff")`), lập tức trả về HTTP `403 Forbidden` (`errorCode: "FORBIDDEN"`, `message: "You do not have permission to access or modify this resource."`).
+        - Nếu request yêu cầu xác thực mà không có danh tính hợp lệ, lập tức trả về HTTP `401 Unauthorized` (`errorCode: "UNAUTHORIZED"`).
+   - **15. QUY CHUẨN PHÂN TRANG HỆ THỐNG ĐỒNG BỘ (SYSTEM PAGINATION GOVERNANCE & PAGED DATA ENVELOPE)**:
+     1. **Tính toán phân trang tại Database**: Mọi truy vấn danh sách phân trang bắt buộc thực hiện tại Database qua `.Skip((page - 1) * pageSize).Take(pageSize)` và `.CountAsync()`.
+     2. **Đóng gói cấu trúc PagedData chuẩn**: Toàn bộ endpoint phân trang phải trả về cấu trúc:
+        ```csharp
+        public sealed record PagedData<T>(
+            IReadOnlyList<T> Items,
+            PaginationMetadata Pagination);
+        public sealed record PaginationMetadata(
+            int PageIndex,
+            int PageSize,
+            int TotalCount,
+            int TotalPages,
+            bool HasPreviousPage,
+            bool HasNextPage);
+        ```
+     3. **Gateway là Reverse Proxy phi trạng thái**: Gateway tuyệt đối không nhận dữ liệu thô không giới hạn về bộ nhớ để tự cắt trang. Gateway bọc trực tiếp payload phân trang từ service thành `ApiResponse<PagedData<T>>`.
+   - **16. QUY CHUẨN GHI NHẬT KÝ KIỂM TOÁN TẬP TRUNG (CENTRALIZED AUDIT LOGGING GOVERNANCE)**:
+     1. **Ghi qua Extension Method tập trung**: Mọi thao tác ghi nhật ký kiểm toán vào bảng `AuditLogs` bắt buộc thực hiện qua extension method `_dbContext.AddAuditLog(...)` trên `I{Service}DbContext`. TUYỆT ĐỐI CẤM khởi tạo thủ công `new AuditLog { ... }` rải rác trong code tầng Application hay Api.
+     2. **Tự động hóa JSON Serialization & Thuộc tính cơ sở**:
+        - Tham số `oldValues`, `newValues`, `changedColumns` nhận `object?` và tự động serialize sang JSON string; nếu truyền vào chuỗi raw JSON đã serialize thì giữ nguyên, không double-serialize.
+        - Tự động chuẩn hóa `ServiceName` theo tên dịch vụ (ví dụ: `"user-service"`), tự động gán `CreatedAt = DateTimeOffset.UtcNow`, và thiết lập `IsSynced = false`.
+     3. **Lưu trữ Cố định và Bất biến (Persistent & Append-Only)**:
+        - Audit Log bắt buộc được commit cùng transaction nghiệp vụ vào bảng `AuditLogs` của database dịch vụ đó (`usermanagement_db`, `wallet_db`...).
+        - TUYỆT ĐỐI CẤM dùng `_logger.LogInformation` để thay thế cho AuditLog nghiệp vụ nhạy cảm (như phân quyền, khóa tài khoản, duyệt hồ sơ người bán, điều chỉnh số dư ví).
+        - Bản ghi AuditLog là bất biến: chỉ được phép INSERT và SELECT, cấm viết API UPDATE hoặc DELETE bản ghi kiểm toán.
 
-## 💬 NGUYÊN TẮC 5: QUY CHUẨN THÔNG BÁO LỖI TOÀN HỆ THỐNG
-1. **Ngôn ngữ (100% English)**: Toàn bộ thông báo lỗi viết bằng tiếng Anh. Tuyệt đối không dùng tiếng Việt.
-2. **Quy cách viết hoa (Sentence case)**: Viết hoa duy nhất chữ cái đầu câu (trừ tên riêng, viết tắt `ID`, `OTP`, `JWT`, `URL`, `Email`...). Ví dụ: `"Email is already registered in the system."`
-3. **Mã lỗi (SCREAMING_SNAKE_CASE)**: Viết hoa toàn bộ và nối bằng gạch dưới: `EMAIL_ALREADY_EXISTS`, `OTP_EXPIRED`, `USER_NOT_FOUND`.
+## 💬 NGUYÊN TẮC 5: QUY CHUẨN THÔNG BÁO LỖI TOÀN HỆ THỐNG (MANDATORY ERROR & ENUM RULES)
+1. **Ngôn ngữ (100% English)**: Toàn bộ thông báo lỗi, exception details, problem details, validation failures viết bằng 100% tiếng Anh. Tuyệt đối CẤM tiếng Việt trong response và runtime exception.
+2. **Quy cách viết hoa thông báo lỗi (100% Sentence case)**:
+   - Viết hoa DUY NHẤT chữ cái đầu tiên của câu thông báo.
+   - Toàn bộ các từ tiếp theo viết thường, TRỪ các từ viết tắt kỹ thuật hoặc tên riêng: `ID`, `OTP`, `JWT`, `URL`, `UUID`, `Email`, `API`, `HTTP`.
+   - TUYỆT ĐỐI CẤM viết hoa toàn bộ thông báo (ví dụ cấm: `"WALLET NOT FOUND"`, `"INVALID INPUT"`).
+   - TUYỆT ĐỐI CẤM dùng Title Case (ví dụ cấm: `"Wallet Not Found Provided"`).
+   - Ví dụ đúng: `"Wallet account not found for the specified user."`, `"Insufficient balance to complete the transaction."`, `"Email is already registered in the system."`
+3. **Mã lỗi (100% SCREAMING_SNAKE_CASE)**:
+   - Viết hoa toàn bộ và nối bằng gạch dưới: `WALLET_NOT_FOUND`, `INSUFFICIENT_BALANCE`, `EMAIL_ALREADY_EXISTS`, `OTP_EXPIRED`, `OTP_INVALID`, `VAL_INVALID_INPUT`, `UNAUTHORIZED`, `FORBIDDEN`.
+   - CẤM tự ý thêm tiền tố `ERR_` bừa bãi (ví dụ cấm: `ERR_INVALID_CREDENTIALS`, `ERR_SOD_VIOLATION` -> sửa thành: `INVALID_CREDENTIALS`, `SOD_VIOLATION`).
+   - Tiền tố `VAL_` chỉ dành riêng cho lỗi validation dữ liệu đầu vào (ví dụ: `VAL_INVALID_INPUT`, `VAL_INVALID_EMAIL`, `VAL_INVALID_ARGUMENT`).
+4. **Quy chuẩn Tuần tự hóa Enum đầu ra REST API (PascalCase Serialization)**:
+   - 100% giá trị Enum trả về trong JSON Response (`ApiResponse<T>` hoặc `PagedData<T>`) BẮT BUỘC là chuỗi **PascalCase** (`"Active"`, `"PendingVerification"`, `"Delivered"`, `"Payment"`).
+   - TUYỆT ĐỐI CẤM trả về chuỗi viết hoa toàn bộ (`"ACTIVE"`, `"PENDING"`, `"DELIVERED"`, `"PAYMENT"`) hoặc số nguyên thô (`0`, `1`, `2`) trong payload response.
 
 ## 🎯 NGUYÊN TẮC 6: ĐIỀU KIỆN HOÀN THÀNH NHIỆM VỤ (DEFINITION OF DONE)
 - [ ] Đã lập Plan chi tiết trước khi thực hiện.
@@ -136,6 +230,18 @@ Chi tiết audit: `docs/agents/system-audit.md`, `docs/plans/SCORECARD.md`, `doc
 - Không coi `/health` là bằng chứng service hoạt động vì không kiểm tra DB.
 
 ## 📝 NGUYÊN TẮC 8: QUY CHUẨN ĐÓNG PHIÊN, BÁO CÁO & LƯU TRỮ KẾ HOẠCH
+Tuân thủ quy trình đầu/cuối phiên chi tiết tại `docs/agents/session-protocol.md`.
+1. **Lưu trữ Kế hoạch**: Ghi tại `.agents/plan/PLAN-YYYYMMDD-HHMM-[TEN_VAN_DE].md` (Mục tiêu, Hướng giải quyết, Checklist).
+2. **Báo cáo Nhật ký**: Ghi tại `.agents/history/YYYY-MM-DD_session_summary.md` (Tổng thể, Nghiên cứu, Link Plan, Báo cáo cá nhân, Báo cáo toàn team).
+
+## 📌 NGUYÊN TẮC 9: CƠ CHẾ DUY TRÌ & CẬP NHẬT RULE BỀN VỮNG (PERSISTENT "GHI VÀO RULE" TRIGGER)
+Bất cứ khi nào Người dùng (Sếp) chỉ thị *"ghi vào rule"*, *"thêm vào rule"*, hoặc yêu cầu chuẩn hóa quy chuẩn kỹ thuật:
+1. AI Coding Agent **BẮT BUỘC PHẢI LẬP TỨC GHI NHẬN VÀ ĐỒNG BỘ** vào:
+   - `.agents/AGENTS.md`
+   - Root `AGENTS.md`
+   - `.cursor/rules/` (`error-handling.mdc`, `api-standards.mdc`, `agent-mission-protocol.mdc`)
+   - Tất cả các file `AGENTS.md` và `specs/00_AGENT_MISSION_GUARDRAILS.md` của các submodule liên quan (`src/Services/{Service}/`).
+2. Tuyệt đối không được bỏ qua hay trì hoãn việc cập nhật các file rule này, đảm bảo mọi AI Agent trong các phiên làm việc tiếp theo luôn kế thừa đầy đủ và tuân thủ 100%.
 Tuân thủ quy trình đầu/cuối phiên chi tiết tại `docs/agents/session-protocol.md`.
 1. **Lưu trữ Kế hoạch**: Ghi tại `.agents/plan/PLAN-YYYYMMDD-HHMM-[TEN_VAN_DE].md` (Mục tiêu, Hướng giải quyết, Checklist).
 2. **Báo cáo Nhật ký**: Ghi tại `.agents/history/YYYY-MM-DD_session_summary.md` (Tổng thể, Nghiên cứu, Link Plan, Báo cáo cá nhân, Báo cáo toàn team).

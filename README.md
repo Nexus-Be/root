@@ -6,74 +6,70 @@ Hệ sinh thái thương mại điện tử & đấu giá trực tuyến phân t
 
 ## 1. Bản Đồ Dịch Vụ & Cổng Mạng (Service & Port Catalog)
 
-| Dịch Vụ | Port App | Database | Port DB | Nhiệm Vụ Chính |
+| Dịch Vụ | Port App | Database Neon | Port DB | Nhiệm Vụ Chính |
 | :--- | :---: | :--- | :---: | :--- |
-| **ApiGateway** | **8080** | Redis Rate Limit | **6379** | Điểm vào duy nhất, Rate Limiting, JWT/RBAC, Mock Engine |
-| **UserService** | **8001** | `usermanagement_db` (Postgres) | **5433** | Đăng ký, đăng nhập, JWT, User Profile, RBAC, Duyệt Seller |
-| **CatalogService** | **8002** | `category_db` (Postgres) | **5434** | Danh mục, sản phẩm, quản lý tồn kho kho ảo của Seller |
-| **CommerceService** | **8003** | `commerce_db` (Postgres) | **5435** | Giỏ hàng, đơn hàng, điều phối Checkout Saga |
-| **LogService** | **8004** | `log_db` (Postgres) | **5436** | Nhật ký hệ thống tập trung (Centralized log trail) |
-| **AuctionService** | **8005** | `auction_db` (Postgres) | **5437** | Phiên đấu giá, trả giá (bid), đồng hồ đếm ngược |
-| **FulfillmentService** | **8006** | `fulfillment_db` (Postgres) | **5438** | Kho bãi vật lý, tính phí vận chuyển, tra cứu vận đơn |
-| **NotificationService** | **8007** | `notification_db` (Postgres) | **5439** | Quản lý thông báo, cài đặt thông báo người dùng |
-| **WalletService** | **8008** | `wallet_db` (Postgres) | **5440** | Ví điện tử, số dư, nạp/rút tiền, chuyển tiền nội bộ |
+| **Gateway** | **8080** | Redis Rate Limit | **6379** | Điểm vào duy nhất, Rate Limiting, JWT/RBAC, Identity Propagation |
+| **UserService** | **8001** | `user` | **5432** | Đăng ký, đăng nhập, JWT, User Profile, RBAC, Duyệt Seller |
+| **CatalogService** | **8002** | `catalog` | **5432** | Danh mục, sản phẩm, quản lý tồn kho kho ảo của Seller |
+| **CommerceService** | **8003** | `commerce` | **5432** | Giỏ hàng, đơn hàng, điều phối Checkout qua REST |
+| **LogService** | **8004** | `log` | **5432** | Nhật ký hệ thống tập trung |
+| **AuctionService** | **8005** | `auction` | **5432** | Phiên đấu giá, trả giá, đồng hồ đếm ngược |
+| **FulfillmentService** | **8006** | `fulfillment` | **5432** | Kho bãi vật lý, phí vận chuyển, vận đơn |
+| **NotificationService** | **8007** | `notification` | **5432** | Thông báo in-app, email SMTP/OTP |
+| **WalletService** | **8008** | `wallet` | **5432** | Ví điện tử, số dư, nạp/rút, chuyển tiền nội bộ |
+| **CheckHealService** | **8009** | Không có DB riêng | - | Giám sát health 8 service và 8 database Neon |
 
 ### Hạ Tầng Dùng Chung (Shared Platform Infrastructure)
-- **RabbitMQ**: Port `5672` (AMQP), Port `15672` (Management UI tại `http://localhost:15672`, tài khoản: `guest` / `MatkhaucuaTui123@`).
-- **Redis In-Memory Store**: Port `6379` (`nexus-shared-redis`, 500MB RAM, chia sẻ giữa Gateway Rate Limit và User Cache).
+- **Redis In-Memory Store**: Port `6379` (`nexus-shared-redis`, 500MB RAM, chia sẻ giữa Gateway Rate Limit và User OTP/Cache).
 - **Grafana Tempo**: Port `4317` (OTLP gRPC), Port `4318` (OTLP HTTP), Port `3200` (API).
+- **Prometheus**: Port `9090`.
 - **Grafana Dashboard**: Port `3000` (`http://localhost:3000/explore`).
+- **Database**: 8 database Neon Cloud độc lập, một database cho mỗi service. Cụm PostgreSQL local trong `src/Infrastructure/databases` chỉ là phương án dự phòng khi phát triển offline.
 
 ---
 
 ## 2. Hướng Dẫn Vận Hành Với Docker Compose
 
-Hệ thống được thiết kế linh hoạt với 3 cấp độ vận hành tùy theo nhu cầu:
+Hệ thống tách làm 2 lớp: hạ tầng dùng chung và stack 10 service.
 
-### Cách 1: Chỉ Chạy Hạ Tầng Nền Tảng & Databases (Khuyên dùng khi Dev)
-Khi bạn muốn viết code bằng Visual Studio / Rider / VS Code và chạy service bằng `dotnet run`:
+### Bước 0: Tạo network dùng chung
 ```bash
-# Từ thư mục gốc Nexus-Be:
+docker network create nexus-network
+```
+Chỉ cần chạy một lần trên mỗi máy.
+
+### Cách 1: Chỉ chạy hạ tầng dùng chung (khuyên dùng khi dev bằng IDE)
+```bash
 docker compose -f docker-compose.infra.yml up -d
 ```
-Lệnh này khởi động toàn bộ:
-- RabbitMQ, Redis, Tempo, Grafana
-- 8 Cơ sở dữ liệu PostgreSQL độc lập (ports 5433 - 5440, mật khẩu mặc định `MatkhaucuaTui123@`)
+Lệnh này chỉ khởi động Redis, Tempo, Prometheus, Grafana. Cụm database local trong `src/Infrastructure/databases` là tùy chọn dự phòng, mặc định hệ thống dùng Neon.
 
----
-
-### Cách 2: Chạy Toàn Bộ Hệ Thống Bằng Container (Full Stack)
-Khi cần demo hoặc kiểm thử tích hợp toàn sàn:
+### Cách 2: Chạy toàn bộ stack 10 service
 ```bash
-# Từ thư mục gốc Nexus-Be:
-docker compose up -d
+docker compose up -d --build
 ```
-Lệnh này dựng trọn bộ:
-- Toàn bộ Hạ tầng & Databases
-- API Gateway (port 8080)
-- 8 Microservices container (ports 8001 - 8008)
+Root `docker-compose.yml` là stack phẳng gồm đúng 10 service trong `src/Services`: Gateway, User, Catalog, Commerce, Log, Auction, Fulfillment, Notification, Wallet, CheckHeal. File này không chứa Redis, Tempo, Prometheus, Grafana và không chứa container database.
 
----
-
-### Cách 3: Làm Việc Độc Lập Trong Từng Microservice Repository
-Mỗi Microservice là một repository độc lập và sở hữu file `docker-compose.yml` riêng:
+Chạy riêng một service:
 ```bash
-# Ví dụ khi chỉ làm việc với CatalogService:
+docker compose up -d user-service
+```
+
+### Cách 3: Làm việc độc lập trong từng microservice repository
+Mỗi repo trong `src/Services` có `.env`, `.env.example` và `docker-compose.yml` riêng, dùng được độc lập:
+```bash
 cd src/Services/Catalog
-
-# 1. Chỉ bật Database riêng của Catalog (category_db tại port 5434):
-docker compose up -d db
-
-# 2. Chạy ứng dụng Catalog cục bộ:
-dotnet run --project Catalog.Api
+cp .env.example .env
+docker compose up -d --build
 ```
+Repo con dùng chung container name với stack root, nên chỉ chạy một trong hai tại một thời điểm.
 
 ---
 
 ## 3. Theo Dõi Distributed Tracing Trên Grafana
 1. Mở trình duyệt vào: `http://localhost:3000/explore`.
 2. Datasource đã được cấu hình mặc định là **Tempo**.
-3. Dán `traceId` từ HTTP response header `X-Trace-Id` vào ô tìm kiếm để xem toàn bộ luồng request xuyên suốt từ Gateway qua các Microservices, Database SQL queries và RabbitMQ events.
+3. Dán `traceId` từ HTTP response header `X-Trace-Id` vào ô tìm kiếm để xem toàn bộ luồng request xuyên suốt từ Gateway qua các Microservices và Database SQL queries.
 
 ---
 

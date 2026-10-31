@@ -28,3 +28,6 @@
 [submodule "src/Services/CheckHeal"]
 	path = src/Services/CheckHeal
 	url = git@github.com:Nexus-Be/CheckHealService.git
+[submodule "src/Services/Gateway"]
+	path = src/Services/Gateway
+	url = git@github.com:Nexus-Be/Gateway.git

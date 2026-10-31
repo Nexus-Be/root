@@ -1,7 +1,7 @@
 # TRUNG TÂM TÀI LIỆU KỸ THUẬT HỆ THỐNG NEXUS
 ## (NEXUS SYSTEM DOCUMENTATION PORTAL)
 
-> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — bộ tài liệu này mô tả **kiến trúc mục tiêu**, trong khi nhiều tính năng chưa có trong code (5/9 service chưa có điểm vào gRPC, Saga chưa triển khai, `POST /api/v1/log/batch` không tồn tại). Đọc kèm bảng điểm thực tế tại `docs/plans/SCORECARD.md` và bằng chứng chi tiết tại `docs/plans/audit/`.
+> **Trạng thái triển khai (2026-10-24):** ⚠️ Một phần — bộ tài liệu này mô tả **kiến trúc mục tiêu**, trong khi nhiều tính năng chưa có trong code (5/9 service chưa có điểm vào gRPC, Saga chưa triển khai, `POST /api/v1/internal/logs/batch` không tồn tại). Đọc kèm bảng điểm thực tế tại `docs/plans/SCORECARD.md` và bằng chứng chi tiết tại `docs/plans/audit/`.
 > **Nguồn sự thật:** code trong `src/Services/*` (không phải tài liệu này).
 > **Cập nhật lần cuối:** 2026-10-24.
 

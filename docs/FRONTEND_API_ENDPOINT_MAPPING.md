@@ -5,7 +5,7 @@
 > **Phiên bản API:** `v1` (`/api/v1/...`)  
 > **Giao thức chuẩn:** 100% RESTful HTTP/JSON (RFC 9110)  
 > **Interactive Swagger UI:** [http://localhost:8080/swagger](http://localhost:8080/swagger)  
-> **Trạng thái chuẩn hóa:** ✅ Đã chuẩn hóa toàn bộ route User & AdminUser sang danh từ số ít (`user`, `user/{userId}`, `me`). Không dùng duplicate plural aliases.
+> **Trạng thái chuẩn hóa:** ✅ 100% Số nhiều (Plural Collections): `/users`, `/sellers`, `/products`, `/categories`, `/carts`, `/orders`, `/shipments`, `/wallets`, `/auctions`, `/notifications`, `/logs`. Ngoại lệ đơn lẻ (Singleton): `/me` và `/auth`.
 
 ---
 
@@ -37,15 +37,14 @@
 
 1. **Điểm chạm duy nhất**: Frontend (React, Vue, Next.js, Mobile App) chỉ gửi request đến Gateway tại `http://localhost:8080`. Không gọi trực tiếp vào các cổng microservice nội bộ (`8001`-`8008`).
 2. **Quy ước định tuyến (Routing Conventions)**:
-   - Toàn bộ route liên quan đến User và AdminUser đều sử dụng **danh từ số ít**:
-     - ✅ Đúng: `/api/v1/user`, `/api/v1/user/{userId}`, `/api/v1/admin/user`, `/api/v1/admin/user/{userId}`, `/api/v1/me`.
-     - ❌ Tránh: `/api/v1/users`, `/api/v1/users/{userId}`, `/api/v1/admin/users`.
-   - Các collection tài nguyên tiêu chuẩn khác giữ nguyên danh từ số nhiều: `/api/v1/auctions`, `/api/v1/categories`, `/api/v1/wallets`, `/api/v1/notifications`, `/api/v1/orders`.
+   - **Quy chuẩn 100% Số nhiều (100% Plural Collections)**:
+     - ✅ Bộ sưu tập tài nguyên: `/api/v1/users`, `/api/v1/users/{userId}`, `/api/v1/admin/users`, `/api/v1/sellers`, `/api/v1/products`, `/api/v1/categories`, `/api/v1/carts`, `/api/v1/orders`, `/api/v1/shipments`, `/api/v1/auctions`, `/api/v1/wallets`, `/api/v1/notifications`, `/api/v1/logs`.
+     - ✅ Ngoại lệ đơn lẻ (Singleton): `/api/v1/me` (hồ sơ của chính mình) và `/api/v1/auth` (các hành động xác thực).
 3. **Quy tắc đặt tên (Casing Rules)**:
    - JSON Request & Response body: `camelCase` (ví dụ: `userId`, `phoneNumber`, `pageIndex`, `totalCount`).
-   - Query string parameters: `camelCase` (ví dụ: `?page=1&limit=20&keyword=abc`).
+   - Query string parameters: `camelCase` (ví dụ: `?page=1&pageSize=20&keyword=abc`).
    - Route path parameters: `camelCase` (ví dụ: `{userId}`, `{orderId}`, `{auctionId}`).
-   - Status & Enums: `SCREAMING_SNAKE_CASE` (ví dụ: `PENDING`, `COMPLETED`, `PAYMENT_FAILED`) hoặc PascalCase cho Role (`Buyer`, `Seller`, `Staff`, `Admin`).
+   - Status & Enums: Luôn tuần tự hóa thành chuỗi `PascalCase` ở JSON Response (ví dụ: `PendingPayment`, `Active`, `InTransit`), cấm số nguyên thô.
 
 ---
 
@@ -310,37 +309,37 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 - **Response** (HTTP 200): `ApiResponse<PenaltyListResponseDto>`.
 
 #### 9. Xem hồ sơ công khai của một người dùng
-- **Endpoint**: `GET /api/v1/user/{userId}`
+- **Endpoint**: `GET /api/v1/users/{userId}`
 - **Quyền**: `AllowAnonymous`
 - **Response** (HTTP 200): `ApiResponse<PublicUserProfileResponseDto>`.
 
 #### 10. Lấy Avatar công khai của một người dùng
-- **Endpoint**: `GET /api/v1/user/{userId}/avatar`
+- **Endpoint**: `GET /api/v1/users/{userId}/avatar`
 - **Quyền**: `AllowAnonymous`
 - **Response** (HTTP 200): `ApiResponse<AvatarResponseDto>`.
 
 #### 11. Xem thông tin cửa hàng người bán
-- **Endpoint**: `GET /api/v1/seller/{sellerId}`
+- **Endpoint**: `GET /api/v1/sellers/{sellerId}`
 - **Quyền**: `AllowAnonymous`
 - **Response** (HTTP 200): `ApiResponse<SellerPublicProfileResponseDto>`.
 
 #### 12. Xem điểm uy tín công khai của người dùng
-- **Endpoint**: `GET /api/v1/user/{userId}/reputation`
+- **Endpoint**: `GET /api/v1/users/{userId}/reputation`
 - **Quyền**: `AllowAnonymous`
 - **Response** (HTTP 200): `ApiResponse<UserReputationResponseDto>`.
 
 #### 13. Lịch sử biến động uy tín của người dùng
-- **Endpoint**: `GET /api/v1/user/{userId}/reputation/history?page=1&limit=20`
+- **Endpoint**: `GET /api/v1/users/{userId}/reputation/history?page=1&limit=20`
 - **Quyền**: `Authenticated`
 - **Response** (HTTP 200): `ApiResponse<ReputationHistoryResponseDto>`.
 
 #### 14. Danh sách đánh giá về một người dùng
-- **Endpoint**: `GET /api/v1/user/{userId}/reviews?page=1&limit=20&filterRating=0`
+- **Endpoint**: `GET /api/v1/users/{userId}/reviews?page=1&limit=20&filterRating=0`
 - **Quyền**: `AllowAnonymous`
 - **Response** (HTTP 200): `ApiResponse<UserReviewListResponseDto>`.
 
 #### 15. Tải tệp bằng chứng đánh giá
-- **Endpoint**: `POST /api/v1/review/files/upload`
+- **Endpoint**: `POST /api/v1/reviews/files/upload`
 - **Quyền**: `Authenticated` (multipart/form-data, max 20MB)
 - **Response** (HTTP 200): `ApiResponse<UploadFilesResponseDto>`.
 
@@ -360,12 +359,12 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 - **Response** (HTTP 201): `ApiResponse<ReviewCreatedResponseDto>`.
 
 #### 17. Tải lên tệp chứng cứ tố cáo / khiếu nại
-- **Endpoint**: `POST /api/v1/report/files/upload`
+- **Endpoint**: `POST /api/v1/reports/files/upload`
 - **Quyền**: `Authenticated` (multipart/form-data, max 20MB)
 - **Response** (HTTP 200): `ApiResponse<UploadFilesResponseDto>`.
 
 #### 18. Gửi báo cáo / khiếu nại vi phạm người dùng
-- **Endpoint**: `POST /api/v1/user/reports` *(Hỗ trợ alias `POST /api/v1/users/reports`)*
+- **Endpoint**: `POST /api/v1/users/reports`
 - **Quyền**: `Authenticated`
 - **Request Body (`CreateUserReportDto`)**:
   ```json
@@ -383,7 +382,7 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 - **Response** (HTTP 200): `ApiResponse<MyReportListResponseDto>`.
 
 #### 20. Đăng ký mở cửa hàng người bán (Seller Registration)
-- **Endpoint**: `POST /api/v1/seller/registration`
+- **Endpoint**: `POST /api/v1/sellers/registration`
 - **Quyền**: `Authenticated`
 - **Request Body (`CreateSellerRegistrationDto`)**:
   ```json
@@ -397,35 +396,35 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 - **Response** (HTTP 201): `ApiResponse<SellerRegistrationCreatedResponseDto>`.
 
 #### 21. Gửi lại OTP xác nhận email mở shop
-- **Endpoint**: `POST /api/v1/seller/registration/otp/resend`
+- **Endpoint**: `POST /api/v1/sellers/registration/otp/resend`
 - **Quyền**: `Authenticated`
 - **Request Body (`ResendSellerRegistrationOtpDto`)**: `{ "registrationId": "reg-uuid", "businessEmail": "shop@nexus.local" }`
 - **Response** (HTTP 200): `ApiResponse<SellerRegistrationOtpResendResponseDto>`.
 
 #### 22. Tải lên tài liệu mở shop (CCCD / Giấy phép kinh doanh)
-- **Endpoint**: `POST /api/v1/seller/registration/documents`
+- **Endpoint**: `POST /api/v1/sellers/registration/documents`
 - **Quyền**: `Authenticated` (multipart/form-data, max 20MB)
 - **Form Fields**: `registrationId`, `files`.
 - **Response** (HTTP 200): `ApiResponse<UploadFilesResponseDto>`.
 
 #### 23. Xác nhận OTP đăng ký người bán
-- **Endpoint**: `POST /api/v1/seller/otp/verify`
+- **Endpoint**: `POST /api/v1/sellers/otp/verify`
 - **Quyền**: `Authenticated`
 - **Request Body (`VerifySellerOtpDto`)**: `{ "registrationId": "reg-uuid", "otpCode": "123456" }`
 - **Response** (HTTP 200): `ApiResponse<VerifySellerOtpResponseDto>`.
 
 #### 24. Xem trạng thái hồ sơ đăng ký người bán
-- **Endpoint**: `GET /api/v1/seller/registration`
+- **Endpoint**: `GET /api/v1/sellers/registration`
 - **Quyền**: `Authenticated`
 - **Response** (HTTP 200): `ApiResponse<SellerRegistrationStatusResponseDto>`.
 
 #### 25. Xem hồ sơ cửa hàng của chính mình
-- **Endpoint**: `GET /api/v1/seller/profile`
+- **Endpoint**: `GET /api/v1/sellers/profile`
 - **Quyền**: `Seller`
 - **Response** (HTTP 200): `ApiResponse<SellerOwnProfileResponseDto>`.
 
 #### 26. Cập nhật hồ sơ cửa hàng của mình
-- **Endpoint**: `PATCH /api/v1/seller/profile`
+- **Endpoint**: `PATCH /api/v1/sellers/profile`
 - **Quyền**: `Seller`
 - **Request Body (`UpdateSellerOwnProfileDto`)**: `{ "shopName": "New Shop Name", "description": "High tech store" }`
 - **Response** (HTTP 200): `ApiResponse<SellerOwnProfileUpdatedResponseDto>`.
@@ -434,20 +433,20 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 
 ### 6.3 Module Quản Trị Người Dùng (Admin Users)
 *Service backend phụ trách: `users` (Port 8001)*  
-*Tiêu chuẩn routing: Toàn bộ dùng chuẩn số ít `/api/v1/admin/user` và `/api/v1/admin/user/{userId}`.*
+*Tiêu chuẩn routing: Toàn bộ dùng chuẩn số nhiều `/api/v1/admin/users` và `/api/v1/admin/users/{userId}`.*
 
 | Phương Thức & Tuyến Đường | Quyền Yêu Cầu | Request Params / Body | Phản Hồi | Mô Tả Chức Năng |
 |:---|:---:|:---|:---:|:---|
-| `GET /api/v1/admin/user` | `Staff` | Query: `page=1, limit=20, keyword, role, status` | `200 ApiResponse<AdminUserListResponseDto>` | Tra cứu & phân trang danh sách người dùng. |
-| `POST /api/v1/admin/user` | `Admin` | Body: `CreateAdminUserDto` (`email, password, firstName, lastName`) | `201 ApiResponse<AdminUserCreatedResponseDto>` | Tạo tài khoản người dùng mới từ trang quản trị. |
-| `GET /api/v1/admin/user/{userId}` | `Staff` | Route: `userId` (GUID) | `200 ApiResponse<AdminUserDetailResponseDto>` | Lấy chi tiết thông tin quản trị tài khoản. |
-| `PUT /api/v1/admin/user/{userId}` | `Admin` | Route: `userId`, Body: `UpdateAdminUserDto` (`firstName, lastName, reason`) | `200 ApiResponse<AdminUserUpdatedResponseDto>` | Cập nhật thông tin tài khoản người dùng. |
-| `DELETE /api/v1/admin/user/{userId}` | `Admin` | Route: `userId`, Body: `DeleteAdminUserDto` (`reason`) | `204 NoContent` | Xóa mềm / vô hiệu hóa tài khoản người dùng. |
-| `PATCH /api/v1/admin/user/{userId}/ban` | `StaffOrAdmin` | Route: `userId`, Body: `BanAdminUserDto` (`reason, banDurationDays`) | `200 ApiResponse<AdminUserBanResponseDto>` | Khóa tài khoản người dùng kèm lý do. |
-| `PATCH /api/v1/admin/user/{userId}/unban` | `StaffOrAdmin` | Route: `userId`, Body: `UnbanAdminUserDto` (`reason`) | `200 ApiResponse<AdminUserUnbanResponseDto>` | Mở khóa tài khoản người dùng. |
-| `PUT /api/v1/admin/user/{userId}/roles` | `Admin` | Route: `userId`, Body: `AssignAdminUserRolesDto` (`roleCodes, reason`) | `200 ApiResponse<AdminUserRolesResponseDto>` | Cập nhật gán vai trò (Roles) cho tài khoản. |
-| `PATCH /api/v1/admin/user/{userId}/reputation` | `Admin` | Route: `userId`, Body: `AdjustAdminUserReputationDto` (`delta, reason`) | `200 ApiResponse<AdminUserReputationResponseDto>` | Cộng/trừ điểm uy tín người dùng thủ công. |
-| `GET /api/v1/admin/seller-registrations` | `Staff` | Query: `page=1, limit=20, status` | `200 ApiResponse<AdminSellerRegistrationListResponseDto>` | Danh sách đơn xin mở shop người bán. |
+| `GET /api/v1/admin/users` | `Staff` | Query: `page=1, pageSize=20, keyword, role, status` | `200 ApiResponse<AdminUserListResponseDto>` | Tra cứu & phân trang danh sách người dùng. |
+| `POST /api/v1/admin/users` | `Admin` | Body: `CreateAdminUserDto` (`email, password, firstName, lastName`) | `201 ApiResponse<AdminUserCreatedResponseDto>` | Tạo tài khoản người dùng mới từ trang quản trị. |
+| `GET /api/v1/admin/users/{userId}` | `Staff` | Route: `userId` (GUID) | `200 ApiResponse<AdminUserDetailResponseDto>` | Lấy chi tiết thông tin quản trị tài khoản. |
+| `PUT /api/v1/admin/users/{userId}` | `Admin` | Route: `userId`, Body: `UpdateAdminUserDto` (`firstName, lastName, reason`) | `200 ApiResponse<AdminUserUpdatedResponseDto>` | Cập nhật thông tin tài khoản người dùng. |
+| `DELETE /api/v1/admin/users/{userId}` | `Admin` | Route: `userId`, Body: `DeleteAdminUserDto` (`reason`) | `204 NoContent` | Xóa mềm / vô hiệu hóa tài khoản người dùng. |
+| `PATCH /api/v1/admin/users/{userId}/ban` | `StaffOrAdmin` | Route: `userId`, Body: `BanAdminUserDto` (`reason, banDurationDays`) | `200 ApiResponse<AdminUserBanResponseDto>` | Khóa tài khoản người dùng kèm lý do. |
+| `PATCH /api/v1/admin/users/{userId}/unban` | `StaffOrAdmin` | Route: `userId`, Body: `UnbanAdminUserDto` (`reason`) | `200 ApiResponse<AdminUserUnbanResponseDto>` | Mở khóa tài khoản người dùng. |
+| `PUT /api/v1/admin/users/{userId}/roles` | `Admin` | Route: `userId`, Body: `AssignAdminUserRolesDto` (`roleCodes, reason`) | `200 ApiResponse<AdminUserRolesResponseDto>` | Cập nhật gán vai trò (Roles) cho tài khoản. |
+| `PATCH /api/v1/admin/users/{userId}/reputation` | `Admin` | Route: `userId`, Body: `AdjustAdminUserReputationDto` (`delta, reason`) | `200 ApiResponse<AdminUserReputationResponseDto>` | Cộng/trừ điểm uy tín người dùng thủ công. |
+| `GET /api/v1/admin/seller-registrations` | `Staff` | Query: `page=1, pageSize=20, status` | `200 ApiResponse<AdminSellerRegistrationListResponseDto>` | Danh sách đơn xin mở shop người bán. |
 | `GET /api/v1/admin/seller-registrations/{registrationId}` | `Staff` | Route: `registrationId` | `200 ApiResponse<AdminSellerRegistrationDetailResponseDto>` | Xem hồ sơ chi tiết đơn xin mở shop. |
 | `PUT /api/v1/admin/seller-registrations/{registrationId}/approve` | `Staff` | Route: `registrationId`, Body: `ApproveSellerRegistrationDto` | `200 ApiResponse<ApproveSellerRegistrationResponseDto>` | Phê duyệt đơn đăng ký bán hàng. |
 | `PUT /api/v1/admin/seller-registrations/{registrationId}/reject` | `Staff` | Route: `registrationId`, Body: `RejectSellerRegistrationDto` (`rejectionReason`) | `200 ApiResponse<RejectSellerRegistrationResponseDto>` | Từ chối đơn đăng ký bán hàng kèm lý do. |
@@ -471,25 +470,25 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 | Phương Thức & Tuyến Đường | Quyền Yêu Cầu | Tham Số & Request Body | Phản Hồi | Mô Tả Nghiệp Vụ |
 |:---|:---:|:---|:---:|:---|
 | `GET /api/v1/products` | `AllowAnonymous` | Query: `page=1, limit=20, categoryId, minPrice, maxPrice, rating, sort` | `200 ApiResponse<ProductListResponseDto>` | Khách xem danh sách sản phẩm phân trang & bộ lọc. |
-| `GET /api/v1/product/search` | `Seller` | Query: `page=1, limit=20, keyword, status` | `200 ApiResponse<ProductSearchResponseDto>` | Người bán tìm kiếm sản phẩm trong kho của mình. |
-| `GET /api/v1/product/{productId}` | `AllowAnonymous` | Route: `productId` | `200 ApiResponse<ProductDetailResponseDto>` | Xem chi tiết sản phẩm, thuộc tính và các biến thể. |
+| `GET /api/v1/products/search` | `Seller` | Query: `page=1, limit=20, keyword, status` | `200 ApiResponse<ProductSearchResponseDto>` | Người bán tìm kiếm sản phẩm trong kho của mình. |
+| `GET /api/v1/products/{productId}` | `AllowAnonymous` | Route: `productId` | `200 ApiResponse<ProductDetailResponseDto>` | Xem chi tiết sản phẩm, thuộc tính và các biến thể. |
 | `POST /api/v1/products` | `Seller` | Body: `CreateProductDto` (`name, description, categoryId, basePrice, variants`) | `201 ApiResponse<ProductCreatedResponseDto>` | Người bán đăng bán sản phẩm mới. |
-| `PATCH /api/v1/product/{productId}` | `Seller` | Route: `productId`, Body: `UpdateProductDto` | `200 ApiResponse<ProductUpdatedResponseDto>` | Cập nhật thông tin mô tả/giá sản phẩm. |
-| `DELETE /api/v1/product/{productId}` | `Seller` | Route: `productId` | `204 NoContent` | Người bán ngừng kinh doanh / xoá sản phẩm. |
-| `POST /api/v1/product/{productId}/pics` | `Seller` | Multipart: `files` (ảnh sản phẩm) | `201 ApiResponse<ProductImagesAddedResponseDto>` | Tải thêm hình ảnh cho sản phẩm. |
-| `GET /api/v1/product/{productId}/pics` | `AllowAnonymous` | Route: `productId` | `200 ApiResponse<ProductImagesResponseDto>` | Lấy danh sách ảnh của sản phẩm. |
-| `DELETE /api/v1/product/{productId}/pics` | `Seller` | Route: `productId`, Body: `DeleteImagesDto` | `204 NoContent` | Xóa ảnh khỏi sản phẩm. |
+| `PATCH /api/v1/products/{productId}` | `Seller` | Route: `productId`, Body: `UpdateProductDto` | `200 ApiResponse<ProductUpdatedResponseDto>` | Cập nhật thông tin mô tả/giá sản phẩm. |
+| `DELETE /api/v1/products/{productId}` | `Seller` | Route: `productId` | `204 NoContent` | Người bán ngừng kinh doanh / xoá sản phẩm. |
+| `POST /api/v1/products/{productId}/pics` | `Seller` | Multipart: `files` (ảnh sản phẩm) | `201 ApiResponse<ProductImagesAddedResponseDto>` | Tải thêm hình ảnh cho sản phẩm. |
+| `GET /api/v1/products/{productId}/pics` | `AllowAnonymous` | Route: `productId` | `200 ApiResponse<ProductImagesResponseDto>` | Lấy danh sách ảnh của sản phẩm. |
+| `DELETE /api/v1/products/{productId}/pics` | `Seller` | Route: `productId`, Body: `DeleteImagesDto` | `204 NoContent` | Xóa ảnh khỏi sản phẩm. |
 | `GET /api/v1/products/{productId}/totalRating` | `AllowAnonymous` | Route: `productId` | `200 ApiResponse<ProductTotalRatingResponseDto>` | Thống kê số lượng và điểm trung bình đánh giá. |
 | `GET /api/v1/products/{productId}/rating` | `AllowAnonymous` | Route: `productId` | `200 ApiResponse<ProductRatingBreakdownDto>` | Phân bổ đánh giá theo số sao 1-5. |
-| `PATCH /api/v1/product/{productId}/status` | `Seller` | Route: `productId`, Body: `{ "status": "ACTIVE" }` | `200 ApiResponse<ProductStatusUpdatedResponseDto>` | Đổi trạng thái hiển thị sản phẩm (Active/Draft). |
-| `POST /api/v1/product/{productId}/variants` | `Seller` | Route: `productId`, Body: `CreateVariantDto` | `201 ApiResponse<VariantCreatedResponseDto>` | Thêm biến thể SKU mới cho sản phẩm. |
-| `DELETE /api/v1/variant/{variantId}` | `Seller` | Route: `variantId` | `204 NoContent` | Xoá biến thể SKU. |
-| `PATCH /api/v1/variant/{variantId}` | `Seller` | Route: `variantId`, Body: `UpdateVariantDto` | `200 ApiResponse<VariantUpdatedResponseDto>` | Cập nhật SKU / giá bán của biến thể. |
-| `GET /api/v1/variant/{variantId}` | `Seller` | Route: `variantId` | `200 ApiResponse<VariantDetailResponseDto>` | Xem chi tiết 1 biến thể SKU. |
-| `POST /api/v1/product/auction` | `Seller` | Body: `CreateAuctionProductDto` | `201 ApiResponse<AuctionProductCreatedResponseDto>` | Đăng sản phẩm đặc thù phục vụ tạo phiên đấu giá. |
-| `GET /api/v1/product/auction/search` | `Seller` | Query: `keyword, page, limit` | `200 ApiResponse<AuctionProductListDto>` | Tìm kiếm sản phẩm đấu giá trong kho. |
-| `GET /api/v1/product/auctions` | `Seller` | Query: `page, limit` | `200 ApiResponse<AuctionProductListDto>` | Danh sách sản phẩm đấu giá của người bán. |
-| `GET /api/v1/product/auction/{auctionId}` | `Seller` | Route: `auctionId` | `200 ApiResponse<AuctionProductDetailDto>` | Chi tiết sản phẩm gán với phiên đấu giá. |
+| `PATCH /api/v1/products/{productId}/status` | `Seller` | Route: `productId`, Body: `{ "status": "ACTIVE" }` | `200 ApiResponse<ProductStatusUpdatedResponseDto>` | Đổi trạng thái hiển thị sản phẩm (Active/Draft). |
+| `POST /api/v1/products/{productId}/variants` | `Seller` | Route: `productId`, Body: `CreateVariantDto` | `201 ApiResponse<VariantCreatedResponseDto>` | Thêm biến thể SKU mới cho sản phẩm. |
+| `DELETE /api/v1/variants/{variantId}` | `Seller` | Route: `variantId` | `204 NoContent` | Xoá biến thể SKU. |
+| `PATCH /api/v1/variants/{variantId}` | `Seller` | Route: `variantId`, Body: `UpdateVariantDto` | `200 ApiResponse<VariantUpdatedResponseDto>` | Cập nhật SKU / giá bán của biến thể. |
+| `GET /api/v1/variants/{variantId}` | `Seller` | Route: `variantId` | `200 ApiResponse<VariantDetailResponseDto>` | Xem chi tiết 1 biến thể SKU. |
+| `POST /api/v1/products/auction` | `Seller` | Body: `CreateAuctionProductDto` | `201 ApiResponse<AuctionProductCreatedResponseDto>` | Đăng sản phẩm đặc thù phục vụ tạo phiên đấu giá. |
+| `GET /api/v1/products/auction/search` | `Seller` | Query: `keyword, page, limit` | `200 ApiResponse<AuctionProductListDto>` | Tìm kiếm sản phẩm đấu giá trong kho. |
+| `GET /api/v1/products/auctions` | `Seller` | Query: `page, limit` | `200 ApiResponse<AuctionProductListDto>` | Danh sách sản phẩm đấu giá của người bán. |
+| `GET /api/v1/products/auction/{auctionId}` | `Seller` | Route: `auctionId` | `200 ApiResponse<AuctionProductDetailDto>` | Chi tiết sản phẩm gán với phiên đấu giá. |
 
 ---
 
@@ -512,7 +511,7 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 | Phương Thức & Tuyến Đường | Quyền Yêu Cầu | Tham Số / Body | Phản Hồi | Mô Tả Nghiệp Vụ |
 |:---|:---:|:---|:---:|:---|
 | `POST /api/v1/inventory/stock-in` | `Seller` | Body: `StockInDto` (`items: [{ skuId, quantity, unitCost }]`) | `200 ApiResponse<StockInResponseDto>` | Nhập kho theo lô nhiều SKU cùng lúc. |
-| `POST /api/v1/variant/{variantId}/stock-in` | `Seller` | Route: `variantId`, Body: `StockInVariantDto` (`quantity`) | `200 ApiResponse<StockInVariantResponseDto>` | Nhập kho bổ sung số lượng cho một biến thể cụ thể. |
+| `POST /api/v1/variants/{variantId}/stock-in` | `Seller` | Route: `variantId`, Body: `StockInVariantDto` (`quantity`) | `200 ApiResponse<StockInVariantResponseDto>` | Nhập kho bổ sung số lượng cho một biến thể cụ thể. |
 
 ---
 
@@ -521,12 +520,12 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 
 | Phương Thức & Tuyến Đường | Quyền Yêu Cầu | Tham Số / Body | Phản Hồi | Mô Tả Nghiệp Vụ |
 |:---|:---:|:---|:---:|:---|
-| `GET /api/v1/cart` | `Customer` | Không | `200 ApiResponse<CartResponseDto>` | Lấy toàn bộ sản phẩm trong giỏ hàng của tôi. |
-| `POST /api/v1/cart/items` | `Customer` | Body: `AddCartItemRequest` (`productId, skuId, quantity`) | `200 ApiResponse<AddCartItemResponseDto>` | Thêm sản phẩm hoặc biến thể vào giỏ hàng. |
-| `PATCH /api/v1/cart/items/{cartItemId}` | `Customer` | Route: `cartItemId`, Body: `UpdateCartItemRequest` (`quantity`) | `200 ApiResponse<UpdateCartItemResponseDto>` | Đổi số lượng của 1 sản phẩm trong giỏ. |
-| `DELETE /api/v1/cart/items` | `Customer` | Body: `RemoveCartItemsRequest` (`cartItemIds, all: false`) | `200 ApiResponse<RemoveCartItemsResponseDto>` | Xoá một số sản phẩm đã chọn khỏi giỏ. |
-| `DELETE /api/v1/cart/items/all` | `Customer` | Không | `200 ApiResponse<ClearCartResponseDto>` | Dọn dẹp sạch toàn bộ giỏ hàng. |
-| `GET /api/v1/cart/items/select` | `Customer` | Query: `cartItemIds=id1,id2` | `200 ApiResponse<List<CartItemValidationDto>>` | Kiểm tra tồn kho & giá các dòng chọn trước checkout. |
+| `GET /api/v1/carts` | `Customer` | Không | `200 ApiResponse<CartResponseDto>` | Lấy toàn bộ sản phẩm trong giỏ hàng của tôi. |
+| `POST /api/v1/carts/items` | `Customer` | Body: `AddCartItemRequest` (`productId, skuId, quantity`) | `200 ApiResponse<AddCartItemResponseDto>` | Thêm sản phẩm hoặc biến thể vào giỏ hàng. |
+| `PATCH /api/v1/carts/items/{cartItemId}` | `Customer` | Route: `cartItemId`, Body: `UpdateCartItemRequest` (`quantity`) | `200 ApiResponse<UpdateCartItemResponseDto>` | Đổi số lượng của 1 sản phẩm trong giỏ. |
+| `DELETE /api/v1/carts/items` | `Customer` | Body: `RemoveCartItemsRequest` (`cartItemIds, all: false`) | `200 ApiResponse<RemoveCartItemsResponseDto>` | Xoá một số sản phẩm đã chọn khỏi giỏ. |
+| `DELETE /api/v1/carts/items/all` | `Customer` | Không | `200 ApiResponse<ClearCartResponseDto>` | Dọn dẹp sạch toàn bộ giỏ hàng. |
+| `GET /api/v1/carts/items/select` | `Customer` | Query: `cartItemIds=id1,id2` | `200 ApiResponse<List<CartItemValidationDto>>` | Kiểm tra tồn kho & giá các dòng chọn trước checkout. |
 
 ---
 
@@ -536,18 +535,19 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 | Phương Thức & Tuyến Đường | Quyền Yêu Cầu | Tham Số / Body | Phản Hồi | Mô Tả Nghiệp Vụ |
 |:---|:---:|:---|:---:|:---|
 | `GET /api/v1/orders` *(alias `order`)* | `Customer` | Query: `page=1, pageSize=20, status, fromDate, toDate` | `200 ApiResponse<PagedData<OrderListItemDto>>` | Danh sách lịch sử đơn hàng của người mua. |
-| `POST /api/v1/checkout/quote` | `Customer` | Body: `CheckoutQuoteRequest` (`cartItemIds, shippingAddress, paymentMethod`) | `200 ApiResponse<CheckoutQuoteResponseDto>` | Tính trước phí ship, chiết khấu và tổng tiền đơn. |
+| `GET /api/v1/orders/buyer/{buyerId}` | `Customer` | Route: `buyerId` (GUID), Query: `page=1, pageSize=20` (1..100) | `200 ApiResponse<PagedData<OrderDto>>` | Đơn hàng của một người mua; máy chủ kiểm tra quyền sở hữu với `x-user-id` và phân trang tại DB. |
+| `POST /api/v1/checkouts/quote` | `Customer` | Body: `CheckoutQuoteRequest` (`cartItemIds, shippingAddress, paymentMethod`) | `200 ApiResponse<CheckoutQuoteResponseDto>` | Tính trước phí ship, chiết khấu và tổng tiền đơn. |
 | `POST /api/v1/orders` | `Customer` | Body: `CreateOrderRequest` (`quoteId, shippingAddress, contactPhone, paymentMethod`) | `201 ApiResponse<CreateOrderResponseDto>` | Đặt hàng chính thức từ báo giá quote đã tính. |
-| `GET /api/v1/order/{orderId}` | `Customer` | Route: `orderId` | `200 ApiResponse<OrderDetailResponseDto>` | Xem chi tiết 1 đơn hàng và các đơn con của shop. |
+| `GET /api/v1/orders/{orderId}` | `Customer` | Route: `orderId` | `200 ApiResponse<OrderDetailResponseDto>` | Xem chi tiết 1 đơn hàng và các đơn con của shop. |
 | `GET /api/v1/subOrder/{subOrderId}` | `Customer` | Route: `subOrderId` | `200 ApiResponse<SubOrderDetailDto>` | Xem chi tiết đơn hàng con thuộc một shop cụ thể. |
 | `POST /api/v1/orders/{orderId}/cancel` | `Customer` | Route: `orderId`, Body: `CancelOrderRequest` (`reasonCode`) | `200 ApiResponse<CancelOrderResponseDto>` | Người mua hủy đơn khi chưa thanh toán / xử lý. |
 | `POST /api/v1/orders/{orderId}/accept` | `Seller` | Route: `orderId`, Body: `SubOrderDecisionRequest` (`subOrderId`) | `200` | Người bán xác nhận đồng ý đóng gói giao hàng. |
 | `POST /api/v1/orders/{orderId}/reject` | `Seller` | Route: `orderId`, Body: `SubOrderDecisionRequest` (`subOrderId, reasonCode`) | `200` | Người bán từ chối đơn hàng do hết hàng/sự cố. |
 | `POST /api/v1/payments/webhook` | `AllowAnonymous` | Body: `PaymentWebhookRequest` | `200` | Webhook nhận tín hiệu thanh toán từ cổng trung gian. |
-| `POST /api/v1/order/{orderId}/products/{productId}/reviews` | `Customer` | Route: `orderId, productId`, Body: `CreateProductReviewRequest` | `201` | Viết đánh giá sản phẩm sau khi đơn hoàn tất. |
-| `POST /api/v1/order/{orderId}/user/{userId}` | `Customer` | Route: `orderId, userId`, Body: `CreateUserFeedbackRequest` | `201` | Đánh giá thái độ người bán / người mua theo đơn. |
-| `PATCH /api/v1/order/{orderId}/products/{productId}/reviews` | `Customer` | Route: `orderId, productId`, Body: `UpdateProductReviewRequest` | `200` | Cập nhật lại đánh giá sản phẩm. |
-| `PATCH /api/v1/order/{orderId}/user/{userId}` | `Customer` | Route: `orderId, userId`, Body: `UpdateUserFeedbackRequest` | `200` | Cập nhật lại phản hồi người dùng. |
+| `POST /api/v1/orders/{orderId}/products/{productId}/reviews` | `Customer` | Route: `orderId, productId`, Body: `CreateProductReviewRequest` | `201` | Viết đánh giá sản phẩm sau khi đơn hoàn tất. |
+| `POST /api/v1/orders/{orderId}/user/{userId}` | `Customer` | Route: `orderId, userId`, Body: `CreateUserFeedbackRequest` | `201` | Đánh giá thái độ người bán / người mua theo đơn. |
+| `PATCH /api/v1/orders/{orderId}/products/{productId}/reviews` | `Customer` | Route: `orderId, productId`, Body: `UpdateProductReviewRequest` | `200` | Cập nhật lại đánh giá sản phẩm. |
+| `PATCH /api/v1/orders/{orderId}/user/{userId}` | `Customer` | Route: `orderId, userId`, Body: `UpdateUserFeedbackRequest` | `200` | Cập nhật lại phản hồi người dùng. |
 | `POST /api/v1/subOrder/{subOrderId}/refund` | `Customer` | Route: `subOrderId`, Body: `RefundSubOrderRequest` (`reason`) | `200` | Yêu cầu hoàn tiền cho một đơn hàng con. |
 
 ---
@@ -567,7 +567,7 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 | `PUT /api/v1/auctions/{auctionId}` | `Seller` | Route: `auctionId`, Body: `UpdateAuctionRequestDto` | `200 ApiResponse<UpdateAuctionResponseDto>` | Cập nhật cấu hình phiên khi chưa bắt đầu. |
 | `POST /api/v1/auctions/{auctionId}/cancel` | `Seller` | Route: `auctionId`, Body: `CancelAuctionRequestDto` (`reason`) | `200 ApiResponse<CancelAuctionResponseDto>` | Người bán hủy phiên đấu giá trước giờ G. |
 | `POST /api/v1/auctions/{auctionId}/recreate` | `Seller` | Route: `auctionId` | `201 ApiResponse<CreateAuctionResponseDto>` | Tạo lại phiên đấu giá mới từ phiên thất bại. |
-| `GET /api/v1/seller/auctions` | `Seller` | Query: `page=1, pageSize=20, status` | `200 ApiResponse<PagedData<AuctionSummaryDto>>` | Danh sách phiên đấu giá do chính shop tạo ra. |
+| `GET /api/v1/sellers/auctions` | `Seller` | Query: `page=1, pageSize=20, status` | `200 ApiResponse<PagedData<AuctionSummaryDto>>` | Danh sách phiên đấu giá do chính shop tạo ra. |
 | `GET /api/v1/auctions/{auctionId}/status-history` | `Authenticated` | Route: `auctionId` | `200 ApiResponse<List<AuctionStatusHistoryDto>>` | Lịch sử chuyển trạng thái vòng đời phiên đấu giá. |
 | `POST /api/v1/admin/auctions/{auctionId}/force-cancel` | `Admin` | Route: `auctionId`, Body: `AdminForceCancelAuctionDto` (`reason`) | `200` | Quản trị viên cưỡng chế dừng phiên đấu giá vi phạm. |
 | `GET /api/v1/admin/auctions/{auctionId}/saga` | `Admin` | Route: `auctionId` | `200 ApiResponse<AuctionSagaStateDto>` | Kiểm tra trạng thái điều phối Saga phân tán. |
@@ -583,11 +583,11 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 |:---|:---:|:---|:---:|:---|
 | `GET /api/v1/shipments/{shipmentId}` | `Customer` | Route: `shipmentId` | `200 ApiResponse<ShipmentDetailResponseDto>` | Chi tiết vận đơn và lịch sử các mốc lộ trình giao. |
 | `GET /api/v1/shipments/order/{orderId}` | `Customer` | Route: `orderId` | `200 ApiResponse<List<ShipmentListItemDto>>` | Danh sách tất cả kiện hàng thuộc về một đơn hàng. |
-| `GET /api/v1/seller/shipment` | `Seller` | Query: `page=1, pageSize=20, status` | `200 ApiResponse<PagedData<SellerShipmentListItemDto>>` | Danh sách vận đơn gửi đi của người bán. |
-| `GET /api/v1/seller/shipment/search` | `Seller` | Query: `page, pageSize, keyword, status, fromDate, toDate` | `200 ApiResponse<PagedData<SellerShipmentListItemDto>>` | Tìm kiếm vận đơn của người bán theo mã/ngày. |
-| `GET /api/v1/seller/shipment/{shipmentId}` | `Seller` | Route: `shipmentId` | `200 ApiResponse<ShipmentDetailResponseDto>` | Người bán xem chi tiết 1 kiện hàng của mình. |
+| `GET /api/v1/sellers/shipments` | `Seller` | Query: `page=1, pageSize=20, status` | `200 ApiResponse<PagedData<SellerShipmentListItemDto>>` | Danh sách vận đơn gửi đi của người bán. |
+| `GET /api/v1/sellers/shipments/search` | `Seller` | Query: `page, pageSize, keyword, status, fromDate, toDate` | `200 ApiResponse<PagedData<SellerShipmentListItemDto>>` | Tìm kiếm vận đơn của người bán theo mã/ngày. |
+| `GET /api/v1/sellers/shipments/{shipmentId}` | `Seller` | Route: `shipmentId` | `200 ApiResponse<ShipmentDetailResponseDto>` | Người bán xem chi tiết 1 kiện hàng của mình. |
 | `PATCH /api/v1/shipments/{shipmentId}/tracking` | `Authenticated` | Route: `shipmentId`, Body: `UpdateShipmentTrackingRequest` (`status, location`) | `200 ApiResponse<ShipmentTrackingUpdatedResponseDto>` | Cập nhật vị trí tracking kiện hàng. |
-| `POST /api/v1/shipment/{shipmentId}/complete` | `Customer` | Route: `shipmentId` | `200 ApiResponse<ShipmentCompletedResponseDto>` | Người mua ấn nút "Đã nhận được hàng". |
+| `POST /api/v1/shipments/{shipmentId}/complete` | `Customer` | Route: `shipmentId` | `200 ApiResponse<ShipmentCompletedResponseDto>` | Người mua ấn nút "Đã nhận được hàng". |
 | `POST /api/v1/shipments/webhook` | `AllowAnonymous` | Body: `ShipmentWebhookRequest` (`trackingNumber, status`) | `200` | Webhook nhận cập nhật từ hãng vận chuyển (GHTK/GHN). |
 
 ---
@@ -618,14 +618,16 @@ Tất cả thông báo lỗi (`detail`) 100% bằng tiếng Anh Sentence case. M
 
 | Phương Thức & Tuyến Đường | Quyền Yêu Cầu | Tham Số / Body | Phản Hồi | Mô Tả Nghiệp Vụ |
 |:---|:---:|:---|:---:|:---|
-| `GET /api/v1/wallets/me` | `Authenticated` | Không | `200 ApiResponse<WalletInfoResponseDto>` | Lấy số dư khả dụng (`availableBalance`) và số dư bị giữ (`lockedBalance`). |
-| `POST /api/v1/wallets/topups/vnpay` | `Authenticated` | Body: `TopupVnPayRequest` (`amount >= 10000, returnUrl`) | `201 ApiResponse<VnpayTopupCreatedResponseDto>` | Tạo yêu cầu nạp ví và nhận URL cổng thanh toán VNPay. |
-| `POST /api/v1/wallets/vnpay/ipn` | `AllowAnonymous` | Query & Body theo chuẩn VNPay | `200 { RspCode: "00", Message: "Confirm success." }` | Webhook IPN nhận kết quả giao dịch thanh toán từ VNPay. |
-| `POST /api/v1/wallets/checkout/direct` | `Authenticated` | Body: `DirectCheckoutRequest` (`orderId, amount, returnUrl`) | `200 ApiResponse<DirectCheckoutResponseDto>` | Tạo phiên thanh toán trực tiếp qua VNPay cho đơn hàng không qua ví. |
-| `POST /api/v1/wallets/withdrawals` | `Authenticated` | Body: `WithdrawalRequest` (`amount >= 50000, bankCode, accountNumber, accountHolderName`) | `201 ApiResponse<WithdrawalCreatedResponseDto>` | Người dùng gửi yêu cầu rút tiền từ ví về tài khoản ngân hàng. |
-| `PATCH /api/v1/admin/wallets/withdrawals/{withdrawalId}` | `StaffOrAdmin` | Route: `withdrawalId`, Body: `ProcessWithdrawalRequest` (`action: APPROVE/REJECT, reason`) | `200 ApiResponse<WithdrawalProcessedResponseDto>` | Nhân viên tài chính duyệt giải ngân hoặc từ chối rút tiền. |
-| `GET /api/v1/wallets/transactions` | `Authenticated` | Query: `page=1, limit=20, type, fromDate, toDate` | `200 ApiResponse<PagedData<WalletTransactionItemDto>>` | Lịch sử biến động số dư sổ cái ví cá nhân. |
-| `POST /api/v1/admin/wallets/{walletId}/adjustments` | `Admin` | Route: `walletId`, Body: `AdjustBalanceRequest` (`amount, reason, referenceId`) | `200 ApiResponse<WalletAdjustmentResponseDto>` | Admin can thiệp điều chỉnh số dư ví thủ công kèm ghi vết audit. |
+| `GET /api/v1/wallets/me` | `Authenticated` | Không | `200 ApiResponse<WalletResponse>` | Lấy số dư khả dụng (`availableBalance`) và số dư bị giữ (`lockedBalance`). Tự tạo ví 0 đồng nếu chưa có. |
+| `POST /api/v1/wallets/topups/vnpay` | `Authenticated` | Body: `TopupVnPayCommand` (`amount` 10.000–100.000.000, `currency`, `paymentMethod`, `bankCode`, `returnUrl`) | `201 ApiResponse<TopupResponse>` | Tạo `WalletTopup` Pending và trả URL thanh toán VNPay. |
+| `POST /api/v1/wallets/vnpay/ipn` | `AllowAnonymous` | Query & Body theo chuẩn VNPay | `200 VnPayIpnResponse` (`responseCode`, `message`) | Webhook IPN nhận kết quả giao dịch; `00` là thành công, `97` sai chữ ký. |
+| `GET /api/v1/wallets/vnpay/return` | `AllowAnonymous` | Query theo chuẩn VNPay | `200 VnPayReturnResponse` hoặc `400 VAL_INVALID_SIGNATURE` | Browser return callback sau khi thanh toán; kiểm tra chữ ký trước khi trả kết quả. |
+| `POST /api/v1/wallets/transfers` | `Authenticated` | Body: `TransferCommand` (`recipientUserId`, `amount` 1.000–100.000.000, `note`) | `200 ApiResponse<TransferResponse>` | Chuyển tiền nội bộ giữa hai ví, ghi 2 bút toán TransferIn/TransferOut. |
+| `POST /api/v1/wallets/withdrawals` | `Authenticated` | Body: `RequestWithdrawalCommand` (`amount` 50.000–500.000.000, `bankCode`, `accountNumber`) | `400 BUSINESS_RULE_VIOLATION` (hiện tại) | Endpoint đã khai báo nhưng luồng tạo yêu cầu rút tiền đang bị vô hiệu hóa. |
+| `PATCH /api/v1/admin/wallets/withdrawals/{withdrawalId:guid}` | `StaffOrAdmin` | Route: `withdrawalId`, Body: `ProcessWithdrawalCommand` (`action: APPROVE/REJECT`, `adminNote`) | `200 ApiResponse<ProcessWithdrawalResponse>` | Duyệt giải ngân hoặc từ chối rút tiền, ghi audit log. |
+| `GET /api/v1/wallets/transactions` | `Authenticated` | Query: `page=1`, `pageSize=10`, `type`, `fromDate`, `toDate` | `200 ApiResponse<WalletTransactionPageResponse>` | Lịch sử biến động số dư, lọc theo `type` (`DEPOSIT`, `WITHDRAWAL`, `PAYMENT`, `REFUND` hoặc tên enum). |
+| `POST /api/v1/admin/wallets/{walletId:guid}/adjustments` | `Admin` | Route: `walletId`, Body: `AdjustWalletBalanceCommand` (`amount`, `adjustmentType: Credit/Debit`, `reason`) | `200 ApiResponse<BalanceAdjustmentResponse>` | Admin điều chỉnh số dư thủ công kèm ghi vết audit. |
+| `POST /api/v1/internal/wallets/checkout/direct` | `InternalServiceKey` | Header `x-user-id`, Body: `CheckoutDirectCommand` (`orderId`, `amount`, `gateway`, `bankCode`, `returnUrl`) | `200 DirectPaymentResponse` | Thanh toán trực tiếp cho đơn hàng (idempotent theo `orderId`). Chỉ gọi nội bộ, Gateway chặn `/internal`. |
 
 ---
 
