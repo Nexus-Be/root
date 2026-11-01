@@ -43,3 +43,15 @@ All resource collection routes across the Nexus ecosystem must strictly use lowe
   }
   ```
 * **Stateless Gateway**: Gateway never buffers raw unpaginated records in RAM to slice pages. It passes through or wraps the microservice's `PagedData<T>`.
+
+## 5. Two-Stream API Documentation Governance
+* **Stream 1: Service-Level Pre-Code Documentation (`src/Services/{Service}/docs/api/`)**:
+  - Mandated before writing any C# code for a REST endpoint (governed by skill `service-api-doc`).
+  - Researches existing domain entities, enums, DTOs, and error patterns for system consistency.
+  - Documents Pure DTO request/response, DataAnnotations, and RFC 9110 error matrix.
+  - 100% Inward-Only. Never references root or sibling service documentation.
+* **Stream 2: Root Ecosystem Documentation (`docs/api/B_none/` & `A_Active/`)**:
+  - Managed by skill `api-doc-lifecycle`.
+  - Client/Gateway-facing documentation with `ApiResponse<T>` envelope wrapping.
+  - Only audited, created, or promoted to active AFTER full feature completion and strictly upon explicit user instruction.
+

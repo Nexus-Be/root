@@ -1,15 +1,19 @@
 ---
 name: api-doc-lifecycle
-description: Manage and synchronize API documentation across Nexus microservices. Scaffolds new API docs in docs/api/B_none/, synchronizes error matrices when C# service functions throw new errors, maps domain enums, and promotes completed APIs to docs/api/A_Active/ upon human verification. Use when authoring, updating, or reviewing API documentation.
+description: Manage and synchronize root-level API documentation across Nexus microservices (docs/api/). Scaffolds and verifies ecosystem docs in docs/api/B_none/, synchronizes error matrices, maps domain enums, and promotes completed APIs to docs/api/A_Active/ strictly upon human verification. Use for root-level documentation reviews.
 ---
 
-# API Documentation Lifecycle & Governance Skill
+# API Documentation Lifecycle & Governance Skill (Root Level)
 
-This skill governs the entire lifecycle of REST API documentation in the Nexus ecosystem, ensuring 100% synchronization between C# implementation code, database enums, error matrices, and Frontend documentation.
+This skill governs the **Root-level API documentation** (`docs/api/`) in the Nexus ecosystem, representing the client and API Gateway integration perspective.
+
+> **QUY TẮC PHÂN LẬP HAI LUỒNG TÀI LIỆU (TWO-STREAM DOCUMENTATION GOVERNANCE):**
+> 1. **Stream 1 - Service-Level Pre-Code Doc (`src/Services/{Service}/docs/api/`):** Do skill `service-api-doc` quản lý. Đây là tài liệu kỹ thuật nội bộ **bắt buộc phải lập TRƯỚC KHI CODE** trong từng microservice để chốt hợp đồng Pure DTO, DataAnnotations, và ma trận lỗi nội bộ. Tuân thủ 100% Inward-Only.
+> 2. **Stream 2 - Root Ecosystem Doc (`docs/api/B_none/` & `A_Active/`):** Do skill `api-doc-lifecycle` này quản lý. Đây là tài liệu tích hợp toàn hệ thống qua Gateway (`8080`) kèm vỏ `ApiResponse<T>`. **Chỉ được kiểm tra, cập nhật hoặc di chuyển sang `A_Active/` SAU KHI toàn bộ luồng nghiệp vụ đã hoàn thành và có sự yêu cầu trực tiếp từ Người dùng (Sếp).**
 
 ---
 
-## 1. The Dual-Stage Architecture
+## 1. The Dual-Stage Architecture (Root Level)
 
 All API documentation is organized by service into two explicit lifecycle stages:
 

@@ -79,31 +79,26 @@ Khi bắt đầu phiên làm việc tại bất kỳ repository nào, AI Agent *
    - **Quy chuẩn Phân trang Hệ thống (System Pagination Governance)**:
      - **Trách nhiệm tính toán phân trang thuộc 100% về Backend Microservices**: Chỉ microservice sở hữu cơ sở dữ liệu mới có quyền thực hiện phân trang qua câu lệnh truy vấn SQL (`OFFSET/LIMIT` hoặc `.Skip((page - 1) * pageSize).Take(pageSize)`) và đếm tổng bản ghi (`SELECT COUNT(*)` hoặc `.CountAsync()`). Microservice chịu trách nhiệm đóng gói cấu trúc phân trang chuẩn `PagedData<T>` (`items` và `pagination: { pageIndex, pageSize, totalCount, totalPages, hasPreviousPage, hasNextPage }`) hoặc DTO phân trang tương đương và trả về trực tiếp trong payload HTTP 200.
      - **Gateway là Edge Reverse Proxy phi trạng thái (Zero Pagination Calculation at Gateway)**: Gateway tuyệt đối KHÔNG truy cập cơ sở dữ liệu, KHÔNG nhận tập dữ liệu thô lớn không giới hạn về bộ nhớ để tự cắt trang (gây nghẽn mạng và cạn kiệt tài nguyên Gateway). Gateway chỉ đóng vai trò chuyển tiếp downstream qua YARP hoặc bọc vỏ phong bì `ApiResponse<PagedData<T>>`.
-   - **Quy chuẩn Quản lý Hồ sơ Tài liệu API Hai Trạng Thái (Dual-Stage API Documentation Lifecycle)**:
-     - Mọi API trong hệ sinh thái Nexus đều phải có đúng 1 file tài liệu độc lập theo mẫu chuẩn `docs/api/API_DOC_TEMPLATE.md` và được quản lý ở 1 trong 2 thư mục:
-       - `docs/api/B_none/{Service}/{ID}_{FEATURE}.md`: API đang phát triển (WIP), mới lên spec hoặc chưa vượt qua kiểm thử.
-       - `docs/api/A_Active/{Service}/{ID}_{FEATURE}.md`: API đã hoàn tất (100% test pass) và được Người dùng nghiệm thu.
-     - Mỗi file tài liệu phải chứa đầy đủ 7 mục bắt buộc: (1) Mô tả & Routing RBAC, (2) Code Trace chi tiết (Service, Controller, Function, DB Table), (3) Quy chuẩn Validation, (4) Phong bì dữ liệu mẫu, (5) Ma trận mã lỗi RFC 9110, (6) Bảng danh mục Enum liên quan (giá trị int trong DB vs string PascalCase ở API), (7) Checklist hoàn thành.
-     - Khi một Function trong service bổ sung mã lỗi mới hoặc exception mới, BẮT BUỘC phải cập nhật ngay vào bảng Error Matrix của file doc tương ứng để Frontend luôn nắm bắt chính xác.
+   - **Quy chuẩn Quản lý Hồ sơ Tài liệu API Hai Luồng (Two-Stream API Documentation Governance)**:
+     - **Luồng 1 - Tài liệu Kỹ thuật Nội bộ Service (Stream 1: Service-Level Pre-Code Doc)**:
+       - **BẮT BUỘC LẬP TRƯỚC KHI CODE**: Khi phát triển hoặc sửa đổi bất kỳ endpoint nào trong microservice, lập trình viên/Agent bắt buộc phải lập tài liệu kỹ thuật tại `src/Services/{Service}/docs/api/{Feature}/{HTTP_METHOD}_{ENDPOINT_SLUG}.md` theo mẫu `SERVICE_API_DOC_TEMPLATE.md` (tuân thủ skill `service-api-doc`).
+       - **Quy chuẩn Nội dung**: Rà soát mã nguồn có sẵn để tái sử dụng DTO/Enum/Naming; mô tả hợp đồng **Pure DTO** (không bọc `ApiResponse<T>`); định nghĩa validation DataAnnotations; lập ma trận mã lỗi RFC 9110 (`SCREAMING_SNAKE_CASE` code, English sentence-case message).
+       - **100% Inward-Only**: Tài liệu này là tài sản nội bộ của service, tuyệt đối không trỏ ngược ra Root.
+     - **Luồng 2 - Tài liệu Hệ sinh thái Toàn cục tại Root (Stream 2: Root Ecosystem Doc)**:
+       - Mọi API trong hệ sinh thái Nexus được quản lý ở 1 trong 2 thư mục tại Root:
+         - `docs/api/B_none/{Service}/{ID}_{FEATURE}.md`: API đang phát triển (WIP), mới lên spec hoặc chưa nghiệm thu.
+         - `docs/api/A_Active/{Service}/{ID}_{FEATURE}.md`: API đã hoàn tất (100% test pass) và được Người dùng nghiệm thu.
+       - **Điều kiện kích hoạt**: Luồng tài liệu Root (`docs/api/`) **CHỈ ĐƯỢC RÀ SOÁT, TẠO MỚI HOẶC CHUYỂN SANG ACTIVE SAU KHI TOÀN BỘ LUỒNG NGHIỆP VỤ ĐÃ HOÀN TẤT VÀ CÓ SỰ YÊU CẦU TRỰC TIẾP TỪ NGƯỜI DÙNG**. Microservice submodules tuyệt đối không tự ý ghi vào thư mục Root này.
    - **Chuẩn hóa XML Comment Endpoint**: Chỉ dùng single-line XML `<summary>` ngắn gọn trực tiếp trên từng Action method. Cấm viết class-level remarks, section dividers kẻ ngang hoặc comment dài dòng nhiều dòng.
    - **Đồng bộ Tài liệu & Specs**: Khi thêm mới hoặc thay đổi bất kỳ route/DTO nào, bắt buộc cập nhật đồng thời file spec tương ứng (`specs/02_GATEWAY_CONTROLLERS_ROUTING.md`) và tài liệu API Frontend (`docs/FRONTEND_API_ENDPOINT_MAPPING.md`).
-   - **Skill thực thi Endpoint**: Trước khi thêm hoặc sửa bất kỳ endpoint nào, bắt buộc đọc và làm theo checklist tại `.agents/skills/new-feature-endpoint/SKILL.md`; khi làm việc trong service repo thì dùng overlay `.agents/skills/new-feature-endpoint/SKILL.md` của chính service đó.
-   - **Quy trình Bắt buộc khi Triển khai & Đóng gói 1 API (API Implementation & Documentation Lifecycle)**:
+   - **Skill thực thi Endpoint**: Trước khi thêm hoặc sửa bất kỳ endpoint nào, bắt buộc đọc và làm theo checklist tại `.agents/skills/new-feature-endpoint/SKILL.md` và `.agents/skills/service-api-doc/SKILL.md`.
+   - **Quy trình Bắt buộc khi Triển khai & Đóng gói 1 API (API Implementation Lifecycle)**:
      Khi thực hiện bất kỳ 1 API nào (mới hoặc refactor):
-     1. Tầng Application: Hoàn thiện `I{Feature}Service.cs`, `{Feature}Service.cs`, `{Feature}Requests.cs`, `{Feature}Responses.cs` (riêng `WalletService` dùng Command/Query + Handler theo CQRS).
-     2. Tầng Api: Ghép cặp Thin Controller 1-to-1, áp dụng chuẩn Route, Envelope và XML summary.
-     3. Kiểm thử tự động: Viết test case và chạy `dotnet test` vượt qua 100%.
-     4. Ghi nhận vào Hồ sơ Tài liệu API: Ngay sau khi code và test xong, BẮT BUỘC cập nhật/ghi nhận vào file tài liệu API tương ứng (`docs/api/...`, `docs/api/active/...`, và `specs/02_API_REST_CONTRACTS.md`) đầy đủ:
-        - **Mô tả nghiệp vụ & Routing**: HTTP Method, Endpoint, Quyền hạn RBAC (`AllowAnonymous`, `Buyer`, `Seller`, `StaffOrAdmin`, `Admin`).
-        - **Quy chuẩn Validation**: Chi tiết từng trường (Bắt buộc/Tùy chọn, Kiểu dữ liệu, Format, Min/Max, Range, Constraints).
-        - **Ma trận Mã lỗi (RFC 9110 Error Matrix)**: HTTP status (`400`, `401`, `403`, `404`, `409`, `500`), `errorCode` chuẩn `SCREAMING_SNAKE_CASE`, `message` 100% tiếng Anh Sentence case, và điều kiện kích hoạt lỗi.
-        - **Payload Mẫu**: Request body và Response envelope `ApiResponse<T>` hoặc `204 NoContent`.
-        - **Checklist Trạng thái Hoàn thành (Completion Checklist)**:
-          - `[x]` Service & Controller implemented
-          - `[x]` Validation rules & Error handling active
-          - `[x]` Unit/Integration tests passed (kèm tên file test)
-          - `[x]` Gateway routing / mock fixture aligned
-          - `[x]` Trạng thái chính thức: `✅ COMPLETED`
+     1. **Lập Tài liệu Kỹ thuật Nội bộ Trước Khi Code (Pre-Code Doc)**: Chạy skill `service-api-doc`, tra cứu Source of Truth (Entities, Enums, DTOs có sẵn), hoàn thiện file tại `src/Services/{Service}/docs/api/`.
+     2. **Tầng Application**: Hoàn thiện `I{Feature}Service.cs`, `{Feature}Service.cs`, `{Feature}Requests.cs`, `{Feature}Responses.cs` (riêng `WalletService` dùng Command/Query + Handler theo CQRS).
+     3. **Tầng Api**: Ghép cặp Thin Controller 1-to-1, trả Pure DTO, áp dụng chuẩn Route và XML summary.
+     4. **Kiểm thử tự động**: Viết test case và chạy `dotnet test` vượt qua 100%. Tích checklist trong service doc sang `✅ VERIFIED`.
+     5. **Đồng bộ Hồ sơ Root (Khi có yêu cầu từ Người dùng)**: Khi người dùng yêu cầu nghiệm thu/chốt luồng, đồng bộ sang `docs/api/` ở Root theo skill `api-doc-lifecycle`.
    - **11. QUY CHUẨN THAY ĐỔI & THAO TÁC CƠ SỞ DỮ LIỆU (DATABASE GOVERNANCE & MIGRATION RULES)**:
      Khi thay đổi mã nguồn, tạo mới thực thể, chỉnh sửa bảng hoặc đụng tới cơ sở dữ liệu, mọi AI Coding Agent BẮT BUỘC tuân thủ nghiêm ngặt 7 điều răn sau:
      1. **Lưu trữ & Ép kiểu Enum (Enum Persistence & Boundary Serialization)**:

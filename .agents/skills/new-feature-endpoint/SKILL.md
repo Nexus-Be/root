@@ -79,7 +79,7 @@ Run the phases in order. A phase may be skipped only when it genuinely does not 
 - [ ] Create `.agents/plan/PLAN-YYYYMMDD-HHMM-<NAME>.md` with objective, files, impact, checklist, and verification commands.
 - [ ] If the contract is ambiguous, ask the operator. Do not guess a route or an error code.
 
-## 6. Phase 1 - Contract design
+## 6. Phase 1 - Contract design & Pre-Code Documentation
 
 - [ ] Path is `/api/v1/{plural-resource}` or the documented `/me` / `/auth` exception.
 - [ ] Admin routes are namespaced per domain (`/api/v1/admin/users`, `/api/v1/admin/wallets`, `/api/v1/admin/auctions`, ...) and never a single catch-all.
@@ -92,6 +92,7 @@ Run the phases in order. A phase may be skipped only when it genuinely does not 
 - [ ] Mutating inter-service calls accept `Idempotency-Key` when the downstream operation can be retried.
 - [ ] New inter-service route uses a public prefix and the internal model stays off.
 - [ ] Write the contract block from `references/checklist.md` into the session plan before coding.
+- [ ] **MANDATORY PRE-CODE DOC:** Run skill `service-api-doc` to draft the internal service technical API doc at `src/Services/{Service}/docs/api/{Feature}/{METHOD}_{ENDPOINT}.md` using `SERVICE_API_DOC_TEMPLATE.md`, referencing existing domain entities, enums, DTOs, and error patterns for cross-service consistency.
 
 ## 7. Phase 2 - Persistence
 
@@ -151,17 +152,14 @@ Wallet does not use feature services. Add a use case under `Wallet.Application/F
 - [ ] `dotnet test {Service}.sln -c Release` passes 100%.
 - [ ] If the repository has no test project, record the gap in the session plan and report it. Do not claim coverage that does not exist.
 
-## 11. Phase 6 - Documentation
+## 11. Phase 6 - Documentation & Verification Check
 
-- [ ] Create `docs/api/B_none/{Service}/{ID}_{FEATURE}.md` from `docs/api/API_DOC_TEMPLATE.md`.
-- [ ] Fill all seven sections: RBAC, code trace, validation, envelope samples, RFC 9110 error matrix, enum table, completion checklist.
-- [ ] Error matrix rows are sorted by status and use SCREAMING_SNAKE_CASE codes with sentence-case messages.
-- [ ] Update `docs/api/README.md` and `docs/FRONTEND_API_ENDPOINT_MAPPING.md`.
+- [ ] **Service Internal Doc (`src/Services/{Service}/docs/api/`):** Update checklist in the pre-code document created in Phase 1, mark all items complete, and set status to `✅ VERIFIED`.
+- [ ] **Root Ecosystem Doc (`docs/api/B_none/` & `A_Active/`):** Handled via `api-doc-lifecycle`. NOTE: Root docs are ONLY created, verified, or moved to `A_Active/` after full end-to-end integration is complete AND strictly upon explicit request from the Human Operator (Sếp).
 - [ ] Update `src/Services/{Service}/specs/02_API_REST_CONTRACTS.md`.
 - [ ] Update `specs/02_INTER_SERVICE_COMMUNICATION_MATRIX.md` when a new inter-service call is added.
 - [ ] Update `src/Services/Gateway/specs/02_ROUTING_CATALOG.md` when a new Gateway route is added.
-- [ ] Move the API doc to `docs/api/A_Active/{Service}/` only after tests pass and the operator accepts the API.
-- [ ] When a service function gains a new error or enum, update the existing API doc in the same change.
+- [ ] When a service function gains a new error or enum, update the service internal API doc in the same change.
 
 ## 12. Phase 7 - Gateway
 
