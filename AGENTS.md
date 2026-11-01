@@ -189,6 +189,18 @@ Khi bắt đầu phiên làm việc tại bất kỳ repository nào, AI Agent *
         - Audit Log bắt buộc được commit cùng transaction nghiệp vụ vào bảng `AuditLogs` của database dịch vụ đó (`usermanagement_db`, `wallet_db`...).
         - TUYỆT ĐỐI CẤM dùng `_logger.LogInformation` để thay thế cho AuditLog nghiệp vụ nhạy cảm (như phân quyền, khóa tài khoản, duyệt hồ sơ người bán, điều chỉnh số dư ví).
         - Bản ghi AuditLog là bất biến: chỉ được phép INSERT và SELECT, cấm viết API UPDATE hoặc DELETE bản ghi kiểm toán.
+   - **17. QUY CHUẨN KIỂM ĐỊNH & REVIEW PULL REQUEST (PULL REQUEST REVIEW & AUDIT GOVERNANCE)**:
+     1. **Kích hoạt Chuyên dụng (PR-Only Trigger Guard)**: Kỹ năng `pr-review-audit` CHỈ ĐƯỢC PHÉP CHẠY khi người dùng (Sếp) yêu cầu rõ ràng về việc review Pull Request. TUYỆT ĐỐI CẤM tự ý kích hoạt cho các tác vụ code thông thường.
+     2. **Kiểm tra Nhánh Bắt buộc (Checkout Preflight Verification)**: Trước khi phân tích, Agent bắt buộc kiểm tra nhánh hiện tại (`git rev-parse --abbrev-ref HEAD`). Nếu đang ở nhánh cơ sở (`dev`, `main`) chưa có commit của PR, DỪNG LẠI NGAY LẬP TỨC và yêu cầu người dùng checkout sang nhánh của PR.
+     3. **Cấu trúc Báo cáo 3 Phần Độc lập & Định vị theo Service**:
+        - **Nguyên tắc định vị**: Pull Request thuộc về microservice nào thì thư mục review BẮT BUỘC lưu nội bộ bên trong chính service đó: `src/Services/{Service}/.agents/review/{PR_CODE}-{GIT_AUTHOR}-{COMMIT_SUMMARY_SLUG}/`. TUYỆT ĐỐI CẤM tạo ở Root repository (`Nexus-Be/.agents/review/`) khi review PR của một service. Chỉ khi PR sửa hạ tầng dùng chung hoặc tài liệu cấp Root mới lưu tại Root `.agents/review/`.
+        - Báo cáo gồm đúng 3 file markdown có checklist:
+          - `01_API_DOCS_AUDIT.md`: Kiểm tra tính chuẩn hóa của doc nội bộ service đối soát với code C#.
+          - `02_CONTROLLER_AUDIT.md`: Kiểm tra Thin Controller, route số nhiều, single route attribute, trả Pure DTO, XML summary, quyền sở hữu.
+          - `03_LOGIC_BUSINESS_AUDIT.md`: Kiểm tra DataAnnotations, phân trang SQL `Skip/Take`, soft delete, audit log.
+     4. **Quy tắc Ký duyệt Nghiệp vụ của Con người (Human-Only Logic Sign-off)**: Agent TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ Ý ĐÁNH DẤU `[x]` vào các checklist logic, usecase và nghiệp vụ. Toàn bộ checklist logic và nghiệm thu nghiệp vụ phải để trống `[ ]` để Reviewer / Con người trực tiếp kiểm tra và tích hoàn thành.
+     5. **Rào chắn Tuyệt đối Không Sửa Logic (Strict Format-Only Fix)**: Lỗi logic/nghiệp vụ: Agent chỉ ghi chú `[NOTE - LOGIC ISSUE]` kèm vị trí `file:line` để tác giả PR tự sửa. Agent TUYỆT ĐỐI KHÔNG TỰ SỬA LOGIC. Pha 2 chỉ sửa lỗi format/conventions sau khi người dùng phê duyệt.
+     6. **Lưu trữ Vĩnh viễn & Không Commit**: Thư mục báo cáo `.agents/review/` là hồ sơ kiểm định, TUYỆT ĐỐI KHÔNG ĐƯỢC XÓA sau khi sửa format. Đưa `.agents/review/` vào `.gitignore` để không bị commit lên Git repository.
 
 ## 💬 NGUYÊN TẮC 5: QUY CHUẨN THÔNG BÁO LỖI TOÀN HỆ THỐNG (MANDATORY ERROR & ENUM RULES)
 1. **Ngôn ngữ (100% English)**: Toàn bộ thông báo lỗi, exception details, problem details, validation failures viết bằng 100% tiếng Anh. Tuyệt đối CẤM tiếng Việt trong response và runtime exception.

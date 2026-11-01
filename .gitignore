@@ -29,6 +29,7 @@ nuget.config
 !.agents/skills/**
 .agents/plan/
 .agents/history/
+.agents/review/
 .claude
 .cursor
 .claude/super-board/active
