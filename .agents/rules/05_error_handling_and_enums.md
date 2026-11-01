@@ -25,18 +25,23 @@
   * Incorrect: `ERR_WALLET_NOT_FOUND`, `wallet_not_found`, `WalletNotFound`
 
 ## 4. RFC 9110 ProblemDetails Envelope
-* Microservice controllers and `GlobalExceptionHandlerMiddleware` return errors conforming to RFC 9110:
+* Gateway and Microservices return 100% of errors (HTTP status >= 400) conforming to RFC 9110 ProblemDetails:
   ```json
   {
-    "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
-    "title": "Not found",
-    "status": 404,
-    "errorCode": "USER_NOT_FOUND",
-    "detail": "User account not found for the specified identifier.",
-    "message": "User account not found for the specified identifier.",
-    "traceId": "0HNPGT7G285Q2"
+    "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+    "title": "One or more validation errors occurred.",
+    "status": 400,
+    "errorCode": "VAL_INVALID_INPUT",
+    "detail": "Username, valid email, and password with at least 8 characters are required.",
+    "errors": {
+      "Email": ["Email address is invalid."],
+      "Password": ["Password must be at least 8 characters long."]
+    },
+    "traceId": "0HNPGT7G285Q2",
+    "timestamp": "2026-10-24T08:25:00Z"
   }
   ```
+  *(Field `errors` dictionary is included for model validation errors (HTTP 400); omitted or null for domain/system errors).*
 
 ## 5. Enum Serialization Boundary Rule
 * **Inside Database (PostgreSQL)**: 100% of Enums must be stored as signed 32-bit `integer` (int32). Prohibit `HasConversion<string>()` and custom Postgres enum types.

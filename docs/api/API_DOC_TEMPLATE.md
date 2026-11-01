@@ -102,6 +102,25 @@ Mọi thay đổi trong hàm nghiệp vụ (thêm validation, ném exception, th
 ### 4.3. Phản hồi Không có Body (`204 NoContent`)
 Áp dụng cho thao tác xóa hoặc cập nhật không cần trả payload.
 
+### 4.4. Phản hồi Lỗi Thống nhất (RFC 9110 ProblemDetails)
+Áp dụng cho 100% phản hồi lỗi (HTTP status >= 400) phát sinh từ Gateway hoặc Microservices:
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errorCode": "VAL_INVALID_INPUT",
+  "detail": "Username, valid email, and password with at least 8 characters are required.",
+  "errors": {
+    "Email": ["Email address is invalid."],
+    "Password": ["Password must be at least 8 characters long."]
+  },
+  "traceId": "0HNPGT7G285Q2",
+  "timestamp": "2026-10-24T08:25:00Z"
+}
+```
+*(Trường `errors` dạng dictionary chứa chi tiết lỗi từng field khi validate form 400; trường này là null/omitted với các lỗi nghiệp vụ khác).*
+
 ---
 
 ## 5. MA TRẬN MÃ LỖI (RFC 9110 ERROR MATRIX)

@@ -229,12 +229,12 @@ Hệ thống Nexus phân định ranh giới trách nhiệm tuyệt đối giữ
 | **200 OK** | Phân trang danh sách | `PagedData<T>` thô | Bọc vào `ApiResponse<PagedData<T>>` | `ApiResponse<PagedData<T>>` |
 | **201 Created** | Tạo mới tài nguyên thành công | DTO thô của entity vừa tạo | Bọc vào `ApiResponse<T>` với `success: true` | `ApiResponse<T>` |
 | **204 NoContent** | Xóa hoặc cập nhật không cần body | `return NoContent();` (Body rỗng) | **Truyền thẳng (Passthrough) rỗng** | `HTTP 204 NoContent` (0 byte) |
-| **400 BadRequest** | Dữ liệu đầu vào sai validation | ProblemDetails / JSON có `errorCode` | Giữ nguyên để `GlobalException` chuẩn hóa | `ApiErrorResponse` (`success: false`) |
-| **401 Unauthorized**| Token JWT thiếu hoặc hết hạn | Bị chặn ngay tại Gateway Authentication | Gateway trả về trực tiếp | `ApiErrorResponse` (`UNAUTHORIZED`) |
-| **403 Forbidden** | Không đủ quyền hoặc Header Spoofing | Bị chặn tại Gateway Guard hoặc Microservice | Trả về mã `FORBIDDEN` | `ApiErrorResponse` (`FORBIDDEN`) |
-| **404 NotFound** | Không tìm thấy tài nguyên | ProblemDetails với `errorCode` | Giữ nguyên body lỗi | `ApiErrorResponse` (`*_NOT_FOUND`) |
-| **409 Conflict** | Trùng lặp dữ liệu (Email, Username) | ProblemDetails với `errorCode` | Giữ nguyên body lỗi | `ApiErrorResponse` (`*_EXISTS`) |
-| **500 ServerError** | Lỗi ngoại lệ chưa xử lý | Exception phát sinh trong code | Bắt bởi Global Exception Handler | `ApiErrorResponse` (`INTERNAL_SERVER_ERROR`) |
+| **400 BadRequest** | Dữ liệu đầu vào sai validation | ProblemDetails / JSON có `errorCode` | Giữ nguyên để `GlobalException` chuẩn hóa | RFC 9110 ProblemDetails (`VAL_INVALID_INPUT` + `errors`) |
+| **401 Unauthorized**| Token JWT thiếu hoặc hết hạn | Bị chặn ngay tại Gateway Authentication | Gateway trả về trực tiếp | RFC 9110 ProblemDetails (`UNAUTHORIZED`) |
+| **403 Forbidden** | Không đủ quyền hoặc Header Spoofing | Bị chặn tại Gateway Guard hoặc Microservice | Trả về mã `FORBIDDEN` | RFC 9110 ProblemDetails (`FORBIDDEN`) |
+| **404 NotFound** | Không tìm thấy tài nguyên | ProblemDetails với `errorCode` | Giữ nguyên body lỗi | RFC 9110 ProblemDetails (`*_NOT_FOUND`) |
+| **409 Conflict** | Trùng lặp dữ liệu (Email, Username) | ProblemDetails với `errorCode` | Giữ nguyên body lỗi | RFC 9110 ProblemDetails (`*_EXISTS`) |
+| **500 ServerError** | Lỗi ngoại lệ chưa xử lý | Exception phát sinh trong code | Bắt bởi Global Exception Handler | RFC 9110 ProblemDetails (`INTERNAL_SERVER_ERROR`) |
 
 ---
 
