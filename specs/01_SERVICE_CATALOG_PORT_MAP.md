@@ -33,7 +33,7 @@ Chạy `dotnet run` **không** dùng port đặc tả trừ khi set `ASPNETCORE_
 |:---|:---:|:---:|:---|
 | ApiGateway | `8080` | `8080` | ✅ khớp (tránh xung đột Portainer 8000) |
 | UserService | `8001` | `8001` | ✅ khớp |
-| CatalogService | `8002` | `5272` (https `7232`) | ⚠️ Cần đồng bộ sang 8002 |
+| CatalogService | `8002` | `8002` | ✅ khớp |
 | CommerceService | `8003` | `5105` (https `7035`) | ⚠️ Cần đồng bộ sang 8003 |
 | LogService | `8004` | `5280` (https `7103`) | ⚠️ Cần đồng bộ sang 8004 |
 | AuctionService | `8005` | `5230` (https `7202`) | ⚠️ Cần đồng bộ sang 8005 |
