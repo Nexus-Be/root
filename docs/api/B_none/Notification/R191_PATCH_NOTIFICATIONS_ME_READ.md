@@ -25,9 +25,9 @@ Mọi thay đổi trong hàm nghiệp vụ (thêm validation, ném exception, th
 
 * **Microservice thụ lý:** `src/Services/Notification/`
 * **Cổng Gateway điều phối:** `src/Services/Gateway/Gateway/appsettings.json` (Route: `notification-notifications-route`)
-* **Controller Action:** `Notification.Api/Controllers/NotificationsController.cs` $\rightarrow$ `MarkAsRead()`
-* **Application Interface:** `Notification.Application/Services/Notifications/INotificationService.cs` $\rightarrow$ `MarkAsReadAsync()`
-* **Service Implementation:** `Notification.Application/Services/Notifications/NotificationService.cs` $\rightarrow$ `MarkAsReadAsync()`
+* **Controller Action:** `Notification.Api/Controllers/Public/NotificationsController.cs` $\rightarrow$ `MarkNotificationsAsRead()`
+* **Application Interface:** `Notification.Application/Services/Notifications/IUserNotificationService.cs` $\rightarrow$ `MarkNotificationsAsReadAsync()`
+* **Service Implementation:** `Notification.Application/Services/Notifications/NotificationService.cs` $\rightarrow$ `MarkNotificationsAsReadAsync()`
 * **Thực thể & Bảng DB:** `Notification.Domain/Entities/Notification.cs` $\rightarrow$ Bảng `Notifications` trong PostgreSQL
 * **Typed HTTP Client (nếu có):** N/A (Giao tiếp nội bộ trực tiếp qua DbContext)
 
@@ -50,8 +50,9 @@ Header:
 
 Body:
 {
-  "notificationIds": ["uuid"],
-  "markAll": false
+  "notificationIds": [
+    "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  ]
 }
 ```
 
@@ -68,8 +69,7 @@ Body:
   "success": true,
   "statusCode": 200,
   "data": {
-    "updatedCount": 1,
-    "unreadCount": 2
+    "markedCount": 1
   },
   "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
   "timestamp": "2026-10-26T00:00:00Z"

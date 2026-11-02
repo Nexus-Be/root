@@ -3,8 +3,8 @@
 > **Phân hệ thụ lý:** `NotificationService`  
 > **Tên tính năng:** `Notifications`  
 > **Mã tham chiếu Excel:** ``NOTI-01``  
-> **Trạng thái tài liệu:** `B_none (Chờ hoàn thiện & nghiệm thu)`  
-> **Trạng thái triển khai:** `⏳ IN_PROGRESS`  
+> **Trạng thái tài liệu:** `B_none (Chờ nghiệm thu chuyển Active)`  
+> **Trạng thái triển khai:** `✅ COMPLETED`  
 
 ---
 
@@ -14,7 +14,7 @@
 * **HTTP Method:** `POST`
 * **Đường dẫn chuẩn:** `/api/v1/notifications/devices`
 * **Đường dẫn gốc trong Excel:** `/api/v1/notifications/devices` (Đường dẫn đã tuân thủ chuẩn 100% số nhiều.)
-* **Quyền hạn truy cập (RBAC):** `Buyer`
+* **Quyền hạn truy cập (RBAC):** `Buyer`, `User`, `Seller`, `Admin`
 * **Yêu cầu Idempotency:** Tùy chọn (Khuyến nghị gửi header `Idempotency-Key: UUIDv4` để tránh gửi lặp)
 
 ---
@@ -24,11 +24,11 @@
 Mọi thay đổi trong hàm nghiệp vụ (thêm validation, ném exception, thêm enum) bắt buộc phải cập nhật đồng bộ vào tài liệu này:
 
 * **Microservice thụ lý:** `src/Services/Notification/`
-* **Cổng Gateway điều phối:** `src/Services/Gateway/Gateway/appsettings.json` (Route: `notification-notifications-route`)
-* **Controller Action:** `Notification.Api/Controllers/NotificationsController.cs` $\rightarrow$ `RegisterDevice()`
-* **Application Interface:** `Notification.Application/Services/Notifications/INotificationService.cs` $\rightarrow$ `RegisterDeviceAsync()`
-* **Service Implementation:** `Notification.Application/Services/Notifications/NotificationService.cs` $\rightarrow$ `RegisterDeviceAsync()`
-* **Thực thể & Bảng DB:** `Notification.Domain/Entities/Notification.cs` $\rightarrow$ Bảng `Notifications` trong PostgreSQL
+* **Cổng Gateway điều phối:** `src/Services/Gateway/Gateway/appsettings.json` (Route: `notifications-route`)
+* **Controller Action:** `Notification.Api/Controllers/Public/NotificationsController.cs` $\rightarrow$ `RegisterDevice()`
+* **Application Interface:** `Notification.Application/Services/Notifications/IUserNotificationService.cs` $\rightarrow$ `RegisterDeviceAsync()`
+* **Service Implementation:** `Notification.Application/Services/Notifications/UserNotificationService.cs` $\rightarrow$ `RegisterDeviceAsync()`
+* **Thực thể & Bảng DB:** `Notification.Domain/Entities/DeviceToken.cs` $\rightarrow$ Bảng `DeviceTokens` trong PostgreSQL
 * **Typed HTTP Client (nếu có):** N/A (Giao tiếp nội bộ trực tiếp qua DbContext)
 
 ---
@@ -120,12 +120,12 @@ Bảng đối chiếu toàn diện giữa trường dữ liệu trong Payload (J
 
 ## 7. CHECKLIST HOÀN THÀNH & NGHIỆM THU (COMPLETION CHECKLIST)
 
-- [ ] **1. Tầng Application:** `INotificationService.cs` và `NotificationService.cs` đã được triển khai hoàn chỉnh.
-- [ ] **2. Tầng Api:** `NotificationsController.cs` ghép cặp 1-to-1, route số nhiều, summary XML ngắn gọn.
-- [ ] **3. Bắt lỗi & Validation:** Toàn bộ mã lỗi trong ma trận ở Mục 5 đã được kiểm soát trong code.
-- [ ] **4. Enum Mapping:** Toàn bộ enum ở Mục 6 được lưu integer trong DB và serialize PascalCase ở API.
-- [ ] **5. Kiểm thử tự động:** `dotnet test` vượt qua 100% các bài test (Kèm tên file test: `NotificationsTests.cs`).
-- [ ] **6. Định tuyến Gateway:** Route YARP `notification-notifications-route` đã được cấu hình trong `appsettings.json` và test thông suốt.
+- [x] **1. Tầng Application:** `IUserNotificationService.cs` và `UserNotificationService.cs` đã được triển khai hoàn chỉnh.
+- [x] **2. Tầng Api:** `NotificationsController.cs` ghép cặp 1-to-1, route số nhiều, summary XML ngắn gọn.
+- [x] **3. Bắt lỗi & Validation:** Toàn bộ mã lỗi trong ma trận ở Mục 5 đã được kiểm soát trong code.
+- [x] **4. Enum Mapping:** Toàn bộ enum ở Mục 6 được lưu integer trong DB và serialize PascalCase ở API.
+- [x] **5. Kiểm thử tự động:** `dotnet test` vượt qua 100% các bài test (Kèm tên file test: `NotificationsControllerTests.cs`, `UserNotificationServiceTests.cs`).
+- [x] **6. Định tuyến Gateway:** Route YARP `notifications-route` đã được cấu hình trong `appsettings.json` và test thông suốt.
 - [ ] **7. Xác nhận của Sếp (Human Approval):** Đã kiểm thử thực tế và cho phép chuyển sang `docs/api/A_Active/`.
 
-> **Trạng thái nghiệm thu:** `[ ⏳ IN_PROGRESS (Lưu tại B_none) ]`
+> **Trạng thái nghiệm thu:** `[ ⏳ CHỜ NGHIỆM THU (Lưu tại B_none) ]`
