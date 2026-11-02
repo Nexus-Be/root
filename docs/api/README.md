@@ -4,7 +4,7 @@
 > **Cổng truy cập duy nhất (Single Gateway Entrypoint):** `http://localhost:8080`  
 > **Giao thức:** 100% RESTful HTTP/JSON (Chuẩn RFC 9110)  
 > **Interactive Swagger UI:** [http://localhost:8080/swagger](http://localhost:8080/swagger)  
-> **Tổng số API đã nghiệm thu (A_Active):** `59 endpoints` (35 User + 24 Catalog)  
+> **Tổng số API đã nghiệm thu (A_Active):** `60 endpoints` (35 User + 25 Catalog)  
 > **Trạng thái tài liệu:** ⏳ Quản lý hai trạng thái (`B_none/` đang hoàn thiện vs `A_Active/` đã nghiệm thu).
 > **Ghi chú về YARP Gateway:** Gateway hoạt động như một Edge Reverse Proxy phi trạng thái (Stateless), bãi bỏ hoàn toàn Mock Mode, chịu trách nhiệm xác thực JWT Bearer, bảo vệ chống giả mạo header và điều phối chuyển tiếp xuống 9 microservices backend. Gateway không sở hữu database hay endpoint nghiệp vụ riêng.
 
@@ -140,8 +140,8 @@ Mọi tài liệu API đều chỉ rõ từng trường enum trong JSON Payload:
 
 | Phân Hệ (Service) | Thư Mục Tài Liệu | Số API | Trạng Thái Vòng Đời |
 |:---|:---|:---:|:---|
-| **User** | [`docs/api/A_Active/User/`](./A_Active/User/) + [`docs/api/B_none/User/`](./B_none/User/) | **72** | 35 API: ✅ `COMPLETED` tại `A_Active/`; 37 API còn lại: ⏳ `IN_PROGRESS` |
-| **Catalog** | [`docs/api/A_Active/Catalog/`](./A_Active/Catalog/) + [`docs/api/B_none/Catalog/`](./B_none/Catalog/) | **28** | 24 API: ✅ `COMPLETED` tại `A_Active/`; 4 API review: ⏳ `IN_PROGRESS` tại `B_none/` |
+| **User** | [`docs/api/A_Active/User/`](./A_Active/User/) + [`docs/api/B_none/User/`](./B_none/User/) | **62** | 35 API: ✅ `COMPLETED` tại `A_Active/`; 27 API còn lại: ⏳ `IN_PROGRESS` tại `B_none/` |
+| **Catalog** | [`docs/api/A_Active/Catalog/`](./A_Active/Catalog/) + [`docs/api/B_none/Catalog/`](./B_none/Catalog/) | **29** | 25 API: ✅ `COMPLETED` tại `A_Active/`; 4 API review: ⏳ `IN_PROGRESS` tại `B_none/` |
 | **Commerce** | [`docs/api/B_none/Commerce/`](./B_none/Commerce/) | **17** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
 | **Auction** | [`docs/api/B_none/Auction/`](./B_none/Auction/) | **21** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
 | **Fulfillment** | [`docs/api/B_none/Fulfillment/`](./B_none/Fulfillment/) | **9** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
@@ -149,7 +149,7 @@ Mọi tài liệu API đều chỉ rõ từng trường enum trong JSON Payload:
 | **Notification** | [`docs/api/B_none/Notification/`](./B_none/Notification/) | **11** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
 | **Log** | [`docs/api/B_none/Log/`](./B_none/Log/) | **4** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
 | **CheckHeal** | [`docs/api/B_none/CheckHeal/`](./B_none/CheckHeal/) | **4** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
-| **TỔNG CỘNG** | **9 Phân Hệ Nghiệp Vụ** | **177** | **59 hồ sơ đã nghiệm thu tại `A_Active/`, 118 hồ sơ đang hoàn thiện tại `B_none/`** |
+| **TỔNG CỘNG** | **9 Phân Hệ Nghiệp Vụ** | **168** | **60 hồ sơ đã nghiệm thu tại `A_Active/`, 108 hồ sơ đang hoàn thiện tại `B_none/`** |
 
 ---
 
@@ -195,7 +195,7 @@ Mọi tài liệu API đều chỉ rõ từng trường enum trong JSON Payload:
 
 ---
 
-### 7.2. Hồ Sơ Đã Nghiệm Thu Tại `A_Active/Catalog/` (24 API Hoàn Tất)
+### 7.2. Hồ Sơ Đã Nghiệm Thu Tại `A_Active/Catalog/` (25 API Hoàn Tất)
 
 | STT | Endpoint | Tài liệu | Mô tả |
 |:---:|:---|:---|:---|
@@ -223,79 +223,87 @@ Mọi tài liệu API đều chỉ rõ từng trường enum trong JSON Payload:
 | 22 | `PATCH /api/v1/images/{id}` | [`22_PATCH_IMAGES_ID.md`](./A_Active/Catalog/22_PATCH_IMAGES_ID.md) | Cập nhật thuộc tính hình ảnh |
 | 23 | `DELETE /api/v1/images/{id}` | [`23_DELETE_IMAGES_ID.md`](./A_Active/Catalog/23_DELETE_IMAGES_ID.md) | Xóa hình ảnh theo ID |
 | 24 | `GET /api/v1/seller/products` | [`24_GET_SELLER_PRODUCTS.md`](./A_Active/Catalog/24_GET_SELLER_PRODUCTS.md) | Người bán tra cứu sản phẩm của shop |
+| 25 | `GET /api/v1/seller/products/{id}` | [`25_GET_SELLER_PRODUCTS_ID.md`](./A_Active/Catalog/25_GET_SELLER_PRODUCTS_ID.md) | Chi tiết sản phẩm toàn diện cho người bán (kèm mọi SKU, hasOrder, ảnh) |
 
 ---
 
 ## 8. DANH SÁCH CHI TIẾT TỪNG ENDPOINT THEO DỊCH VỤ
 
-### User Service (72 endpoints: 10 tại `A_Active`, 62 tại `B_none`)
+### User Service (62 endpoints: 35 tại `A_Active`, 27 tại `B_none`)
+
+#### Nhóm Đã Nghiệm Thu (`A_Active/User/` - 35 API)
 
 | Endpoint & Liên kết file | Ref Excel | Mô tả nghiệp vụ |
 |:---|:---:|:---|
+| [`[POST] /api/v1/auth/register`](./A_Active/User/1_POST_AUTH_REGISTER.md) | `1` | Người dùng đăng ký tài khoản |
+| [`[POST] /api/v1/auth/otp/verify`](./A_Active/User/2_POST_AUTH_OTP_VERIFY.md) | `2` | Xác thực OTP kích hoạt tài khoản |
+| [`[POST] /api/v1/auth/otp/resend`](./A_Active/User/3_POST_AUTH_OTP_RESEND.md) | `3` | Gửi lại OTP kích hoạt tài khoản |
+| [`[POST] /api/v1/auth/login`](./A_Active/User/4_POST_AUTH_LOGIN.md) | `4` | Đăng nhập hệ thống (Email + Password) |
+| [`[POST] /api/v1/auth/refresh`](./A_Active/User/5_POST_AUTH_REFRESH.md) | `5` | Làm mới Token ngầm (Refresh Token Rotation - RTR) |
+| [`[POST] /api/v1/auth/password/forgot`](./A_Active/User/6_POST_AUTH_PASSWORD_FORGOT.md) | `6` | Yêu cầu quên mật khẩu & gửi OTP |
+| [`[PUT] /api/v1/auth/password/reset`](./A_Active/User/7_PUT_AUTH_PASSWORD_RESET.md) | `7` | Đặt lại mật khẩu mới bằng mã OTP |
+| [`[PATCH] /api/v1/auth/password`](./A_Active/User/8_PATCH_AUTH_PASSWORD.md) | `8` | Đổi mật khẩu cá nhân |
+| [`[POST] /api/v1/auth/logout`](./A_Active/User/9_POST_AUTH_LOGOUT.md) | `9` | Đăng xuất & thu hồi phiên hiện tại |
 | [`[POST] /api/v1/auth/logout-all`](./A_Active/User/10_POST_AUTH_LOGOUT_ALL.md) | `10` | Đăng xuất khỏi toàn bộ thiết bị khác |
+| [`[POST] /api/v1/users/auth/test`](./A_Active/User/11_POST_USERS_AUTH_TEST.md) | `11` | Kiểm tra tạo user test và gửi OTP |
+| [`[GET] /api/v1/users/{userId}`](./A_Active/User/12_GET_USERS_USERID.md) | `12` | Lấy thông tin hồ sơ an toàn của user |
+| [`[GET] /api/v1/me`](./A_Active/User/13_GET_ME.md) | `13` | Xem thông tin hồ sơ cá nhân của chính mình |
+| [`[PATCH] /api/v1/me`](./A_Active/User/14_PATCH_ME.md) | `14` | Cập nhật thông tin hồ sơ cá nhân |
+| [`[POST] /api/v1/sellers/registration`](./A_Active/User/15_POST_SELLERS_REGISTRATION.md) | `15` | Nộp đơn đăng ký Seller onboarding |
+| [`[POST] /api/v1/sellers/otp/verify`](./A_Active/User/16_POST_SELLERS_OTP_VERIFY.md) | `16` | Xác thực OTP mở shop của Seller |
+| [`[POST] /api/v1/sellers/otp/resend`](./A_Active/User/17_POST_SELLERS_OTP_RESEND.md) | `17` | Gửi lại mã OTP đăng ký mở shop |
+| [`[GET] /api/v1/sellers/status`](./A_Active/User/18_GET_SELLERS_STATUS.md) | `18` | Tra cứu trạng thái đơn đăng ký Seller |
+| [`[GET] /api/v1/sellers/profile`](./A_Active/User/19_GET_SELLERS_PROFILE.md) | `19` | Seller tự xem thông tin shop của mình |
+| [`[PATCH] /api/v1/sellers/profile`](./A_Active/User/20_PATCH_SELLERS_PROFILE.md) | `20` | Cập nhật thông tin hồ sơ shop |
+| [`[GET] /api/v1/sellers/{id}`](./A_Active/User/21_GET_SELLERS_ID.md) | `21` | Khách hàng xem thông tin công khai của shop |
+| [`[POST] /api/v1/admin/users`](./A_Active/User/22_POST_ADMIN_USERS.md) | `22` | Admin tạo tài khoản người dùng mới |
+| [`[GET] /api/v1/admin/users`](./A_Active/User/23_GET_ADMIN_USERS.md) | `23` | Admin xem danh sách người dùng phân trang |
+| [`[GET] /api/v1/admin/users/{userId}`](./A_Active/User/24_GET_ADMIN_USERS_USERID.md) | `24` | Admin xem chi tiết hồ sơ & quyền hạn |
+| [`[PUT] /api/v1/admin/users/{userId}/roles`](./A_Active/User/25_PUT_ADMIN_USERS_USERID_ROLES.md) | `25` | Gán / Thu hồi vai trò nội bộ (Phân quyền SoD) |
+| [`[PUT] /api/v1/admin/users/{userId}`](./A_Active/User/26_PUT_ADMIN_USERS_USERID.md) | `26` | Admin cập nhật thông tin người dùng |
+| [`[DELETE] /api/v1/admin/users/{userId}`](./A_Active/User/27_DELETE_ADMIN_USERS_USERID.md) | `27` | Admin xóa mềm người dùng khỏi hệ thống |
+| [`[PATCH] /api/v1/admin/users/{userId}/ban`](./A_Active/User/28_PATCH_ADMIN_USERS_USERID_BAN.md) | `28` | Admin khóa tài khoản vi phạm |
+| [`[PATCH] /api/v1/admin/users/{userId}/unban`](./A_Active/User/29_PATCH_ADMIN_USERS_USERID_UNBAN.md) | `29` | Admin mở khóa tài khoản |
+| [`[GET] /api/v1/admin/roles`](./A_Active/User/30_GET_ADMIN_ROLES.md) | `30` | Admin xem toàn bộ danh mục vai trò |
+| [`[GET] /api/v1/admin/seller-registrations`](./A_Active/User/31_GET_ADMIN_SELLER_REGISTRATIONS.md) | `31` | Danh sách đơn đăng ký Seller chờ duyệt |
+| [`[GET] /api/v1/admin/seller-registrations/{id}`](./A_Active/User/32_GET_ADMIN_SELLER_REGISTRATIONS_ID.md) | `32` | Xem chi tiết hồ sơ mở Shop và chứng từ |
+| [`[PUT] /api/v1/admin/seller-registrations/{id}/approve`](./A_Active/User/33_PUT_ADMIN_SELLER_REGISTRATIONS_APPROVE.md) | `33` | Staff duyệt hồ sơ mở Shop của Seller |
+| [`[PUT] /api/v1/admin/seller-registrations/{id}/reject`](./A_Active/User/34_PUT_ADMIN_SELLER_REGISTRATIONS_REJECT.md) | `34` | Staff từ chối hồ sơ mở Shop của Seller |
+| [`[GET] /health`](./A_Active/User/35_GET_HEALTH.md) | `35` | Health probe kiểm tra sức khỏe service nội bộ |
+
+#### Nhóm Đang Phát Triển / Chờ Nghiệm Thu (`B_none/User/` - 27 API)
+
+| Endpoint & Liên kết file | Ref Excel | Mô tả nghiệp vụ |
+|:---|:---:|:---|
 | [`[GET] /api/v1/me/sessions`](./B_none/User/11_GET_ME_SESSIONS.md) | `11` | Xem danh sách thiết bị đang đăng nhập |
 | [`[DELETE] /api/v1/me/sessions/{id}`](./B_none/User/12_DELETE_ME_SESSIONS.md) | `12` | Thu hồi / Đăng xuất thiết bị từ xa |
-| [`[GET] /api/v1/me`](./B_none/User/13_GET_ME.md) | `13` | Xem danh sách cá nhân của user |
-| [`[PATCH] /api/v1/me`](./B_none/User/14_PATCH_ME.md) | `14` | Cập nhật thông tin hồ sơ cá nhân |
 | [`[GET] /api/v1/me/avatar`](./B_none/User/15_GET_ME_AVATAR.md) | `15` | Xem ảnh avatar cá nhân |
 | [`[POST] /api/v1/me/avatar`](./B_none/User/16_POST_ME_AVATAR.md) | `16` | Tải lên và cập nhật avatar cá nhân |
 | [`[GET] /api/v1/me/reputation`](./B_none/User/17_GET_ME_REPUTATION.md) | `17` | Xem uy tín của bản thân |
-| [`[GET] /api/v1/me/penalties`](./B_none/User/18_GET_ME_PENALTIES.md) | `18` | xem thông tin phạt của bản thân |
-| [`[GET] /api/v1/users/{userId}`](./B_none/User/19_GET_USER.md) | `19` | Xem chi tiết hồ sơ cá nhân của 1 user cụ thể |
-| [`[POST] /api/v1/auth/register`](./A_Active/User/1_POST_AUTH_REGISTER.md) | `1` | Người dùng đăng kí tài khoản |
+| [`[GET] /api/v1/me/penalties`](./B_none/User/18_GET_ME_PENALTIES.md) | `18` | Xem thông tin phạt của bản thân |
 | [`[GET] /api/v1/users/{userId}/avatar`](./B_none/User/20_GET_USER_AVATAR.md) | `20` | Xem ảnh avatar của từng user |
-| [`[GET] /api/v1/sellers/{sellerId}`](./B_none/User/21_GET_SELLER.md) | `21` | User lấy thông tin cửa hàng của Seller |
-| [`[GET] /api/v1/users/{userId}/reputation`](./B_none/User/22_GET_USER_REPUTATION.md) | `22` | Xem Thẻ Tóm tắt Hồ sơ Uy tín công khai |
+| [`[GET] /api/v1/users/{userId}/reputation`](./B_none/User/22_GET_USER_REPUTATION.md) | `22` | Xem thẻ tóm tắt hồ sơ uy tín công khai |
 | [`[GET] /api/v1/users/{userId}/reputation/history`](./B_none/User/23_GET_USER_REPUTATION_HISTORY.md) | `23` | Xem lịch sử uy tín (tăng or giảm) |
-| [`[GET] /api/v1/users/{userId}/reviews`](./B_none/User/24_GET_USER_REVIEWS.md) | `24` | Xem danh sách đánh giá công khai của 1 user/Shop |
-| [`[POST] /api/v1/reviews/files/upload`](./B_none/User/25_POST_REVIEW_FILES_UPLOAD.md) | `25` | Upload đánh giá sản phẩm |
+| [`[GET] /api/v1/users/{userId}/reviews`](./B_none/User/24_GET_USER_REVIEWS.md) | `24` | Xem danh sách đánh giá công khai của user/shop |
+| [`[POST] /api/v1/reviews/files/upload`](./B_none/User/25_POST_REVIEW_FILES_UPLOAD.md) | `25` | Upload tài liệu đính kèm đánh giá |
 | [`[POST] /api/v1/reviews`](./B_none/User/26_POST_REVIEWS.md) | `26` | Đánh giá đối tác 2 chiều (Buyer ↔ Seller) |
-| [`[POST] /api/v1/reports/files/upload`](./B_none/User/27_POST_REPORT_FILES_UPLOAD.md) | `27` | Upload bằng chứng tố cáo tài khoản vi phạm (User Violation Evidence) |
-| [`[POST] /api/v1/users/reports`](./B_none/User/28_POST_USERS_REPORTS.md) | `28` | Người dùng gửi đơn tố cáo tài khoản vi phạm quy chế |
-| [`[GET] /api/v1/me/reports`](./B_none/User/29_GET_ME_REPORTS.md) | `29` | Người dùng xem danh sách các báo cáo do mình đã gửi |
-| [`[POST] /api/v1/auth/otp/verify`](./A_Active/User/2_POST_AUTH_OTP_VERIFY.md) | `2` | Xác thực tài khoản người dùng |
-| [`[POST] /api/v1/sellers/registration`](./B_none/User/30_POST_SELLER_REGISTRATION.md) | `30` | Seller tạo đơn đăng kí |
-| [`[POST] /api/v1/sellers/registration/otp/resend`](./B_none/User/31_POST_SELLER_REGISTRATION_OTP_RESEND.md) | `31` | Gửi lại otp cho tài khoản Seller |
-| [`[POST] /api/v1/sellers/registration/documents`](./B_none/User/32_POST_SELLER_REGISTRATION_DOCUMENTS.md) | `32` | Upload tài liệu Seller(CCCD, ....) |
-| [`[POST] /api/v1/sellers/otp/verify`](./B_none/User/33_POST_SELLER_OTP_VERIFY.md) | `33` | Xác thực mã otp của Seller |
-| [`[GET] /api/v1/sellers/registration`](./B_none/User/34_GET_SELLER_REGISTRATION.md) | `34` | Seller xem đơn (đã được duyệt làm Seller hay chưa) |
-| [`[GET] /api/v1/sellers/profile`](./B_none/User/35_GET_SELLER_PROFILE.md) | `35` | Seller tự coi thông tin shop |
-| [`[PATCH] /api/v1/sellers/profile`](./B_none/User/36_PATCH_SELLER_PROFILE.md) | `36` | Cập nhật thông tin cá nhân hồ sơ cho Seller |
-| [`[GET] /api/v1/admin/seller-registrations/{registrationId}`](./B_none/User/37B_GET_ADMIN_SELLER_REGISTRATIONS.md) | `37B` | Xem chi tiết hồ sơ mở Shop và tài liệu chứng từ định danh |
-| [`[GET] /api/v1/admin/seller-registrations`](./B_none/User/37_GET_ADMIN_SELLER_REGISTRATIONS.md) | `37` | Danh sách hồ sơ Seller chờ duyệt |
-| [`[PUT] /api/v1/admin/seller-registrations/{registrationId}/approve`](./B_none/User/38_PUT_ADMIN_SELLER_REGISTRATIONS_APPROVE.md) | `38` | Staff duyệt hồ sơ Seller |
-| [`[PUT] /api/v1/admin/seller-registrations/{registrationId}/reject`](./B_none/User/39_PUT_ADMIN_SELLER_REGISTRATIONS_REJECT.md) | `39` | Staff từ chối hồ sơ Seller |
-| [`[POST] /api/v1/auth/otp/resend`](./A_Active/User/3_POST_AUTH_OTP_RESEND.md) | `3` | Dùng gửi otp cho đăng kí và cả quên mật khẩu |
-| [`[GET] /api/v1/admin/reports`](./B_none/User/40_GET_ADMIN_REPORTS.md) | `40` | Admin/Staff xem danh sách các đơn tố cáo tài khoản |
-| [`[PUT] /api/v1/admin/reports/{reportId}/dismiss`](./B_none/User/41B_PUT_ADMIN_REPORTS_DISMISS.md) | `41B` | Staff bác bỏ đơn tố cáo sai sự thật / không đủ chứng cứ |
-| [`[PUT] /api/v1/admin/reports/{reportId}/resolve`](./B_none/User/41_PUT_ADMIN_REPORTS_RESOLVE.md) | `41` | Staff xử lý chấp thuận tố cáo & áp dụng chế tài kỷ luật |
+| [`[POST] /api/v1/reports/files/upload`](./B_none/User/27_POST_REPORT_FILES_UPLOAD.md) | `27` | Upload bằng chứng tố cáo vi phạm |
+| [`[POST] /api/v1/users/reports`](./B_none/User/28_POST_USERS_REPORTS.md) | `28` | Người dùng gửi đơn tố cáo tài khoản vi phạm |
+| [`[GET] /api/v1/me/reports`](./B_none/User/29_GET_ME_REPORTS.md) | `29` | Người dùng xem danh sách báo cáo đã gửi |
+| [`[POST] /api/v1/sellers/registration/documents`](./B_none/User/32_POST_SELLER_REGISTRATION_DOCUMENTS.md) | `32` | Upload tài liệu giấy tờ Seller |
+| [`[GET] /api/v1/admin/reports`](./B_none/User/40_GET_ADMIN_REPORTS.md) | `40` | Admin/Staff xem danh sách đơn tố cáo |
+| [`[PUT] /api/v1/admin/reports/{reportId}/resolve`](./B_none/User/41_PUT_ADMIN_REPORTS_RESOLVE.md) | `41` | Staff xử lý chấp thuận đơn tố cáo |
+| [`[PUT] /api/v1/admin/reports/{reportId}/dismiss`](./B_none/User/41B_PUT_ADMIN_REPORTS_DISMISS.md) | `41B` | Staff bác bỏ đơn tố cáo sai sự thật |
 | [`[PUT] /api/v1/admin/reviews/{id}/hide`](./B_none/User/42_PUT_ADMIN_REVIEWS_HIDE.md) | `42` | Staff/Admin ẩn đánh giá vi phạm tiêu chuẩn |
-| [`[GET] /api/v1/admin/users`](./B_none/User/43_GET_ADMIN_USER.md) | `43` | Admin xem danh sách các user |
-| [`[POST] /api/v1/admin/users`](./B_none/User/44_POST_ADMIN_USER.md) | `44` | Admin tạo user mới |
-| [`[GET] /api/v1/admin/users/{userId}`](./B_none/User/45_GET_ADMIN_USER.md) | `45` | Xem chi tiết hồ sơ cá nhân, phân quyền & uy tín |
-| [`[PUT] /api/v1/admin/users/{userId}`](./B_none/User/46_PUT_ADMIN_USER.md) | `46` | Admin cập nhật thông tin của user cụ thể |
-| [`[DELETE] /api/v1/admin/users/{userId}`](./B_none/User/47_DELETE_ADMIN_USER.md) | `47` | Xóa MỀM 1 user khỏi hệ thống |
-| [`[PATCH] /api/v1/admin/users/{userId}/ban`](./B_none/User/48_PATCH_ADMIN_USER_BAN.md) | `48` | Admin ban 1 user |
-| [`[PATCH] /api/v1/admin/users/{userId}/unban`](./B_none/User/49_PATCH_ADMIN_USER_UNBAN.md) | `49` | Admin hủy ban 1 user |
-| [`[POST] /api/v1/auth/login`](./A_Active/User/4_POST_AUTH_LOGIN.md) | `4` | Đăng nhập hệ thống (Email + Password) |
-| [`[GET] /api/v1/admin/sellers/{sellerId}`](./B_none/User/50_GET_ADMIN_SELLERS.md) | `50` | Admin lấy thông tin cửa hàng của từng Seller |
-| [`[PUT] /api/v1/admin/users/{userId}/roles`](./B_none/User/51_PUT_ADMIN_USER_ROLES.md) | `51` | Gán / Thu hồi vai trò nội bộ (Phân quyền SoD) |
-| [`[PATCH] /api/v1/admin/users/{userId}/reputation`](./B_none/User/52_PATCH_ADMIN_USER_REPUTATION.md) | `52` | Admin điều chỉnh uy tín của user(thủ công) |
-| [`[GET] /api/v1/admin/roles`](./B_none/User/53_GET_ADMIN_ROLES.md) | `53` | Admin xem toàn bộ roles trong hệ thống |
+| [`[GET] /api/v1/admin/sellers/{sellerId}`](./B_none/User/50_GET_ADMIN_SELLERS.md) | `50` | Admin lấy thông tin chi tiết của Seller |
+| [`[PATCH] /api/v1/admin/users/{userId}/reputation`](./B_none/User/52_PATCH_ADMIN_USER_REPUTATION.md) | `52` | Admin điều chỉnh uy tín thủ công |
 | [`[GET] /api/v1/admin/permissions`](./B_none/User/54_GET_ADMIN_PERMISSIONS.md) | `54` | Xem danh sách các đặc quyền |
-| [`[PUT] /api/v1/admin/roles/{roleId}/permissions`](./B_none/User/55_PUT_ADMIN_ROLES_PERMISSIONS.md) | `55` | Cập nhật danh sách đặc quyền (Permissions) cho Vai trò |
-| [`[GET] /api/v1/admin/audit-logs`](./B_none/User/56_GET_ADMIN_AUDIT_LOGS.md) | `56` | Tra cứu Nhật ký Kiểm toán hệ thống |
-| [`[GET] /api/v1/admin/configs`](./B_none/User/57_GET_ADMIN_CONFIGS.md) | `57` | Xem danh sách tham số cấu hình toàn sàn |
+| [`[PUT] /api/v1/admin/roles/{roleId}/permissions`](./B_none/User/55_PUT_ADMIN_ROLES_PERMISSIONS.md) | `55` | Cập nhật đặc quyền cho vai trò |
+| [`[GET] /api/v1/admin/audit-logs`](./B_none/User/56_GET_ADMIN_AUDIT_LOGS.md) | `56` | Tra cứu nhật ký kiểm toán hệ thống |
+| [`[GET] /api/v1/admin/configs`](./B_none/User/57_GET_ADMIN_CONFIGS.md) | `57` | Xem danh sách cấu hình toàn sàn |
 | [`[PUT] /api/v1/admin/configs`](./B_none/User/58_PUT_ADMIN_CONFIGS.md) | `58` | Cập nhật tham số cấu hình toàn sàn |
-| [`[POST] /api/v1/auth/refresh`](./A_Active/User/5_POST_AUTH_REFRESH.md) | `5` | Làm mới Token ngầm (Refresh Token Rotation - RTR) |
-| [`[POST] /api/v1/auth/password/forgot`](./A_Active/User/6_POST_AUTH_PASSWORD_FORGOT.md) | `6` | Yêu cầu quên mật khẩu & Gửi OTP khôi phục |
-| [`[PUT] /api/v1/auth/password/reset`](./A_Active/User/7_PUT_AUTH_PASSWORD_RESET.md) | `7` | Đặt lại mật khẩu mới bằng mã OTP |
-| [`[PATCH] /api/v1/auth/password`](./A_Active/User/8_PATCH_AUTH_PASSWORD.md) | `8` | Cập nhật lại mật khẩu(Đổi mật khẩu) |
-| [`[POST] /api/v1/auth/logout`](./A_Active/User/9_POST_AUTH_LOGOUT.md) | `9` | Đăng xuất & Thu hồi phiên hiện tại |
-| [`[POST] /api/v1/orders/{orderId}/user/{userId}`](./B_none/User/R93_POST_ORDER_USER.md) | `` | Đánh giá người dùng |
-| [`[PATCH] /api/v1/orders/{orderId}/user/{userId}`](./B_none/User/R95_PATCH_ORDER_USER.md) | `` | Chỉnh sửa đánh giá người dùng |
 
-### Catalog Service (28 endpoints: 24 tại `A_Active`, 4 tại `B_none`)
+### Catalog Service (29 endpoints: 25 tại `A_Active`, 4 tại `B_none`)
 
 #### Nhóm Đã Nghiệm Thu (`A_Active/Catalog/`)
 
@@ -325,6 +333,7 @@ Mọi tài liệu API đều chỉ rõ từng trường enum trong JSON Payload:
 | [`[PATCH] /api/v1/images/{id}`](./A_Active/Catalog/22_PATCH_IMAGES_ID.md) | `CAT-14` | Cập nhật thuộc tính hình ảnh (thứ tự, altText, cờ active) |
 | [`[DELETE] /api/v1/images/{id}`](./A_Active/Catalog/23_DELETE_IMAGES_ID.md) | `CAT-13` | Xóa hình ảnh sản phẩm theo ID |
 | [`[GET] /api/v1/seller/products`](./A_Active/Catalog/24_GET_SELLER_PRODUCTS.md) | `CAT-44` | Người bán tra cứu danh sách sản phẩm của shop |
+| [`[GET] /api/v1/seller/products/{id}`](./A_Active/Catalog/25_GET_SELLER_PRODUCTS_ID.md) | `CAT-45` | Chi tiết sản phẩm toàn diện cho người bán (kèm mọi SKU, hasOrder, ảnh) |
 
 #### Nhóm Đang Phát Triển / Chờ Nghiệm Thu (`B_none/Catalog/`)
 
