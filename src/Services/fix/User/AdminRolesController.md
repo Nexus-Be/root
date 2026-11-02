@@ -23,14 +23,14 @@
 ### `GET /api/v1/admin/roles` — `ListRoles`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: admin
 
-- [x] Single-line XML `<summary>` on the action — `Lists all user roles available for assignment.`
+- [x] Single-line XML `<summary>` on the action — `[Admin] Lists all user roles available for assignment.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `roles`
 - [x] Route segments are lowercase (kebab-case for compounds) — `-`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `bounded reference collection (accepted by exception)`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`

@@ -6,8 +6,8 @@
 - **Layer**: Public
 - **Base Route**: `/api/v1/products`
 - **Namespace**: `Catalog.Api.Controllers.Public`
-- **Endpoints**: 3
-- **Open violations**: 0 / 39
+- **Endpoints**: 12
+- **Open violations**: 16 / 134
 
 ## Controller-level
 
@@ -20,35 +20,38 @@
 - [x] Caller identity is read through `TryGetUserId`, not a nullable `GetUserId`
 - [x] Thin controller injects exactly one collaborating feature abstraction — `injects: ProductService`
 
-### `GET /api/v1/products` — `List`
+### `GET /api/v1/products` — `Search`
 
-- **Return**: `ActionResult<PagedData<ProductDto>>`
+- **Return**: `ActionResult<PagedData<ProductListItemDto>>`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Lists active products with pagination.`
+- [x] Single-line XML `<summary>` on the action — `Searches and lists active products with filtering and pagination (CAT-06).`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `products`
 - [x] Route segments are lowercase (kebab-case for compounds) — `-`
 - [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
-- [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<PagedData<ProductDto>>`
-- [x] List action clamps `pageSize` to a maximum (client cannot request an unbounded page)
+- [ ] Caller identity parameters are verified against the token (no trusting `buyerId`/`sellerId` from the client) — `sellerId`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<PagedData<ProductListItemDto>>`
+- [ ] List action clamps `pageSize` to a maximum (client cannot request an unbounded page) — `pageSize is forwarded as supplied`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)
 
-### `GET /api/v1/products/{id:guid}` — `GetById`
+### `GET /api/v1/products/search` — `SearchAlias`
 
-- **Return**: `ActionResult<ProductDto>`
+- **Return**: `ActionResult<PagedData<ProductListItemDto>>`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Gets product details by ID.`
+- [x] Single-line XML `<summary>` on the action — `Searches active products with filtering and pagination (CAT-20 / CAT-21 alias endpoint).`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
-- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
-- [x] Route uses a plural collection or an allowed singleton/filter — `products`
-- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}`
+- [x] Action route stays inside the controller resource (no absolute override) — `search`
+- [x] Route uses a plural collection or an allowed singleton/filter — `search`
+- [x] Route segments are lowercase (kebab-case for compounds) — `search`
 - [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
-- [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<ProductDto>`
+- [ ] Caller identity parameters are verified against the token (no trusting `buyerId`/`sellerId` from the client) — `sellerId`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<PagedData<ProductListItemDto>>`
+- [ ] List action clamps `pageSize` to a maximum (client cannot request an unbounded page) — `pageSize is forwarded as supplied`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)
@@ -58,7 +61,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: seller, admin
 
-- [x] Single-line XML `<summary>` on the action — `Creates a new product and initializes warehouse inventory.`
+- [x] Single-line XML `<summary>` on the action — `Creates a new regular product in Draft status (CAT-01). Can include initial variants.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `products`
@@ -67,5 +70,151 @@
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
-- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `POST /api/v1/products/auction` — `CreateAuction`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Creates a new auction product in Draft status (CAT-43). Does not require variant price.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `auction`
+- [ ] Route uses a plural collection or an allowed singleton/filter — `auction`
+- [x] Route segments are lowercase (kebab-case for compounds) — `auction`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `PUT /api/v1/products/{id:guid}` — `Update`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Updates product general details (CAT-02).`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `products`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `PATCH /api/v1/products/{id:guid}` — `Patch`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Updates product general details via partial patch (CAT-02).`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `products`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `DELETE /api/v1/products/{id:guid}` — `Delete`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Soft deletes a product and all its variants (CAT-04). Requires product owner or admin.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `products`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Deletion accepts an empty request body
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `GET /api/v1/products/{id:guid}/images` — `GetImages`
+
+- **Return**: `IActionResult`
+- **RBAC**: none
+
+- [x] Single-line XML `<summary>` on the action — `Gets all images of a product (CAT-40).`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}/images`
+- [x] Route uses a plural collection or an allowed singleton/filter — `images`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}/images`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `POST /api/v1/products/{id:guid}/images` — `UploadImage`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Uploads an image for a product via Cloudinary (CAT-12). Max 5MB, format .jpg/.jpeg/.png/.webp.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}/images`
+- [x] Route uses a plural collection or an allowed singleton/filter — `images`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}/images`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `DELETE /api/v1/products/{id:guid}/images/{imageId:guid}` — `DeleteImage`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Deletes an image from a product (CAT-13 sub-route).`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}/images/{imageId:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `images`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}/images/{imageId:guid}`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Deletion accepts an empty request body
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `POST /api/v1/products/{id:guid}/variants` — `AddVariant`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Adds a new variant/SKU to a product (CAT-07). Max 10 variants allowed.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}/variants`
+- [x] Route uses a plural collection or an allowed singleton/filter — `variants`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}/variants`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `PUT /api/v1/products/{id:guid}/default-variant` — `SetDefaultVariant`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Sets a variant as the default variant for the product (CAT-10).`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}/default-variant`
+- [ ] Route uses a plural collection or an allowed singleton/filter — `default-variant`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}/default-variant`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
 

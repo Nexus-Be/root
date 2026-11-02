@@ -6,8 +6,8 @@
 - **Layer**: Public
 - **Base Route**: `/api/v1/wallets`
 - **Namespace**: `Wallet.Api.Controllers`
-- **Endpoints**: 7
-- **Open violations**: 0 / 79
+- **Endpoints**: 8
+- **Open violations**: 1 / 89
 
 ## Controller-level
 
@@ -129,6 +129,22 @@
 - [x] Route segments are lowercase (kebab-case for compounds) — `vnpay/return`
 - [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `anonymous`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `POST /api/v1/wallets/checkout/direct` — `CheckoutDirect`
+
+- **Return**: `ActionResult<DirectPaymentResponse>`
+- **RBAC**: none
+
+- [x] Single-line XML `<summary>` on the action — `Processes direct order checkout payment from the user wallet.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `checkout/direct`
+- [x] Route uses a plural collection or an allowed singleton/filter — `checkout`
+- [x] Route segments are lowercase (kebab-case for compounds) — `checkout/direct`
+- [ ] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<DirectPaymentResponse>`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)

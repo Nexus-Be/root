@@ -6,8 +6,8 @@
 - **Layer**: Public
 - **Base Route**: `/api/v1/warehouses`
 - **Namespace**: `Fulfillment.Api.Controllers.Public`
-- **Endpoints**: 2
-- **Open violations**: 0 / 28
+- **Endpoints**: 10
+- **Open violations**: 6 / 112
 
 ## Controller-level
 
@@ -25,7 +25,7 @@
 - **Return**: `ActionResult<PagedData<WarehouseDto>>`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Lists active warehouses with pagination.`
+- [x] Single-line XML `<summary>` on the action — `Lists active warehouses with database pagination.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `warehouses`
@@ -41,13 +41,145 @@
 - **Return**: `ActionResult<WarehouseDto>`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Gets warehouse details by ID.`
+- [x] Single-line XML `<summary>` on the action — `Retrieves a warehouse by its unique identifier.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
 - [x] Route uses a plural collection or an allowed singleton/filter — `warehouses`
 - [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}`
 - [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<WarehouseDto>`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `GET /api/v1/warehouses/seller/{sellerId:guid}` — `GetBySellerId`
+
+- **Return**: `IActionResult`
+- **RBAC**: none
+
+- [x] Single-line XML `<summary>` on the action — `Retrieves active warehouse details by seller ID.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `seller/{sellerId:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `seller`
+- [x] Route segments are lowercase (kebab-case for compounds) — `seller/{sellerId:guid}`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
+- [ ] Caller identity parameters are verified against the token (no trusting `buyerId`/`sellerId` from the client) — `sellerId`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `POST /api/v1/warehouses/initialize` — `Initialize`
+
+- **Return**: `ActionResult<InternalWarehouseResponse>`
+- **RBAC**: none
+
+- [x] Single-line XML `<summary>` on the action — `Provisions a warehouse for an approved seller with idempotency.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `initialize`
+- [x] Route uses a plural collection or an allowed singleton/filter — `initialize`
+- [x] Route segments are lowercase (kebab-case for compounds) — `initialize`
+- [ ] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<InternalWarehouseResponse>`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `PUT /api/v1/warehouses/seller/{sellerId:guid}` — `UpdateBySellerId`
+
+- **Return**: `ActionResult<WarehouseDto>`
+- **RBAC**: none
+
+- [x] Single-line XML `<summary>` on the action — `Updates warehouse details by seller ID.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `seller/{sellerId:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `seller`
+- [x] Route segments are lowercase (kebab-case for compounds) — `seller/{sellerId:guid}`
+- [ ] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
+- [ ] Caller identity parameters are verified against the token (no trusting `buyerId`/`sellerId` from the client) — `sellerId`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<WarehouseDto>`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `DELETE /api/v1/warehouses/seller/{sellerId:guid}` — `DeleteBySellerId`
+
+- **Return**: `IActionResult`
+- **RBAC**: none
+
+- [x] Single-line XML `<summary>` on the action — `Deactivates warehouse by seller ID during compensation rollback.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `seller/{sellerId:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `seller`
+- [x] Route segments are lowercase (kebab-case for compounds) — `seller/{sellerId:guid}`
+- [ ] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
+- [ ] Caller identity parameters are verified against the token (no trusting `buyerId`/`sellerId` from the client) — `sellerId`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Deletion accepts an empty request body
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `GET /api/v1/warehouses/me` — `GetMyWarehouse`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller
+
+- [x] Single-line XML `<summary>` on the action — `Retrieves the current authenticated seller's active warehouse.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `me`
+- [x] Route uses a plural collection or an allowed singleton/filter — `me`
+- [x] Route segments are lowercase (kebab-case for compounds) — `me`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `POST /api/v1/warehouses` — `Create`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Creates a new warehouse for a seller.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override)
+- [x] Route uses a plural collection or an allowed singleton/filter — `warehouses`
+- [x] Route segments are lowercase (kebab-case for compounds) — `-`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `PUT /api/v1/warehouses/{id:guid}` — `Update`
+
+- **Return**: `IActionResult`
+- **RBAC**: seller, admin
+
+- [x] Single-line XML `<summary>` on the action — `Updates warehouse name and address by warehouse ID.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `warehouses`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `seller, admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `PATCH /api/v1/warehouses/{id:guid}/status` — `SetActiveStatus`
+
+- **Return**: `IActionResult`
+- **RBAC**: admin
+
+- [x] Single-line XML `<summary>` on the action — `Sets active status of a warehouse by warehouse ID.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}/status`
+- [x] Route uses a plural collection or an allowed singleton/filter — `status`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}/status`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)

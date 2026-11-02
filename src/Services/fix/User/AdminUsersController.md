@@ -6,8 +6,8 @@
 - **Layer**: Public
 - **Base Route**: `/api/v1/admin/users`
 - **Namespace**: `User.Api.Controllers`
-- **Endpoints**: 6
-- **Open violations**: 0 / 70
+- **Endpoints**: 8
+- **Open violations**: 0 / 89
 
 ## Controller-level
 
@@ -23,14 +23,14 @@
 ### `POST /api/v1/admin/users` — `CreateUser`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: admin
 
-- [x] Single-line XML `<summary>` on the action — `Creates a user account on behalf of an administrator.`
+- [x] Single-line XML `<summary>` on the action — `[Admin] Creates a user account on behalf of an administrator.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `users`
 - [x] Route segments are lowercase (kebab-case for compounds) — `-`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
@@ -39,16 +39,15 @@
 ### `GET /api/v1/admin/users` — `ListUsers`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: admin
 
-- [x] Single-line XML `<summary>` on the action — `Lists user accounts with pagination and filters.`
+- [x] Single-line XML `<summary>` on the action — `[Admin] Lists user accounts with pagination and filters.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `users`
 - [x] Route segments are lowercase (kebab-case for compounds) — `-`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
-- [x] List action clamps `pageSize` to a maximum (client cannot request an unbounded page)
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)
@@ -56,14 +55,14 @@
 ### `GET /api/v1/admin/users/{userId:guid}` — `GetUserDetail`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: admin
 
-- [x] Single-line XML `<summary>` on the action — `Retrieves the administrative detail of a single user.`
+- [x] Single-line XML `<summary>` on the action — `[Admin] Retrieves the administrative detail of a single user.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `{userId:guid}`
 - [x] Route uses a plural collection or an allowed singleton/filter — `users`
 - [x] Route segments are lowercase (kebab-case for compounds) — `{userId:guid}`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
@@ -72,14 +71,14 @@
 ### `PUT /api/v1/admin/users/{userId:guid}/roles` — `AssignUserRoles`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: admin
 
-- [x] Single-line XML `<summary>` on the action — `Replaces the assigned roles of a user account.`
+- [x] Single-line XML `<summary>` on the action — `[Admin] Replaces the assigned roles of a user account.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `{userId:guid}/roles`
 - [x] Route uses a plural collection or an allowed singleton/filter — `roles`
 - [x] Route segments are lowercase (kebab-case for compounds) — `{userId:guid}/roles`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
@@ -88,14 +87,14 @@
 ### `PUT /api/v1/admin/users/{userId:guid}` — `UpdateUser`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: admin
 
-- [x] Single-line XML `<summary>` on the action — `Updates an existing user account.`
+- [x] Single-line XML `<summary>` on the action — `[Admin] Updates an existing user account.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `{userId:guid}`
 - [x] Route uses a plural collection or an allowed singleton/filter — `users`
 - [x] Route segments are lowercase (kebab-case for compounds) — `{userId:guid}`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
@@ -104,17 +103,49 @@
 ### `DELETE /api/v1/admin/users/{userId:guid}` — `DeleteUser`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: admin
 
-- [x] Single-line XML `<summary>` on the action — `Deletes a user account.`
+- [x] Single-line XML `<summary>` on the action — `[Admin] Deletes a user account.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `{userId:guid}`
 - [x] Route uses a plural collection or an allowed singleton/filter — `users`
 - [x] Route segments are lowercase (kebab-case for compounds) — `{userId:guid}`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Deletion accepts an empty request body
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `PATCH /api/v1/admin/users/{userId:guid}/ban` — `BanUser`
+
+- **Return**: `IActionResult`
+- **RBAC**: admin
+
+- [x] Single-line XML `<summary>` on the action — `[Admin] Bans a user account for regulatory or policy violations.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{userId:guid}/ban`
+- [x] Route uses a plural collection or an allowed singleton/filter — `ban`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{userId:guid}/ban`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `PATCH /api/v1/admin/users/{userId:guid}/unban` — `UnbanUser`
+
+- **Return**: `IActionResult`
+- **RBAC**: admin
+
+- [x] Single-line XML `<summary>` on the action — `[Admin] Unbans a previously suspended user account.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{userId:guid}/unban`
+- [x] Route uses a plural collection or an allowed singleton/filter — `unban`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{userId:guid}/unban`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)
 

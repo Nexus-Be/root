@@ -6,8 +6,8 @@
 - **Layer**: Public
 - **Base Route**: `/api/v1/admin/seller-registrations`
 - **Namespace**: `User.Api.Controllers`
-- **Endpoints**: 3
-- **Open violations**: 0 / 39
+- **Endpoints**: 4
+- **Open violations**: 1 / 48
 
 ## Controller-level
 
@@ -23,16 +23,31 @@
 ### `GET /api/v1/admin/seller-registrations` — `ListSellerRegistrations`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: staff
 
-- [x] Single-line XML `<summary>` on the action — `Lists pending seller registration applications for review.`
+- [x] Single-line XML `<summary>` on the action — `[Staff] Lists pending seller registration applications for review.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `seller-registrations`
 - [x] Route segments are lowercase (kebab-case for compounds) — `-`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `staff`
+- [ ] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
+### `GET /api/v1/admin/seller-registrations/{registrationId:guid}` — `GetSellerRequestDetails`
+
+- **Return**: `IActionResult`
+- **RBAC**: staff
+
+- [x] Single-line XML `<summary>` on the action — `[Staff] Retrieves full details of a seller registration application for review.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{registrationId:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `seller-registrations`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{registrationId:guid}`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `staff`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
-- [x] List action clamps `pageSize` to a maximum (client cannot request an unbounded page)
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)
@@ -40,14 +55,14 @@
 ### `PUT /api/v1/admin/seller-registrations/{id:guid}/approve` — `ApproveSellerRegistration`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: staff
 
-- [x] Single-line XML `<summary>` on the action — `Approves a seller registration and assigns seller role.`
+- [x] Single-line XML `<summary>` on the action — `[Staff] Approves a seller registration and assigns seller role.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}/approve`
 - [x] Route uses a plural collection or an allowed singleton/filter — `approve`
 - [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}/approve`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `staff`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
@@ -56,14 +71,14 @@
 ### `PUT /api/v1/admin/seller-registrations/{id:guid}/reject` — `RejectSellerRegistration`
 
 - **Return**: `IActionResult`
-- **RBAC**: admin, staff
+- **RBAC**: staff
 
-- [x] Single-line XML `<summary>` on the action — `Rejects a seller registration with a required reason.`
+- [x] Single-line XML `<summary>` on the action — `[Staff] Rejects a seller registration with a required reason.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}/reject`
 - [x] Route uses a plural collection or an allowed singleton/filter — `reject`
 - [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}/reject`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `staff`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`

@@ -25,7 +25,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Retrieves the authenticated user's own profile.`
+- [x] Single-line XML `<summary>` on the action — `[Authenticated] Retrieves the authenticated user's own profile.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `me`
@@ -41,7 +41,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Updates the authenticated user's own profile.`
+- [x] Single-line XML `<summary>` on the action — `[Authenticated] Updates the authenticated user's own profile.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `me`

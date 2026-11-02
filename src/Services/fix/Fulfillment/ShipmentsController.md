@@ -38,16 +38,16 @@
 
 ### `GET /api/v1/shipments/order/{orderId:guid}` — `GetByOrderId`
 
-- **Return**: `ActionResult<ShipmentDto>`
-- **RBAC**: none
+- **Return**: `IActionResult`
+- **RBAC**: buyer, seller, admin, staff
 
 - [x] Single-line XML `<summary>` on the action — `Gets shipment details by order ID.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `order/{orderId:guid}`
 - [x] Route uses a plural collection or an allowed singleton/filter — `order`
 - [x] Route segments are lowercase (kebab-case for compounds) — `order/{orderId:guid}`
-- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
-- [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<ShipmentDto>`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `buyer, seller, admin, staff`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)

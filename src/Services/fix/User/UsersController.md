@@ -7,7 +7,7 @@
 - **Base Route**: `/api/v1/users`
 - **Namespace**: `User.Api.Controllers`
 - **Endpoints**: 1
-- **Open violations**: 0 / 18
+- **Open violations**: 1 / 19
 
 ## Controller-level
 
@@ -20,17 +20,18 @@
 - [x] Caller identity is read through `TryGetUserId`, not a nullable `GetUserId`
 - [x] Thin controller injects exactly one collaborating feature abstraction — `injects: ProfileService`
 
-### `GET /api/v1/users/{id:guid}` — `GetUserProfileById`
+### `GET /api/v1/users/{userId:guid}` — `GetUserPublicProfile`
 
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Retrieves the public profile of a user by ID.`
+- [x] Single-line XML `<summary>` on the action — `[Public] Retrieves the safe public profile of a user by ID.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
-- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
+- [x] Action route stays inside the controller resource (no absolute override) — `{userId:guid}`
 - [x] Route uses a plural collection or an allowed singleton/filter — `users`
-- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{userId:guid}`
 - [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
+- [ ] Caller identity parameters are verified against the token (no trusting `buyerId`/`sellerId` from the client) — `userId`
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`

@@ -6,8 +6,8 @@
 - **Layer**: Public
 - **Base Route**: `/api/v1/categories`
 - **Namespace**: `Catalog.Api.Controllers.Public`
-- **Endpoints**: 2
-- **Open violations**: 0 / 28
+- **Endpoints**: 5
+- **Open violations**: 7 / 60
 
 ## Controller-level
 
@@ -17,21 +17,22 @@
 - [x] Public controller does not mount under `/internal`
 - [x] Gateway YARP has a route covering the base path — `api/v1/categories`
 - [x] Controller performs no direct DbContext access
-- [x] Caller identity is read through `TryGetUserId`, not a nullable `GetUserId`
+- [ ] Caller identity is read through `TryGetUserId`, not a nullable `GetUserId` — `GetUserId() is passed downstream without an auth guard`
 - [x] Thin controller injects exactly one collaborating feature abstraction — `injects: CategoryService`
 
-### `GET /api/v1/categories` — `ListAll`
+### `GET /api/v1/categories` — `List`
 
-- **Return**: `ActionResult<PagedData<CategoryDto>>`
+- **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Lists categories with pagination.`
+- [x] Single-line XML `<summary>` on the action — `Lists categories with pagination and sorting. Supports tree hierarchy or flat list with search.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override)
 - [x] Route uses a plural collection or an allowed singleton/filter — `categories`
 - [x] Route segments are lowercase (kebab-case for compounds) — `-`
 - [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
-- [x] List/query action returns a paged envelope (pagination computed in the database) — `bounded reference collection (accepted by exception)`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [ ] List action clamps `pageSize` to a maximum (client cannot request an unbounded page) — `pageSize is forwarded as supplied`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)
@@ -41,7 +42,7 @@
 - **Return**: `ActionResult<CategoryDto>`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Gets category details by ID.`
+- [x] Single-line XML `<summary>` on the action — `Gets category details by ID including subcategories if present.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
 - [x] Route uses a plural collection or an allowed singleton/filter — `categories`
@@ -50,5 +51,54 @@
 - [x] List/query action returns a paged envelope (pagination computed in the database) — `ActionResult<CategoryDto>`
 - [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
-- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `POST /api/v1/categories` — `Create`
+
+- **Return**: `IActionResult`
+- **RBAC**: admin, staff
+
+- [x] Single-line XML `<summary>` on the action — `Creates a new category. Requires admin or staff role (CAT-15).`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override)
+- [x] Route uses a plural collection or an allowed singleton/filter — `categories`
+- [x] Route segments are lowercase (kebab-case for compounds) — `-`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `PUT /api/v1/categories/{id:guid}` — `Update`
+
+- **Return**: `IActionResult`
+- **RBAC**: admin, staff
+
+- [x] Single-line XML `<summary>` on the action — `Updates an existing category. Requires admin or staff role (CAT-16).`
+- [ ] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `2 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `categories`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
+
+### `DELETE /api/v1/categories/{id:guid}` — `Delete`
+
+- **Return**: `IActionResult`
+- **RBAC**: admin, staff
+
+- [x] Single-line XML `<summary>` on the action — `Soft deletes a category. Requires admin or staff role (CAT-17).`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [x] Action route stays inside the controller resource (no absolute override) — `{id:guid}`
+- [x] Route uses a plural collection or an allowed singleton/filter — `categories`
+- [x] Route segments are lowercase (kebab-case for compounds) — `{id:guid}`
+- [x] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `admin, staff`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Deletion accepts an empty request body
+- [ ] Controller declares no error status codes (the error matrix lives in the API doc) — `declares a 4xx/5xx response`
 

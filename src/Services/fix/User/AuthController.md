@@ -6,8 +6,8 @@
 - **Layer**: Public
 - **Base Route**: `/api/v1/auth`
 - **Namespace**: `User.Api.Controllers`
-- **Endpoints**: 10
-- **Open violations**: 0 / 108
+- **Endpoints**: 11
+- **Open violations**: 2 / 118
 
 ## Controller-level
 
@@ -25,7 +25,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Registers a new user account and sends a verification OTP.`
+- [x] Single-line XML `<summary>` on the action — `[Public] Registers a new user account and sends a verification OTP.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `register`
 - [x] Route uses a plural collection or an allowed singleton/filter — `register`
@@ -36,12 +36,28 @@
 - [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
 - [x] Controller declares no error status codes (the error matrix lives in the API doc)
 
+### `POST /api/v1/users/auth/test` — `RegisterTest`
+
+- **Return**: `IActionResult`
+- **RBAC**: none
+
+- [x] Single-line XML `<summary>` on the action — `[Public / Dev] Tests user registration by creating a pending Buyer user and dispatching an OTP email.`
+- [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
+- [ ] Action route stays inside the controller resource (no absolute override) — `/api/v1/users/auth/test`
+- [x] Route uses a plural collection or an allowed singleton/filter — `users`
+- [x] Route segments are lowercase (kebab-case for compounds) — `/api/v1/users/auth/test`
+- [ ] Mutating action declares authorization (`[RequireRole]` or API-key middleware), or is a documented anonymous endpoint — `missing`
+- [x] List/query action returns a paged envelope (pagination computed in the database) — `IActionResult`
+- [x] Response enum values stay PascalCase (no manual `ToString().ToLower...`)
+- [x] Deletion returns `204 NoContent` with an empty body — `NoContent`
+- [x] Controller declares no error status codes (the error matrix lives in the API doc)
+
 ### `POST /api/v1/auth/otp/verify` — `VerifyOtp`
 
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Verifies the OTP sent to a newly registered account.`
+- [x] Single-line XML `<summary>` on the action — `[Public] Verifies the OTP sent to a newly registered account.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `otp/verify`
 - [x] Route uses a plural collection or an allowed singleton/filter — `otp`
@@ -57,7 +73,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Resends the account verification OTP email.`
+- [x] Single-line XML `<summary>` on the action — `[Public] Resends the account verification OTP email.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `otp/resend`
 - [x] Route uses a plural collection or an allowed singleton/filter — `otp`
@@ -73,7 +89,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Authenticates a user and issues access and refresh tokens.`
+- [x] Single-line XML `<summary>` on the action — `[Public] Authenticates a user and issues access and refresh tokens.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `login`
 - [x] Route uses a plural collection or an allowed singleton/filter — `login`
@@ -89,7 +105,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Issues a new access token from a valid refresh token.`
+- [x] Single-line XML `<summary>` on the action — `[Public] Issues a new access token from a valid refresh token.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `refresh`
 - [x] Route uses a plural collection or an allowed singleton/filter — `refresh`
@@ -105,7 +121,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Revokes the supplied refresh token session.`
+- [x] Single-line XML `<summary>` on the action — `[Authenticated] Revokes the supplied refresh token session.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `logout`
 - [x] Route uses a plural collection or an allowed singleton/filter — `logout`
@@ -121,7 +137,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Revokes all active sessions of the authenticated user.`
+- [x] Single-line XML `<summary>` on the action — `[Authenticated] Revokes all active sessions of the authenticated user.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `logout-all`
 - [x] Route uses a plural collection or an allowed singleton/filter — `logout-all`
@@ -137,7 +153,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Sends a password reset OTP to the registered email.`
+- [x] Single-line XML `<summary>` on the action — `[Public] Sends a password reset OTP to the registered email.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `password/forgot`
 - [x] Route uses a plural collection or an allowed singleton/filter — `password`
@@ -153,7 +169,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Resets the account password using a valid OTP code.`
+- [x] Single-line XML `<summary>` on the action — `[Public] Resets the account password using a valid OTP code.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `password/reset`
 - [x] Route uses a plural collection or an allowed singleton/filter — `password`
@@ -169,7 +185,7 @@
 - **Return**: `IActionResult`
 - **RBAC**: none
 
-- [x] Single-line XML `<summary>` on the action — `Changes the password of the authenticated user.`
+- [x] Single-line XML `<summary>` on the action — `[Authenticated] Changes the password of the authenticated user.`
 - [x] Exactly one HTTP verb attribute on the action (no duplicate route alias) — `1 verb attributes`
 - [x] Action route stays inside the controller resource (no absolute override) — `password`
 - [x] Route uses a plural collection or an allowed singleton/filter — `password`
