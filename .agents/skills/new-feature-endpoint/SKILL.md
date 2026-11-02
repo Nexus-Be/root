@@ -52,6 +52,8 @@ Known current state that overrides older text:
 - Never query another service's database.
 - Database enums are integers. JSON enums are PascalCase strings.
 - Migrations are additive. No `DROP`, `TRUNCATE`, or `RENAME` without explicit approval.
+- Outbound inter-service HTTP requests preserve and propagate the W3C `traceparent` header to maintain continuous distributed traces in Grafana Tempo.
+- Git commit messages and PR titles must strictly follow Conventional Commits without any emojis or icons (Rule 18).
 - Secrets stay out of source. Do not add or echo credentials.
 
 ## 4. Phase map

@@ -18,6 +18,10 @@ query_frontend:
   search:
     max_duration: 0
 
+ingester:
+  trace_idle_period: 5s
+  max_block_duration: 5m
+
 compactor:
   compaction:
     block_retention: 48h

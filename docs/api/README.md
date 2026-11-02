@@ -4,8 +4,8 @@
 > **Cổng truy cập duy nhất (Single Gateway Entrypoint):** `http://localhost:8080`  
 > **Giao thức:** 100% RESTful HTTP/JSON (Chuẩn RFC 9110)  
 > **Interactive Swagger UI:** [http://localhost:8080/swagger](http://localhost:8080/swagger)  
-> **Tổng số API đã chuẩn hóa:** `163 endpoints`  
-> **Trạng thái tài liệu:** ⏳ Quản lý hai trạng thái (`B_none/` chưa nghiệm thu vs `A_Active/` đã hoàn tất).
+> **Tổng số API đã nghiệm thu (A_Active):** `59 endpoints` (35 User + 24 Catalog)  
+> **Trạng thái tài liệu:** ⏳ Quản lý hai trạng thái (`B_none/` đang hoàn thiện vs `A_Active/` đã nghiệm thu).
 > **Ghi chú về YARP Gateway:** Gateway hoạt động như một Edge Reverse Proxy phi trạng thái (Stateless), bãi bỏ hoàn toàn Mock Mode, chịu trách nhiệm xác thực JWT Bearer, bảo vệ chống giả mạo header và điều phối chuyển tiếp xuống 9 microservices backend. Gateway không sở hữu database hay endpoint nghiệp vụ riêng.
 
 ---
@@ -138,10 +138,10 @@ Mọi tài liệu API đều chỉ rõ từng trường enum trong JSON Payload:
 
 ## 7. DANH MỤC 9 PHÂN HỆ API CHI TIẾT (MASTER CATALOG)
 
-| Phân Hệ (Service) | Thư Mục Tài Liệu (`B_none`) | Số API | Trạng Thái Vòng Đời |
+| Phân Hệ (Service) | Thư Mục Tài Liệu | Số API | Trạng Thái Vòng Đời |
 |:---|:---|:---:|:---|
-| **User** | [`docs/api/B_none/User/`](./B_none/User/) + [`docs/api/A_Active/User/`](./A_Active/User/) | **72** | 10 API Auth: ✅ `COMPLETED` tại `A_Active/`; 62 API còn lại: ⏳ `IN_PROGRESS` |
-| **Catalog** | [`docs/api/B_none/Catalog/`](./B_none/Catalog/) | **17** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
+| **User** | [`docs/api/A_Active/User/`](./A_Active/User/) + [`docs/api/B_none/User/`](./B_none/User/) | **72** | 35 API: ✅ `COMPLETED` tại `A_Active/`; 37 API còn lại: ⏳ `IN_PROGRESS` |
+| **Catalog** | [`docs/api/A_Active/Catalog/`](./A_Active/Catalog/) + [`docs/api/B_none/Catalog/`](./B_none/Catalog/) | **28** | 24 API: ✅ `COMPLETED` tại `A_Active/`; 4 API review: ⏳ `IN_PROGRESS` tại `B_none/` |
 | **Commerce** | [`docs/api/B_none/Commerce/`](./B_none/Commerce/) | **17** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
 | **Auction** | [`docs/api/B_none/Auction/`](./B_none/Auction/) | **21** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
 | **Fulfillment** | [`docs/api/B_none/Fulfillment/`](./B_none/Fulfillment/) | **9** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
@@ -149,26 +149,80 @@ Mọi tài liệu API đều chỉ rõ từng trường enum trong JSON Payload:
 | **Notification** | [`docs/api/B_none/Notification/`](./B_none/Notification/) | **11** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
 | **Log** | [`docs/api/B_none/Log/`](./B_none/Log/) | **4** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
 | **CheckHeal** | [`docs/api/B_none/CheckHeal/`](./B_none/CheckHeal/) | **4** | Trạng thái: ⏳ `IN_PROGRESS` (Chờ nghiệm thu) |
-| **TỔNG CỘNG** | **9 Phân Hệ Nghiệp Vụ** | **163** | **153 hồ sơ tại `B_none/`, 10 hồ sơ Auth đã nghiệm thu tại `A_Active/`** |
+| **TỔNG CỘNG** | **9 Phân Hệ Nghiệp Vụ** | **177** | **59 hồ sơ đã nghiệm thu tại `A_Active/`, 118 hồ sơ đang hoàn thiện tại `B_none/`** |
 
 ---
 
-### 7.1. Hồ Sơ Đã Nghiệm Thu Tại `A_Active/User/` (10 API Auth)
+### 7.1. Hồ Sơ Đã Nghiệm Thu Tại `A_Active/User/` (35 API Hoàn Tất)
 
-| Endpoint | Tài liệu | Ngày nghiệm thu |
-|:---|:---|:---|
-| `POST /api/v1/auth/register` | [`1_POST_AUTH_REGISTER.md`](./A_Active/User/1_POST_AUTH_REGISTER.md) | 2026-10-31 |
-| `POST /api/v1/auth/otp/verify` | [`2_POST_AUTH_OTP_VERIFY.md`](./A_Active/User/2_POST_AUTH_OTP_VERIFY.md) | 2026-10-31 |
-| `POST /api/v1/auth/otp/resend` | [`3_POST_AUTH_OTP_RESEND.md`](./A_Active/User/3_POST_AUTH_OTP_RESEND.md) | 2026-10-31 |
-| `POST /api/v1/auth/login` | [`4_POST_AUTH_LOGIN.md`](./A_Active/User/4_POST_AUTH_LOGIN.md) | 2026-10-31 |
-| `POST /api/v1/auth/refresh` | [`5_POST_AUTH_REFRESH.md`](./A_Active/User/5_POST_AUTH_REFRESH.md) | 2026-10-31 |
-| `POST /api/v1/auth/password/forgot` | [`6_POST_AUTH_PASSWORD_FORGOT.md`](./A_Active/User/6_POST_AUTH_PASSWORD_FORGOT.md) | 2026-10-31 |
-| `PUT /api/v1/auth/password/reset` | [`7_PUT_AUTH_PASSWORD_RESET.md`](./A_Active/User/7_PUT_AUTH_PASSWORD_RESET.md) | 2026-10-31 |
-| `PATCH /api/v1/auth/password` | [`8_PATCH_AUTH_PASSWORD.md`](./A_Active/User/8_PATCH_AUTH_PASSWORD.md) | 2026-10-31 |
-| `POST /api/v1/auth/logout` | [`9_POST_AUTH_LOGOUT.md`](./A_Active/User/9_POST_AUTH_LOGOUT.md) | 2026-10-31 |
-| `POST /api/v1/auth/logout-all` | [`10_POST_AUTH_LOGOUT_ALL.md`](./A_Active/User/10_POST_AUTH_LOGOUT_ALL.md) | 2026-10-31 |
+| STT | Endpoint | Tài liệu | Mô tả |
+|:---:|:---|:---|:---|
+| 01 | `POST /api/v1/auth/register` | [`1_POST_AUTH_REGISTER.md`](./A_Active/User/1_POST_AUTH_REGISTER.md) | Đăng ký tài khoản người dùng |
+| 02 | `POST /api/v1/auth/otp/verify` | [`2_POST_AUTH_OTP_VERIFY.md`](./A_Active/User/2_POST_AUTH_OTP_VERIFY.md) | Xác thực OTP đăng ký |
+| 03 | `POST /api/v1/auth/otp/resend` | [`3_POST_AUTH_OTP_RESEND.md`](./A_Active/User/3_POST_AUTH_OTP_RESEND.md) | Gửi lại OTP kích hoạt tài khoản |
+| 04 | `POST /api/v1/auth/login` | [`4_POST_AUTH_LOGIN.md`](./A_Active/User/4_POST_AUTH_LOGIN.md) | Đăng nhập hệ thống (Email + Password) |
+| 05 | `POST /api/v1/auth/refresh` | [`5_POST_AUTH_REFRESH.md`](./A_Active/User/5_POST_AUTH_REFRESH.md) | Làm mới token ngầm (RTR) |
+| 06 | `POST /api/v1/auth/password/forgot` | [`6_POST_AUTH_PASSWORD_FORGOT.md`](./A_Active/User/6_POST_AUTH_PASSWORD_FORGOT.md) | Yêu cầu quên mật khẩu & gửi OTP |
+| 07 | `PUT /api/v1/auth/password/reset` | [`7_PUT_AUTH_PASSWORD_RESET.md`](./A_Active/User/7_PUT_AUTH_PASSWORD_RESET.md) | Đặt lại mật khẩu bằng mã OTP |
+| 08 | `PATCH /api/v1/auth/password` | [`8_PATCH_AUTH_PASSWORD.md`](./A_Active/User/8_PATCH_AUTH_PASSWORD.md) | Đổi mật khẩu cá nhân |
+| 09 | `POST /api/v1/auth/logout` | [`9_POST_AUTH_LOGOUT.md`](./A_Active/User/9_POST_AUTH_LOGOUT.md) | Đăng xuất phiên hiện tại |
+| 10 | `POST /api/v1/auth/logout-all` | [`10_POST_AUTH_LOGOUT_ALL.md`](./A_Active/User/10_POST_AUTH_LOGOUT_ALL.md) | Đăng xuất toàn bộ phiên thiết bị |
+| 11 | `POST /api/v1/users/auth-test` | [`11_POST_USERS_AUTH_TEST.md`](./A_Active/User/11_POST_USERS_AUTH_TEST.md) | Kiểm tra xác thực token |
+| 12 | `GET /api/v1/users/{userId}` | [`12_GET_USERS_USERID.md`](./A_Active/User/12_GET_USERS_USERID.md) | Lấy thông tin hồ sơ an toàn của user |
+| 13 | `GET /api/v1/me` | [`13_GET_ME.md`](./A_Active/User/13_GET_ME.md) | Lấy thông tin hồ sơ cá nhân |
+| 14 | `PATCH /api/v1/me` | [`14_PATCH_ME.md`](./A_Active/User/14_PATCH_ME.md) | Cập nhật thông tin cá nhân |
+| 15 | `POST /api/v1/sellers/registration` | [`15_POST_SELLERS_REGISTRATION.md`](./A_Active/User/15_POST_SELLERS_REGISTRATION.md) | Nộp đơn đăng ký Seller onboarding |
+| 16 | `POST /api/v1/sellers/otp/verify` | [`16_POST_SELLERS_OTP_VERIFY.md`](./A_Active/User/16_POST_SELLERS_OTP_VERIFY.md) | Xác thực OTP mở shop của Seller |
+| 17 | `POST /api/v1/sellers/otp/resend` | [`17_POST_SELLERS_OTP_RESEND.md`](./A_Active/User/17_POST_SELLERS_OTP_RESEND.md) | Gửi lại mã OTP đăng ký mở shop |
+| 18 | `GET /api/v1/sellers/status` | [`18_GET_SELLERS_STATUS.md`](./A_Active/User/18_GET_SELLERS_STATUS.md) | Tra cứu trạng thái đơn đăng ký Seller |
+| 19 | `GET /api/v1/sellers/profile` | [`19_GET_SELLERS_PROFILE.md`](./A_Active/User/19_GET_SELLERS_PROFILE.md) | Seller xem thông tin shop của mình |
+| 20 | `PATCH /api/v1/sellers/profile` | [`20_PATCH_SELLERS_PROFILE.md`](./A_Active/User/20_PATCH_SELLERS_PROFILE.md) | Cập nhật hồ sơ thông tin shop |
+| 21 | `GET /api/v1/sellers/{sellerId}` | [`21_GET_SELLERS_ID.md`](./A_Active/User/21_GET_SELLERS_ID.md) | Khách hàng xem thông tin shop người bán |
+| 22 | `POST /api/v1/admin/users` | [`22_POST_ADMIN_USERS.md`](./A_Active/User/22_POST_ADMIN_USERS.md) | Admin tạo tài khoản người dùng mới |
+| 23 | `GET /api/v1/admin/users` | [`23_GET_ADMIN_USERS.md`](./A_Active/User/23_GET_ADMIN_USERS.md) | Admin xem danh sách người dùng phân trang |
+| 24 | `GET /api/v1/admin/users/{userId}` | [`24_GET_ADMIN_USERS_USERID.md`](./A_Active/User/24_GET_ADMIN_USERS_USERID.md) | Admin xem chi tiết hồ sơ & quyền hạn |
+| 25 | `PUT /api/v1/admin/users/{userId}/roles` | [`25_PUT_ADMIN_USERS_USERID_ROLES.md`](./A_Active/User/25_PUT_ADMIN_USERS_USERID_ROLES.md) | Admin phân vai trò nội bộ cho user |
+| 26 | `PUT /api/v1/admin/users/{userId}` | [`26_PUT_ADMIN_USERS_USERID.md`](./A_Active/User/26_PUT_ADMIN_USERS_USERID.md) | Admin cập nhật thông tin người dùng |
+| 27 | `DELETE /api/v1/admin/users/{userId}` | [`27_DELETE_ADMIN_USERS_USERID.md`](./A_Active/User/27_DELETE_ADMIN_USERS_USERID.md) | Admin xóa mềm người dùng khỏi hệ thống |
+| 28 | `PATCH /api/v1/admin/users/{userId}/ban` | [`28_PATCH_ADMIN_USERS_USERID_BAN.md`](./A_Active/User/28_PATCH_ADMIN_USERS_USERID_BAN.md) | Admin khóa tài khoản vi phạm |
+| 29 | `PATCH /api/v1/admin/users/{userId}/unban` | [`29_PATCH_ADMIN_USERS_USERID_UNBAN.md`](./A_Active/User/29_PATCH_ADMIN_USERS_USERID_UNBAN.md) | Admin mở khóa tài khoản |
+| 30 | `GET /api/v1/admin/roles` | [`30_GET_ADMIN_ROLES.md`](./A_Active/User/30_GET_ADMIN_ROLES.md) | Admin xem toàn bộ danh mục vai trò |
+| 31 | `GET /api/v1/admin/seller-registrations` | [`31_GET_ADMIN_SELLER_REGISTRATIONS.md`](./A_Active/User/31_GET_ADMIN_SELLER_REGISTRATIONS.md) | Danh sách đơn đăng ký Seller chờ duyệt |
+| 32 | `GET /api/v1/admin/seller-registrations/{id}` | [`32_GET_ADMIN_SELLER_REGISTRATIONS_ID.md`](./A_Active/User/32_GET_ADMIN_SELLER_REGISTRATIONS_ID.md) | Chi tiết hồ sơ mở shop & chứng từ |
+| 33 | `PUT /api/v1/admin/seller-registrations/{id}/approve` | [`33_PUT_ADMIN_SELLER_REGISTRATIONS_APPROVE.md`](./A_Active/User/33_PUT_ADMIN_SELLER_REGISTRATIONS_APPROVE.md) | Duyệt hồ sơ mở shop của Seller |
+| 34 | `PUT /api/v1/admin/seller-registrations/{id}/reject` | [`34_PUT_ADMIN_SELLER_REGISTRATIONS_REJECT.md`](./A_Active/User/34_PUT_ADMIN_SELLER_REGISTRATIONS_REJECT.md) | Từ chối hồ sơ mở shop |
+| 35 | `GET /health` | [`35_GET_HEALTH.md`](./A_Active/User/35_GET_HEALTH.md) | Health probe kiểm tra sức khỏe service |
 
-Bằng chứng nghiệm thu: `tools/auth_e2e_test.sh` (70/70 case PASS qua Gateway `:8080`), `dotnet test User.sln -c Release` (231 test PASS).
+---
+
+### 7.2. Hồ Sơ Đã Nghiệm Thu Tại `A_Active/Catalog/` (24 API Hoàn Tất)
+
+| STT | Endpoint | Tài liệu | Mô tả |
+|:---:|:---|:---|:---|
+| 01 | `GET /api/v1/categories` | [`01_GET_CATEGORIES.md`](./A_Active/Catalog/01_GET_CATEGORIES.md) | Lấy danh sách danh mục (cây hoặc phẳng) |
+| 02 | `GET /api/v1/categories/{id}` | [`02_GET_CATEGORIES_ID.md`](./A_Active/Catalog/02_GET_CATEGORIES_ID.md) | Lấy chi tiết danh mục kèm cây con |
+| 03 | `POST /api/v1/categories` | [`03_POST_CATEGORIES.md`](./A_Active/Catalog/03_POST_CATEGORIES.md) | Tạo danh mục mới (Admin/Staff) |
+| 04 | `PUT /api/v1/categories/{id}` | [`04_PUT_CATEGORIES_ID.md`](./A_Active/Catalog/04_PUT_CATEGORIES_ID.md) | Cập nhật thông tin danh mục (Admin/Staff) |
+| 05 | `DELETE /api/v1/categories/{id}` | [`05_DELETE_CATEGORIES_ID.md`](./A_Active/Catalog/05_DELETE_CATEGORIES_ID.md) | Xóa mềm danh mục (Admin/Staff) |
+| 06 | `GET /api/v1/products` | [`06_GET_PRODUCTS.md`](./A_Active/Catalog/06_GET_PRODUCTS.md) | Tìm kiếm & phân trang sản phẩm công khai |
+| 07 | `GET /api/v1/products/{id}` | [`07_GET_PRODUCTS_ID.md`](./A_Active/Catalog/07_GET_PRODUCTS_ID.md) | Lấy chi tiết sản phẩm (kèm biến thể, ảnh) |
+| 08 | `POST /api/v1/products` | [`08_POST_PRODUCTS.md`](./A_Active/Catalog/08_POST_PRODUCTS.md) | Tạo sản phẩm thông thường mới (Draft) |
+| 09 | `POST /api/v1/products/auction` | [`09_POST_PRODUCTS_AUCTION.md`](./A_Active/Catalog/09_POST_PRODUCTS_AUCTION.md) | Tạo sản phẩm đấu giá mới (Draft) |
+| 10 | `PUT /api/v1/products/{id}` | [`10_PUT_PRODUCTS_ID.md`](./A_Active/Catalog/10_PUT_PRODUCTS_ID.md) | Cập nhật thông tin chung sản phẩm |
+| 11 | `PATCH /api/v1/products/{id}/status` | [`11_PATCH_PRODUCTS_ID_STATUS.md`](./A_Active/Catalog/11_PATCH_PRODUCTS_ID_STATUS.md) | Thay đổi trạng thái sản phẩm |
+| 12 | `DELETE /api/v1/products/{id}` | [`12_DELETE_PRODUCTS_ID.md`](./A_Active/Catalog/12_DELETE_PRODUCTS_ID.md) | Xóa mềm sản phẩm và biến thể |
+| 13 | `GET /api/v1/products/{id}/images` | [`13_GET_PRODUCTS_ID_IMAGES.md`](./A_Active/Catalog/13_GET_PRODUCTS_ID_IMAGES.md) | Lấy danh sách toàn bộ ảnh sản phẩm |
+| 14 | `POST /api/v1/products/{id}/images` | [`14_POST_PRODUCTS_ID_IMAGES.md`](./A_Active/Catalog/14_POST_PRODUCTS_ID_IMAGES.md) | Tải ảnh lên cho sản phẩm (Cloudinary) |
+| 15 | `DELETE /api/v1/products/{id}/images/{imageId}` | [`15_DELETE_PRODUCTS_ID_IMAGES_IMAGEID.md`](./A_Active/Catalog/15_DELETE_PRODUCTS_ID_IMAGES_IMAGEID.md) | Xóa ảnh khỏi sản phẩm |
+| 16 | `POST /api/v1/products/{id}/variants` | [`16_POST_PRODUCTS_ID_VARIANTS.md`](./A_Active/Catalog/16_POST_PRODUCTS_ID_VARIANTS.md) | Thêm biến thể SKU cho sản phẩm |
+| 17 | `PUT /api/v1/products/{id}/default-variant` | [`17_PUT_PRODUCTS_ID_DEFAULT_VARIANT.md`](./A_Active/Catalog/17_PUT_PRODUCTS_ID_DEFAULT_VARIANT.md) | Đặt biến thể mặc định cho sản phẩm |
+| 18 | `GET /api/v1/variants/{id}` | [`18_GET_VARIANTS_ID.md`](./A_Active/Catalog/18_GET_VARIANTS_ID.md) | Lấy chi tiết biến thể SKU |
+| 19 | `PUT /api/v1/variants/{id}` | [`19_PUT_VARIANTS_ID.md`](./A_Active/Catalog/19_PUT_VARIANTS_ID.md) | Cập nhật thông tin biến thể SKU |
+| 20 | `PATCH /api/v1/variants/{id}/status` | [`20_PATCH_VARIANTS_ID_STATUS.md`](./A_Active/Catalog/20_PATCH_VARIANTS_ID_STATUS.md) | Thay đổi trạng thái biến thể SKU |
+| 21 | `DELETE /api/v1/variants/{id}` | [`21_DELETE_VARIANTS_ID.md`](./A_Active/Catalog/21_DELETE_VARIANTS_ID.md) | Xóa mềm biến thể SKU |
+| 22 | `PATCH /api/v1/images/{id}` | [`22_PATCH_IMAGES_ID.md`](./A_Active/Catalog/22_PATCH_IMAGES_ID.md) | Cập nhật thuộc tính hình ảnh |
+| 23 | `DELETE /api/v1/images/{id}` | [`23_DELETE_IMAGES_ID.md`](./A_Active/Catalog/23_DELETE_IMAGES_ID.md) | Xóa hình ảnh theo ID |
+| 24 | `GET /api/v1/seller/products` | [`24_GET_SELLER_PRODUCTS.md`](./A_Active/Catalog/24_GET_SELLER_PRODUCTS.md) | Người bán tra cứu sản phẩm của shop |
 
 ---
 
@@ -238,39 +292,48 @@ Bằng chứng nghiệm thu: `tools/auth_e2e_test.sh` (70/70 case PASS qua Gatew
 | [`[PUT] /api/v1/auth/password/reset`](./A_Active/User/7_PUT_AUTH_PASSWORD_RESET.md) | `7` | Đặt lại mật khẩu mới bằng mã OTP |
 | [`[PATCH] /api/v1/auth/password`](./A_Active/User/8_PATCH_AUTH_PASSWORD.md) | `8` | Cập nhật lại mật khẩu(Đổi mật khẩu) |
 | [`[POST] /api/v1/auth/logout`](./A_Active/User/9_POST_AUTH_LOGOUT.md) | `9` | Đăng xuất & Thu hồi phiên hiện tại |
-| [`[GET] /api/v1/products/search`](./B_none/User/R103_GET_PRODUCT_SEARCH.md) | `` | search, filter các sản phẩm của shop mình |
-| [`[GET] /api/v1/products/{productId}`](./B_none/User/R104_GET_PRODUCT.md) | `` | coi thông tin detail của 1 sản phẩm |
-| [`[PATCH] /api/v1/products/{productId}`](./B_none/User/R106_PATCH_PRODUCT.md) | `` | seller cập nhật thông tin sản phẩm, danh mục |
-| [`[DELETE] /api/v1/products/{productId}`](./B_none/User/R107_DELETE_PRODUCT.md) | `` | Xóa sản phẩm |
-| [`[POST] /api/v1/products/{productId}/pictures`](./B_none/User/R108_POST_PRODUCT_PICS.md) | `` | thêm list ảnh của sản phẩm |
-| [`[GET] /api/v1/products/{productId}/pictures`](./B_none/User/R109_GET_PRODUCT_PICS.md) | `` | xem các ảnh của sản phẩm |
-| [`[DELETE] /api/v1/products/{productId}/pictures`](./B_none/User/R110_DELETE_PRODUCT_PICS.md) | `` | xóa list ảnh sản phẩm |
-| [`[PATCH] /api/v1/products/{productId}/status`](./B_none/User/R113_PATCH_PRODUCT_STATUS.md) | `` | Cập nhật trạng thái sản phẩm |
-| [`[GET] /api/v1/products/aucction/search`](./B_none/User/R126_GET_PRODUCT_AUCCTION_SEARCH.md) | `` | coi đươc các sản phẩm seller đó đã đấu giá, filter |
-| [`[GET] /api/v1/products/{productId}`](./B_none/User/R68_GET_PRODUCT.md) | `` | lấy thông tin chi tiết của 1 product |
-| [`[POST] /api/v1/orders/{orderId}/user/{userId}`](./B_none/User/R93_POST_ORDER_USER.md) | `` | đánh giá người dùng |
-| [`[PATCH] /api/v1/orders/{orderId}/user/{userId}`](./B_none/User/R95_PATCH_ORDER_USER.md) | `` | chỉnh sửa đánh giá người dùng |
-### Catalog Service (17 endpoints)
+| [`[POST] /api/v1/orders/{orderId}/user/{userId}`](./B_none/User/R93_POST_ORDER_USER.md) | `` | Đánh giá người dùng |
+| [`[PATCH] /api/v1/orders/{orderId}/user/{userId}`](./B_none/User/R95_PATCH_ORDER_USER.md) | `` | Chỉnh sửa đánh giá người dùng |
+
+### Catalog Service (28 endpoints: 24 tại `A_Active`, 4 tại `B_none`)
+
+#### Nhóm Đã Nghiệm Thu (`A_Active/Catalog/`)
 
 | Endpoint & Liên kết file | Ref Excel | Mô tả nghiệp vụ |
 |:---|:---:|:---|
-| [`[GET] /api/v1/products`](./B_none/Catalog/R102_GET_PRODUCTS.md) | `` | xem toàn bộ các sản phẩm của shop mình |
-| [`[POST] /api/v1/products`](./B_none/Catalog/R105_POST_PRODUCTS.md) | `` | tạo sản phẩm mới, kèm biến thể đầu, KÈM DANH MỤC |
-| [`[GET] /api/v1/products/{productId}/totalRating`](./B_none/Catalog/R111_GET_PRODUCTS_TOTALRATING.md) | `` | xem số sao của 1 sản phẩm, trung bình |
-| [`[GET] /api/v1/products/{productId}/rating`](./B_none/Catalog/R112_GET_PRODUCTS_RATING.md) | `` | tổng số sao, và đánh giá của các người mua trong product |
-| [`[POST] /api/v1/products/{productId}/variants`](./B_none/Catalog/R115_POST_PRODUCT_VARIANTS.md) | `` | Thêm biến thể cho sản phẩm |
-| [`[DELETE] /api/v1/variants/{variantId}`](./B_none/Catalog/R116_DELETE_VARIANT.md) | `` | xóa 1 biến thể |
-| [`[PATCH] /api/v1/variants/{variantId}`](./B_none/Catalog/R117_PATCH_VARIANT.md) | `` | Cập nhật thông tin của sản phẩm biến thể |
-| [`[GET] /api/v1/variants/{variantId}`](./B_none/Catalog/R118_GET_VARIANT.md) | `` | xem thông tin chi tiết của 1 biến thể |
-| [`[GET] /api/v1/categories`](./B_none/Catalog/R120_GET_CATEGORIES.md) | `` | Xem danh sách danh mục |
-| [`[POST] /api/v1/categories`](./B_none/Catalog/R121_POST_CATEGORIES.md) | `` | Tạo danh mục mới, có thể truyền danh mục cha, nếu ko truyền nó là cha |
-| [`[PUT] /api/v1/categories/{categoryId}`](./B_none/Catalog/R122_PUT_CATEGORIES.md) | `` | Cập nhật danh mục |
-| [`[DELETE] /api/v1/categories`](./B_none/Catalog/R123_DELETE_CATEGORIES.md) | `` | Xóa mềm danh mục |
-| [`[GET] /api/v1/categories/{categoryId}`](./B_none/Catalog/R124_GET_CATEGORIES.md) | `` | xem danh sách các danh mục con và thông tin 1 danh mục cha |
-| [`[GET] /api/v1/products`](./B_none/Catalog/R66_GET_PRODUCTS.md) | `` | lấy toàn bộ product |
-| [`[GET] /api/v1/products/search`](./B_none/Catalog/R67_GET_PRODUCTS_SEARCH.md) | `` | filter, search product |
-| [`[POST] /api/v1/orders/{orderId}/products/{productId}/reviews`](./B_none/Catalog/R92_POST_ORDER_PRODUCTS_REVIEWS.md) | `` | ddbuyer đánh giá 1 sản phẩm, check sản phẩm đã được mua chưa, đã hoàn thành chưa, có phải người này ko. phải điền order id vào |
-| [`[PATCH] /api/v1/orders/{orderId}/products/{productId}/reviews`](./B_none/Catalog/R94_PATCH_ORDER_PRODUCTS_REVIEWS.md) | `` | chỉnh sửa đánh giá sản phẩm |
+| [`[GET] /api/v1/categories`](./A_Active/Catalog/01_GET_CATEGORIES.md) | `CAT-14` | Lấy danh sách danh mục (cây phân cấp hoặc phẳng) |
+| [`[GET] /api/v1/categories/{id}`](./A_Active/Catalog/02_GET_CATEGORIES_ID.md) | `CAT-18` | Lấy chi tiết danh mục kèm cây con trực thuộc |
+| [`[POST] /api/v1/categories`](./A_Active/Catalog/03_POST_CATEGORIES.md) | `CAT-15` | Tạo danh mục mới (Admin/Staff) |
+| [`[PUT] /api/v1/categories/{id}`](./A_Active/Catalog/04_PUT_CATEGORIES_ID.md) | `CAT-16` | Cập nhật thông tin danh mục (Admin/Staff) |
+| [`[DELETE] /api/v1/categories/{id}`](./A_Active/Catalog/05_DELETE_CATEGORIES_ID.md) | `CAT-17` | Xóa mềm danh mục (Admin/Staff) |
+| [`[GET] /api/v1/products`](./A_Active/Catalog/06_GET_PRODUCTS.md) | `CAT-05 / CAT-20` | Tìm kiếm & lọc sản phẩm công khai phân trang |
+| [`[GET] /api/v1/products/{id}`](./A_Active/Catalog/07_GET_PRODUCTS_ID.md) | `CAT-06` | Xem chi tiết sản phẩm đầy đủ (kèm biến thể, ảnh, rating) |
+| [`[POST] /api/v1/products`](./A_Active/Catalog/08_POST_PRODUCTS.md) | `CAT-01` | Tạo sản phẩm thông thường mới (Draft) |
+| [`[POST] /api/v1/products/auction`](./A_Active/Catalog/09_POST_PRODUCTS_AUCTION.md) | `CAT-43` | Tạo sản phẩm đấu giá mới (Draft) |
+| [`[PUT] /api/v1/products/{id}`](./A_Active/Catalog/10_PUT_PRODUCTS_ID.md) | `CAT-02` | Cập nhật thông tin chung sản phẩm |
+| [`[PATCH] /api/v1/products/{id}/status`](./A_Active/Catalog/11_PATCH_PRODUCTS_ID_STATUS.md) | `CAT-03` | Thay đổi trạng thái sản phẩm (Draft, Active, Inactive) |
+| [`[DELETE] /api/v1/products/{id}`](./A_Active/Catalog/12_DELETE_PRODUCTS_ID.md) | `CAT-04` | Xóa mềm sản phẩm và toàn bộ biến thể |
+| [`[GET] /api/v1/products/{id}/images`](./A_Active/Catalog/13_GET_PRODUCTS_ID_IMAGES.md) | `CAT-40` | Lấy danh sách hình ảnh của sản phẩm |
+| [`[POST] /api/v1/products/{id}/images`](./A_Active/Catalog/14_POST_PRODUCTS_ID_IMAGES.md) | `CAT-12` | Tải lên hình ảnh cho sản phẩm (Cloudinary) |
+| [`[DELETE] /api/v1/products/{id}/images/{imageId}`](./A_Active/Catalog/15_DELETE_PRODUCTS_ID_IMAGES_IMAGEID.md) | `CAT-13` | Xóa ảnh khỏi sản phẩm |
+| [`[POST] /api/v1/products/{id}/variants`](./A_Active/Catalog/16_POST_PRODUCTS_ID_VARIANTS.md) | `CAT-07` | Thêm biến thể SKU mới cho sản phẩm (tối đa 10) |
+| [`[PUT] /api/v1/products/{id}/default-variant`](./A_Active/Catalog/17_PUT_PRODUCTS_ID_DEFAULT_VARIANT.md) | `CAT-10` | Đặt biến thể mặc định cho sản phẩm |
+| [`[GET] /api/v1/variants/{id}`](./A_Active/Catalog/18_GET_VARIANTS_ID.md) | `CAT-42` | Lấy thông tin chi tiết một biến thể SKU |
+| [`[PUT] /api/v1/variants/{id}`](./A_Active/Catalog/19_PUT_VARIANTS_ID.md) | `CAT-08` | Cập nhật thông tin biến thể SKU |
+| [`[PATCH] /api/v1/variants/{id}/status`](./A_Active/Catalog/20_PATCH_VARIANTS_ID_STATUS.md) | `CAT-09` | Thay đổi trạng thái biến thể SKU (Active/Inactive) |
+| [`[DELETE] /api/v1/variants/{id}`](./A_Active/Catalog/21_DELETE_VARIANTS_ID.md) | `CAT-11` | Xóa mềm biến thể SKU |
+| [`[PATCH] /api/v1/images/{id}`](./A_Active/Catalog/22_PATCH_IMAGES_ID.md) | `CAT-14` | Cập nhật thuộc tính hình ảnh (thứ tự, altText, cờ active) |
+| [`[DELETE] /api/v1/images/{id}`](./A_Active/Catalog/23_DELETE_IMAGES_ID.md) | `CAT-13` | Xóa hình ảnh sản phẩm theo ID |
+| [`[GET] /api/v1/seller/products`](./A_Active/Catalog/24_GET_SELLER_PRODUCTS.md) | `CAT-44` | Người bán tra cứu danh sách sản phẩm của shop |
+
+#### Nhóm Đang Phát Triển / Chờ Nghiệm Thu (`B_none/Catalog/`)
+
+| Endpoint & Liên kết file | Ref Excel | Mô tả nghiệp vụ |
+|:---|:---:|:---|
+| [`[GET] /api/v1/products/{productId}/totalRating`](./B_none/Catalog/R111_GET_PRODUCTS_TOTALRATING.md) | `` | Xem tổng quan sao đánh giá trung bình của sản phẩm |
+| [`[GET] /api/v1/products/{productId}/rating`](./B_none/Catalog/R112_GET_PRODUCTS_RATING.md) | `` | Danh sách bình luận & đánh giá của người mua |
+| [`[POST] /api/v1/orders/{orderId}/products/{productId}/reviews`](./B_none/Catalog/R92_POST_ORDER_PRODUCTS_REVIEWS.md) | `` | Người mua đánh giá sản phẩm sau khi hoàn thành đơn |
+| [`[PATCH] /api/v1/orders/{orderId}/products/{productId}/reviews`](./B_none/Catalog/R94_PATCH_ORDER_PRODUCTS_REVIEWS.md) | `` | Chỉnh sửa đánh giá sản phẩm |
 ### Commerce Service (17 endpoints)
 
 | Endpoint & Liên kết file | Ref Excel | Mô tả nghiệp vụ |

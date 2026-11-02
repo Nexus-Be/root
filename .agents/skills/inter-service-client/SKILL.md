@@ -26,6 +26,7 @@ Every inter-service client must strictly adhere to the following 6 rules:
 4. **Identity & Ownership Propagation:** When acting on behalf of an authenticated user, the client must inject the caller identity into the downstream request header `x-user-id`.
 5. **Mandatory Idempotency Keys:** For any mutating financial, payment, or stock reservation operation, the client must transmit an `Idempotency-Key` header with a unique UUIDv4 string.
 6. **Defensive Timeout & Resilience:** Every HTTP client must enforce a strict timeout (5 to 10 seconds). Calls must be wrapped in `try-catch` blocks, logging the response status and error body on failure without crashing the host process.
+7. **Distributed Tracing Continuity (W3C TraceContext Propagation):** When making inter-service HTTP requests, the client must ensure the W3C `traceparent` header (`00-{traceId}-{spanId}-01`) is preserved across boundaries. While ASP.NET Core `AddHttpClientInstrumentation()` automatically propagates `Activity.Current` during active HTTP request contexts, background workers/queues lose this context. For background queues, capture `Activity.Current?.Id` (or `HttpContext.Request.Headers["traceparent"]`) in the payload, and inject `request.Headers.TryAddWithoutValidation("traceparent", payload.TraceParent)` before dispatch.
 
 ## 3. Service Port & URL Matrix
 

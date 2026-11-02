@@ -29,14 +29,17 @@ Bảng dưới đây là các tiền tố Gateway đang chuyển tiếp thật. 
 | Module | Tiền tố qua Gateway | Service đích | Tài liệu chi tiết |
 |:---|:---|:---|:---|
 | Xác thực | `/api/v1/auth/**` | User `8001` | [A_Active/User](api/A_Active/User/) |
-| Hồ sơ cá nhân | `/api/v1/me/**` | User `8001` | [B_none/User](api/B_none/User/) |
-| Người dùng | `/api/v1/users/**` | User `8001` | [B_none/User](api/B_none/User/) |
-| Người bán | `/api/v1/sellers/**` | User `8001` | [B_none/User](api/B_none/User/) |
-| Quản trị người dùng | `/api/v1/admin/users/**` | User `8001` | [B_none/User](api/B_none/User/) |
-| Vai trò và quyền | `/api/v1/admin/roles/**` | User `8001` | [B_none/User](api/B_none/User/) |
-| Hồ sơ đăng ký Seller | `/api/v1/admin/seller-registrations/**` | User `8001` | [B_none/User](api/B_none/User/) |
-| Sản phẩm | `/api/v1/products/**` | Catalog `8002` | [B_none/Catalog](api/B_none/Catalog/) |
-| Danh mục | `/api/v1/categories/**` | Catalog `8002` | [B_none/Catalog](api/B_none/Catalog/) |
+| Hồ sơ cá nhân | `/api/v1/me/**` | User `8001` | [A_Active/User](api/A_Active/User/) |
+| Người dùng | `/api/v1/users/**` | User `8001` | [A_Active/User](api/A_Active/User/) |
+| Người bán | `/api/v1/sellers/**` | User `8001` | [A_Active/User](api/A_Active/User/) |
+| Quản trị người dùng | `/api/v1/admin/users/**` | User `8001` | [A_Active/User](api/A_Active/User/) |
+| Vai trò và quyền | `/api/v1/admin/roles/**` | User `8001` | [A_Active/User](api/A_Active/User/) |
+| Hồ sơ đăng ký Seller | `/api/v1/admin/seller-registrations/**` | User `8001` | [A_Active/User](api/A_Active/User/) |
+| Sản phẩm | `/api/v1/products/**` | Catalog `8002` | [A_Active/Catalog](api/A_Active/Catalog/) |
+| Danh mục | `/api/v1/categories/**` | Catalog `8002` | [A_Active/Catalog](api/A_Active/Catalog/) |
+| Biến thể sản phẩm | `/api/v1/variants/**` | Catalog `8002` | [A_Active/Catalog](api/A_Active/Catalog/) |
+| Hình ảnh sản phẩm | `/api/v1/images/**` | Catalog `8002` | [A_Active/Catalog](api/A_Active/Catalog/) |
+| Sản phẩm người bán | `/api/v1/seller/products/**` | Catalog `8002` | [A_Active/Catalog](api/A_Active/Catalog/) |
 | Giỏ hàng | `/api/v1/carts/**` | Commerce `8003` | [B_none/Commerce](api/B_none/Commerce/) |
 | Đơn hàng | `/api/v1/orders/**` | Commerce `8003` | [B_none/Commerce](api/B_none/Commerce/) |
 | Nhật ký | `/api/v1/logs/**` | Log `8004` | [B_none/Log](api/B_none/Log/) |
@@ -60,7 +63,6 @@ Các route dưới đây có trong controller nhưng chưa có trong `appsetting
 
 - `/api/v1/checkouts/**` (Commerce)
 - `/api/v1/sub-orders/**` (Commerce)
-- `/api/v1/variants/**` (Catalog)
 - `/api/v1/admin/auctions/**` (Auction)
 - `/api/v1/bids/**` (Auction)
 - `/api/v1/reviews/**` (User)
@@ -68,7 +70,17 @@ Các route dưới đây có trong controller nhưng chưa có trong `appsetting
 
 Frontend cần các route này thì phải bổ sung route YARP trước.
 
-### 3.2. Route liên service đi qua Gateway
+### 3.2. Tra cứu Swagger UI tập trung trên Gateway
+
+- Gateway cung cấp giao diện Swagger UI tại **`http://localhost:8080/swagger`**.
+- Mặc định mở tài liệu `Gateway (Edge)` (`/swagger/v1/swagger.json`).
+- Để xem hợp đồng API chi tiết của từng phân hệ, chọn phân hệ tương ứng ở menu góc trên bên phải:
+  - **Catalog Service**: `/swagger/downstream/catalog/swagger.json`
+  - **User Service**: `/swagger/downstream/user/swagger.json`
+  - **Commerce / Auction / Fulfillment / Notification / Wallet / Log / CheckHeal**.
+- Lưu ý: Microservice đích cần đang chạy ở cổng nội bộ tương ứng (`8001`-`8009`) để Gateway tổng hợp được tài liệu Swagger thời gian thực.
+
+### 3.3. Route liên service đi qua Gateway
 
 Trong giai đoạn Internal API tạm khóa, một số lời gọi service-to-service dùng route công khai và đi qua Gateway như API thường:
 

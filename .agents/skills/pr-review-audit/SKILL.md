@@ -43,6 +43,11 @@ Trước khi thực hiện bất kỳ thao tác phân tích hay quét diff nào,
 * **TUYỆT ĐỐI CẤM** tạo thư mục review tại Root repository (`Nexus-Be/.agents/review/`) khi đối tượng review là một service submodule. Báo cáo kiểm định của service nào phải luôn nằm trọn vẹn bên trong submodule của chính service đó, bảo đảm 100% tính tự cung tự cấp (Self-contained) và nguyên tắc Inward-Only.
 * *Chỉ khi Pull Request là thay đổi hạ tầng dùng chung toàn cục hoặc tài liệu cấp Root (`Nexus-Be`)* thì thư mục review mới được đặt tại Root `.agents/review/`.
 
+### 1.7 Quy Chuẩn Thông Điệp Commit & Tiêu Đề PR (Zero Emoji / Icon Rule - Rule 18)
+* **CẤM TUYỆT ĐỐI EMOJI / ICON:** Tiêu đề PR và toàn bộ commit messages tuyệt đối không chứa emoji hoặc icon (`✨`, `🐛`, `🔧`, `♻️`, `🧪`, `📝`, `⚡`, `👷`, `💄`, `🔒`, `🚧`...).
+* **Chuẩn 100% Conventional Commits thuần túy:** Bắt buộc định dạng `<type>(<scope>): <subject>` hoặc `<type>: <subject>` bằng tiếng Anh chuẩn, thể mệnh lệnh, chữ thường, không chấm câu cuối dòng.
+* Kiểm tra git log của PR (`git log $(git merge-base HEAD origin/dev)..HEAD --oneline`) để bảo đảm mọi commit trong PR đều tuân thủ.
+
 ---
 
 ## 2. Cấu Trúc Thư Mục & 3 File Báo Cáo

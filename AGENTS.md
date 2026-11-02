@@ -201,6 +201,19 @@ Khi bắt đầu phiên làm việc tại bất kỳ repository nào, AI Agent *
      4. **Quy tắc Ký duyệt Nghiệp vụ của Con người (Human-Only Logic Sign-off)**: Agent TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ Ý ĐÁNH DẤU `[x]` vào các checklist logic, usecase và nghiệp vụ. Toàn bộ checklist logic và nghiệm thu nghiệp vụ phải để trống `[ ]` để Reviewer / Con người trực tiếp kiểm tra và tích hoàn thành.
      5. **Rào chắn Tuyệt đối Không Sửa Logic (Strict Format-Only Fix)**: Lỗi logic/nghiệp vụ: Agent chỉ ghi chú `[NOTE - LOGIC ISSUE]` kèm vị trí `file:line` để tác giả PR tự sửa. Agent TUYỆT ĐỐI KHÔNG TỰ SỬA LOGIC. Pha 2 chỉ sửa lỗi format/conventions sau khi người dùng phê duyệt.
      6. **Lưu trữ Vĩnh viễn & Không Commit**: Thư mục báo cáo `.agents/review/` là hồ sơ kiểm định, TUYỆT ĐỐI KHÔNG ĐƯỢC XÓA sau khi sửa format. Đưa `.agents/review/` vào `.gitignore` để không bị commit lên Git repository.
+   - **18. QUY CHUẨN THÔNG ĐIỆP COMMIT (GIT COMMIT MESSAGE STANDARDS — ZERO EMOJI / ICON)**:
+     - **CẤM TUYỆT ĐỐI EMOJI / ICON TRONG COMMIT**: Tuyệt đối CẤM đưa bất kỳ biểu tượng emoji, icon nào (`✨`, `🐛`, `🔧`, `♻️`, `🧪`, `📝`, `⚡`, `👷`, `💄`, `🔒`, `🚧`...) vào tiêu đề commit, nội dung commit hoặc PR title.
+     - **Chuẩn 100% Conventional Commits thuần túy**: Tiêu đề commit bắt buộc có định dạng `<type>(<scope>): <subject>` hoặc `<type>: <subject>` bằng tiếng Anh chuẩn (chữ thường cho `type` và `scope`, thể mệnh lệnh imperative, không chấm câu cuối dòng).
+     - **Các loại type hợp lệ**: `feat`, `fix`, `chore`, `refactor`, `test`, `perf`, `docs`, `ci`, `ui`, `security`, `revert`, `wip`.
+     - **Ví dụ hợp lệ**:
+       - `feat(notification): standardize public and internal otp endpoints`
+       - `fix(wallet): ensure non-negative balance check on direct debit`
+       - `chore(gateway): update downstream routing configuration`
+       - `refactor(catalog): streamline product query service`
+     - **Ví dụ vi phạm (CẤM)**:
+       - `✨ feat(notification): ...` (Vi phạm: chứa emoji)
+       - `🐛 fix: ...` (Vi phạm: chứa emoji)
+       - `update code` (Vi phạm: không đúng Conventional Commits)
 
 ## 💬 NGUYÊN TẮC 5: QUY CHUẨN THÔNG BÁO LỖI TOÀN HỆ THỐNG (MANDATORY ERROR & ENUM RULES)
 1. **Ngôn ngữ (100% English)**: Toàn bộ thông báo lỗi, exception details, problem details, validation failures viết bằng 100% tiếng Anh. Tuyệt đối CẤM tiếng Việt trong response và runtime exception.
@@ -281,7 +294,7 @@ Board: Backlog · Ready · Building · QA · Review · Blocked · Done. Labels r
 
 | Thing | Format → `.claude/skills/super-board/references/writing-standard.md` |
 |---|---|
-| Commit, PR title | `<emoji> [type] scope: subject` + short bullets · ✨ feat 🐛 fix 🔧 chore ♻️ refactor 🧪 test 📝 docs |
+| Commit, PR title | `[type] scope: subject` (NO EMOJI/ICON) + short bullets · feat, fix, chore, refactor, test, docs |
 | PR body | blocks: status · Problem · Solution · AC + proof · history · Before\|After · Risk — `super-board-pr-body.sh` |
 | Ticket | Problem · Context · Fix · AC · Risk · Blocked by → `docs/agents/issue-tracker.md` |
 | Comment | `[role] [label] status` · Did · ✅ Done · ❌ Not done · Next · ≤ 8 lines |
@@ -291,3 +304,23 @@ Board: Backlog · Ready · Building · QA · Review · Blocked · Done. Labels r
 - NEVER link screenshots. Embed a raw URL pinned to a sha.
 - DON'T repeat file lists in status comments. DON'T write "Not verified" or "Next" in a PR body.
 <!-- super-board:end -->
+
+---
+
+## 📋 BẢNG ÁNH XẠ QUY CHUẨN VÀ CƠ CHẾ THỰC THI (RULE ENFORCEMENT TABLE)
+
+| Quy chuẩn (Rule) | Cơ chế thực thi (Enforced By) | Cấp độ (Level) |
+|---|---|---|
+| Plan-First Rule | Trình bày Plan chi tiết trước khi thao tác | Level 4 (Agent Instructions) |
+| Inward-Only Scoping | Rào chắn đường dẫn nội bộ, cô lập submodule | Level 1 (Architecture) / Level 4 |
+| Database Isolation (Database-per-service) | Kết nối DB riêng biệt qua biến môi trường | Level 1 (Architecture) |
+| No-Repository over EF Core | Inject trực tiếp `DbContext` trong Application | Level 1 (Architecture) |
+| 100% RESTful HTTP/JSON (Cấm gRPC & Message Broker) | Đóng gói Dependency và DI không chứa gRPC/MassTransit | Level 1 (Architecture) |
+| Identity Anti-Spoofing | `ClientContextMiddleware` ngắt request chứa header giả | Level 1 (Architecture) / Pipeline |
+| Resource Ownership Protection | `HttpContext.GetUserId()` đối soát quyền sở hữu | Level 3 (Behavior Tests) |
+| Phân trang tính tại Microservice | Truy vấn SQL `Skip/Take` và trả `PagedData<T>` | Level 1 (Architecture) / Level 3 |
+| Tiêu đề Commit KHÔNG CHỨA ICON/EMOJI | Conventional Commits thuần túy: `type(scope): subject` | Level 4 (Agent Instructions) |
+| Thông báo lỗi tiếng Anh Sentence case | Middleware xử lý ngoại lệ và Unit Tests | Level 3 (Behavior Tests) |
+| Mã lỗi SCREAMING_SNAKE_CASE | Domain Exceptions và Hợp đồng DTO | Level 3 (Behavior Tests) |
+| Enum Serialization PascalCase | `PascalCaseJsonStringEnumConverter` | Level 2 (Types / Serialization) |
+
