@@ -46,7 +46,8 @@ Known current state that overrides older text:
 - JSON is camelCase. C# DTOs are PascalCase. Enums leave the API as PascalCase strings, never integers or SCREAMING_SNAKE_CASE.
 - Error codes are SCREAMING_SNAKE_CASE. Messages are English sentence case. No `ERR_` prefix.
 - Every list endpoint paginates at the database with `Skip`/`Take` and `CountAsync`. No unbounded lists.
-- Never trust `userId`, `sellerId`, or `buyerId` from the client. Read identity from `HttpContext`.
+- Never trust `userId`, `sellerId`, or `buyerId` from the client. `UserContextMiddleware` automatically decodes gateway headers into `HttpContext.User`. Read caller identity via `this.TryGetUserId(out var userId, out var authError)` and enforce roles via `[RequireRole(...)]` or `this.HasRole(...)`.
+- Outbound inter-service HTTP requests automatically propagate `x-user-id`, `x-user-roles`, `x-user-email`, and `x-trace-id` via `IdentityPropagationHandler`. Ensure typed clients in `DependencyInjection.cs` attach `.AddHttpMessageHandler<IdentityPropagationHandler>()`.
 - Never create `IRepository<T>`, `GenericRepository`, or `UnitOfWork`. Inject `I{Service}DbContext`.
 - Never use gRPC, RabbitMQ, MassTransit, Saga, or Outbox/Inbox tables.
 - Never query another service's database.
@@ -138,7 +139,11 @@ Wallet does not use feature services. Add a use case under `Wallet.Application/F
 - [ ] Each action has exactly one route attribute and one single-line XML `<summary>`.
 - [ ] Controller injects only `I{Feature}Service` (or `ISender` in Wallet).
 - [ ] Input uses `[FromRoute]`, `[FromQuery]`, `[FromBody]`, and `CancellationToken`.
-- [ ] Identity comes from `this.TryGetUserId(...)`. Ownership uses `this.EnsureOwnership(...)`. Admin uses the service's role helper.
+- [ ] **Caller Identity & Ownership:**
+  - If action requires authentication: extract caller identity via `if (!this.TryGetUserId(out var userId, out var authError)) return authError;` (returns HTTP 401 ProblemDetails on missing identity).
+  - If action requires specific roles: decorate action or controller with `[RequireRole("seller", "admin")]` or verify via `this.HasRole("admin")` (returns HTTP 403 ProblemDetails when unauthorized).
+  - If action mutates user-scoped or tenant-scoped data: pass `userId` to the feature service (`_service.ActionAsync(userId, request, ct)`) or guard via `this.EnsureOwnership(resource.OwnerId, out var ownershipError)`. Never accept `userId`/`sellerId`/`buyerId` from client query/body.
+  - If action dispatches an inter-service call: confirm the target HTTP client attaches `IdentityPropagationHandler` in `DependencyInjection.cs`, which forwards `x-user-id`, `x-user-roles`, and `x-user-email` automatically.
 - [ ] Read and write actions return the DTO directly with `Ok(...)` or `StatusCode(201, ...)`.
 - [ ] Delete or empty actions return `NoContent()`.
 - [ ] No `ResultFilter`, no manual envelope, no business branching in the controller.

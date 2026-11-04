@@ -62,7 +62,26 @@ When domain exceptions, validation failures, or edge guards trigger errors:
 
 ---
 
-## 5. Canonical Reference Controller Blueprint
+## 5. Inbound Identity & Role Resolution (`UserContextMiddleware`)
+
+Gateway forwards verified identity claims via HTTP headers (`x-user-id`, `x-user-roles`, `x-user-email`, `x-user-permissions`). The pipeline's `UserContextMiddleware` automatically decodes these headers and assigns a strongly typed `ClaimsPrincipal` to `HttpContext.User`.
+
+Controllers interact with user identity strictly through these conventions:
+1. **Extract Caller ID**: Use `if (!this.TryGetUserId(out var userId, out var authError)) return authError;`
+   - Returns HTTP 401 ProblemDetails with `errorCode = "UNAUTHORIZED"` if caller is unauthenticated.
+2. **Enforce Role Constraints**:
+   - Declarative: Decorate action/controller with `[RequireRole("buyer", "seller")]` or `[RequireRole("admin", "staff")]`.
+   - Imperative: Use `this.HasRole("admin")` or `this.IsAdmin()` for branching logic within authorized methods.
+   - Non-qualifying roles automatically receive HTTP 403 ProblemDetails with `errorCode = "FORBIDDEN"`.
+3. **Enforce Resource Ownership**:
+   - Use `this.EnsureOwnership(resource.OwnerId, out var ownershipError)` or pass `userId` directly from context into the feature service.
+   - **Prohibit Client-Supplied User IDs**: Never accept `userId`, `sellerId`, or `buyerId` from query string or request body to establish identity. Always bind the actor from `HttpContext`.
+4. **Outbound Propagation**:
+   - When the controller calls a downstream service via a typed REST client, `IdentityPropagationHandler` (registered in `DependencyInjection.cs`) automatically propagates `x-user-id`, `x-user-roles`, and `x-user-email` to the target service without manual header manipulation.
+
+---
+
+## 6. Canonical Reference Controller Blueprint
 
 The following structural skeleton represents the standardized pattern for any controller in Nexus. It is modeled after stable controllers such as `UsersController.cs` and `MeController.cs`:
 
@@ -158,7 +177,7 @@ public sealed class {Feature}Controller : ControllerBase
 
 ---
 
-## 6. Architecture Decoupling (Feature Services vs CQRS)
+## 7. Architecture Decoupling (Feature Services vs CQRS)
 
 The controller boundary convention is decoupled from the internal dispatch architecture:
 
@@ -175,7 +194,7 @@ Used by: `WalletService` (frozen architectural exception).
 
 ---
 
-## 7. HTTP Status & Return Conventions
+## 8. HTTP Status & Return Conventions
 
 - **GET Single Item**: Return `Task<ActionResult<T>>` with `Ok(dto)` (HTTP 200).
 - **GET Paginated List**: Return `Task<ActionResult<PagedData<T>>>` with `Ok(pagedData)` (HTTP 200).
@@ -187,7 +206,7 @@ Used by: `WalletService` (frozen architectural exception).
 
 ---
 
-## 8. Anti-Pattern Checklist (Bad vs Good)
+## 9. Anti-Pattern Checklist (Bad vs Good)
 
 | Anti-Pattern (PROHIBITED) | Standard Pattern (MANDATORY) |
 | :--- | :--- |

@@ -69,13 +69,11 @@ Chín microservices backend (`User`, `Catalog`, `Commerce`, `Log`, `Auction`, `F
 
 ---
 
-## 3. Các Rào Chắn Bất Biến (Architectural Invariants)
+## 4. Giao Trinh Giang Day & Tham Chieu Kien Truc Chuyen Sau (Teaching & Architecture Guides)
 
-Mọi kỹ sư và AI Coding Agent khi làm việc trong các thư mục này bắt buộc tuân thủ 5 nguyên tắc:
-1. **Không dùng Repository Pattern bọc ngoài EF Core:** Tầng Application inject trực tiếp `I{Service}DbContext` và truy vấn `DbSet<T>`. Tuyệt đối cấm tạo `IRepository<T>`, `GenericRepository`, hoặc `UnitOfWork`.
-2. **Không dùng MediatR / CQRS:** Toàn bộ logic nghiệp vụ đặt tập trung trong Feature Services (`Services/{Feature}/`). Không chia tách thành các file Command/Query/Handler phân tán.
-3. **100% Giao tiếp qua RESTful HTTP/JSON:** Cấm hoàn toàn gRPC, Protobuf, RabbitMQ, MassTransit và bảng Outbox/Inbox. Giao tiếp liên dịch vụ chuyển sang gọi đồng bộ bằng Typed HttpClient.
-4. **Trạng thái Public API và Internal API:**
-   - Toàn bộ endpoint đặt trong `Controllers/Public/` với route số nhiều `/api/v1/{resources}`, kể cả các cuộc gọi liên service.
-   - Internal API tạm khóa từ 2026-10-31. Không tạo `Controllers/Internal/` và không thêm route `/api/v1/internal/{resources}`. Không yêu cầu header `X-Internal-Service-Key`.
-5. **Cơ sở dữ liệu độc lập (Database-per-service):** Mỗi dịch vụ sở hữu cơ sở dữ liệu PostgreSQL riêng biệt. Cấm truy vấn chéo giữa các cơ sở dữ liệu.
+Dành cho các kỹ sư và AI Coding Agent muốn học hỏi và nắm vững toàn bộ kiến trúc hệ thống Nexus:
+
+- **Backend Microservices Archetype:** [`teach/service/README.md`](teach/service/README.md) — 7 chuyên đề kiến trúc lấy `UserService` làm chuẩn mẫu (Clean Architecture 4 tầng, Feature Co-location, Security, Middleware, EF Core, Redis fallback).
+- **Edge API Gateway:** [`teach/gateway/README.md`](teach/gateway/README.md) — 6 chuyên đề kiến trúc Edge Proxy (Microsoft YARP 2.3.0, Active Anti-Spoofing, Identity Propagation, Response Envelope, Redis Rate Limiting, Swagger Aggregation).
+- **Hạ Tầng Dùng Chung & Observability:** [`teach/infrastructure/README.md`](teach/infrastructure/README.md) — 7 chuyên đề hạ tầng (OpenTelemetry .NET 8, Grafana Tempo, Prometheus Exemplars, Grafana Unified Dashboards, Redis 7 LRU, Cụm 8 PostgreSQL Local).
+
