@@ -1,101 +1,103 @@
-# [GET] /api/v1/sellers/shipments
+# [GET] /api/v1/shipments
 
 > **Phân hệ thụ lý:** `FulfillmentService`  
 > **Tên tính năng:** `Shipments`  
-> **Mã tham chiếu Excel:** ``FUL-08``  
+> **Mã tham chiếu Excel:** `FUL-08`  
 > **Trạng thái tài liệu:** `B_none (Chờ hoàn thiện & nghiệm thu)`  
-> **Trạng thái triển khai:** `⏳ IN_PROGRESS`  
+> **Trạng thái triển khai:** `✅ VERIFIED`  
 
 ---
 
 ## 1. MÔ TẢ NGHIỆP VỤ & PHÂN QUYỀN
 
-* **Mô tả chức năng:** lấy danh sách các đơn ship của selller phải giao
+* **Mô tả chức năng:** Lấy danh sách vận đơn phân trang, hỗ trợ lọc theo trạng thái, kho hàng, mã vận đơn và khoảng thời gian.
 * **HTTP Method:** `GET`
-* **Đường dẫn chuẩn:** `/api/v1/sellers/shipments`
-* **Đường dẫn gốc trong Excel:** `/api/v1/seller/shipment` (Chuẩn hóa từ '/api/v1/seller/shipment' sang chuẩn 100% số nhiều '/api/v1/sellers/shipments'.)
-* **Quyền hạn truy cập (RBAC):** `Seller`
-* **Yêu cầu Idempotency:** Không áp dụng (Idempotent theo HTTP spec)
+* **Đường dẫn chuẩn:** `/api/v1/shipments`
+* **Đường dẫn gốc trong Excel:** `/api/v1/seller/shipment` (Quy về route chuẩn hệ thống `/api/v1/shipments` có cách ly theo quyền người dùng).
+* **Quyền hạn truy cập (RBAC):** `Buyer`, `Seller`, `Admin`, `Staff` (`[RequireRole("buyer", "seller", "admin", "staff")]`)
+* **Quy tắc sở hữu (Resource Ownership):**
+  * Với Seller: Hệ thống tự động lọc các vận đơn xuất phát từ kho hàng thuộc quyền sở hữu của Seller đó.
+  * Với Buyer: Hệ thống lọc các vận đơn mà người dùng là người mua (`buyerId == currentUserId`).
+  * Với Admin / Staff: Truy cập danh sách vận đơn của toàn bộ hệ sinh thái.
+* **Yêu cầu Idempotency:** Không áp dụng (Idempotent theo chuẩn HTTP GET).
 
 ---
 
 ## 2. DẤU VẾT MÃ NGUỒN (CODE TRACE & EXECUTION PATH)
 
-Mọi thay đổi trong hàm nghiệp vụ (thêm validation, ném exception, thêm enum) bắt buộc phải cập nhật đồng bộ vào tài liệu này:
-
-* **Microservice thụ lý:** `src/Services/Fulfillment/`
-* **Cổng Gateway điều phối:** `src/Services/Gateway/Gateway/appsettings.json` (Route: `fulfillment-shipments-route`)
-* **Controller Action:** `Fulfillment.Api/Controllers/ShipmentsController.cs` $\rightarrow$ `GetSellerShipments()`
-* **Application Interface:** `Fulfillment.Application/Services/Shipments/IShipmentService.cs` $\rightarrow$ `GetSellerShipmentsAsync()`
-* **Service Implementation:** `Fulfillment.Application/Services/Shipments/ShipmentService.cs` $\rightarrow$ `GetSellerShipmentsAsync()`
-* **Thực thể & Bảng DB:** `Fulfillment.Domain/Entities/Shipment.cs` $\rightarrow$ Bảng `Shipments` trong PostgreSQL
-* **Typed HTTP Client (nếu có):** N/A (Giao tiếp nội bộ trực tiếp qua DbContext)
+* **Microservice thụ lý:** `src/Services/Fulfillment/` (Cổng 8006)
+* **Cổng Gateway điều phối:** `src/Services/Gateway/Gateway/appsettings.json` (Route: `shipments-route`)
+* **Controller Action:** `Fulfillment.Api/Controllers/Public/ShipmentsController.cs` $\rightarrow$ `ListShipments([FromQuery] ShipmentFilterRequest request)`
+* **Application Interface:** `Fulfillment.Application/Services/Shipment/IShipmentService.cs` $\rightarrow$ `ListShipmentsAsync()`
+* **Service Implementation:** `Fulfillment.Application/Services/Shipment/ShipmentService.cs` $\rightarrow$ `ListShipmentsAsync()`
+* **Thực thể & Bảng DB:** `Fulfillment.Domain/Entities/Shipment.cs` $\rightarrow$ Bảng `shipments` trong PostgreSQL
 
 ---
 
 ## 3. QUY CHUẨN VALIDATION & THAM SỐ ĐẦU VÀO
 
-### 3.1. Route Parameters (Tham số đường dẫn)
-*Không có tham số đường dẫn.*
+### 3.1. Query Parameters (Tham số truy vấn)
+| Tên tham số | Kiểu dữ liệu | Mặc định | Ràng buộc & Khoảng giá trị | Ghi chú |
+|:---|:---|:---:|:---|:---|
+| `page` | `integer` | `1` | $\ge 1$ | Số trang |
+| `pageSize` | `integer` | `20` | $1 \le pageSize \le 100$ | Kích thước trang |
+| `status` | `string` | `null` | PascalCase enum | Lọc trạng thái (`InTransit`, `Delivered`...) |
+| `trackingNumber` | `string` | `null` | Tối đa 50 ký tự | Tìm theo mã vận đơn |
+| `orderId` | `Guid` | `null` | UUIDv4 format | Lọc theo đơn hàng con |
+| `warehouseId` | `Guid` | `null` | UUIDv4 format | Lọc theo kho xuất |
+| `fromDate` | `DateTimeOffset` | `null` | ISO 8601 | Thời gian tạo từ ngày |
+| `toDate` | `DateTimeOffset` | `null` | ISO 8601 | Thời gian tạo đến ngày |
 
-### 3.2. Query Parameters (Tham số truy vấn)
-| Tên tham số | Kiểu dữ liệu | Mặc định | Ràng buộc & Khoảng giá trị |
-|:---|:---|:---:|:---|
-| `page` | `integer` | `1` | Số trang (tối thiểu 1) |
-| `pageSize` | `integer` | `20` | Kích thước trang ($1 \le pageSize \le 100$) |
-
-### 3.3. Request Body (JSON Payload)
+### 3.2. Request Header
 ```json
-Header:
 {
-  "Authorization": "Bearer <JWT>"
-}
-
-Query:
-{
-  "page": 1,
-  "size": 20,
-  "status": "READY_TO_SHIP|IN_TRANSIT|DELIVERED"
+  "Authorization": "Bearer <JWT_TOKEN>"
 }
 ```
-
 
 ---
 
 ## 4. PHONG BÌ DỮ LIỆU ĐẦU RA (RESPONSE ENVELOPE)
 
-### 4.1. Phản hồi Phân trang (`ApiResponse<PagedData<T>>`)
-Áp dụng cho API tra cứu danh sách có phân trang:
+### 4.1. Phản hồi Phân trang (`ApiResponse<PagedData<ShipmentDto>>`)
 ```json
-200 OK:
+// 200 OK
 {
   "success": true,
   "statusCode": 200,
   "data": {
     "items": [
       {
-        "shipmentId": "uuid",
-        "subOrderId": "uuid",
-        "trackingNumber": "GHN1029384756",
-        "carrierName": "GHN",
-        "status": "ReadyToShip",
-        "shippingFee": 30000,
+        "id": "e0b1c2d3-e4f5-4a6b-8c9d-0e1f2a3b4c5d",
+        "orderId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "warehouseId": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+        "carrierId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+        "trackingNumber": "GHN1029384",
+        "status": "InTransit",
         "receiverName": "Nguyen Van A",
-        "receiverPhone": "0901234567",
-        "createdAt": "2026-10-26T00:00:00Z"
+        "receiverPhone": "0912345678",
+        "receiverAddress": "123 Le Loi, Ben Nghe, Quan 1, TP.HCM",
+        "buyerId": "d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a",
+        "shippingFee": 28000.0,
+        "printToken": "mock_ghn_token_xyz",
+        "ghnOrderCode": "GHN1029384",
+        "estimatedDeliveryAt": "2026-11-21T10:00:00Z",
+        "deliveredAt": null,
+        "items": [],
+        "events": []
       }
     ],
     "pagination": {
       "pageIndex": 1,
       "pageSize": 20,
-      "totalCount": 100,
-      "totalPages": 5,
+      "totalCount": 1,
+      "totalPages": 1,
       "hasPreviousPage": false,
-      "hasNextPage": true
+      "hasNextPage": false
     }
   },
   "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
-  "timestamp": "2026-10-26T00:00:00Z"
+  "timestamp": "2026-11-19T09:00:00Z"
 }
 ```
 
@@ -103,46 +105,14 @@ Query:
 
 ## 5. MA TRẬN MÃ LỖI (RFC 9110 ERROR MATRIX)
 
-Frontend bắt buộc dựa vào cột `errorCode` để map và hiển thị giao diện phù hợp. Khi backend function bổ sung lệnh ném lỗi, phải cập nhật ngay vào bảng này:
-
-| HTTP Status | errorCode (SCREAMING_SNAKE_CASE) | message (100% English Sentence case) | Điều kiện kích hoạt trong Code Function |
+| HTTP Status | errorCode (SCREAMING_SNAKE_CASE) | message (100% English Sentence case) | Điều kiện kích hoạt trong Code |
 |:---:|:---|:---|:---|
-| `400` | `VAL_INVALID_INPUT` | "One or more validation errors occurred." | Dữ liệu đầu vào vi phạm FluentValidation hoặc model binding. |
-| `401` | `UNAUTHORIZED` | "Authentication token is missing, expired, or invalid." | Người dùng chưa đăng nhập hoặc JWT không hợp lệ. |
-| `403` | `FORBIDDEN` | "Only sellers can access shipment management." | Điều kiện nghiệp vụ đặc thù: FORBIDDEN. |
-| `401` | `UNAUTHORIZED` | "Token is missing, expired, or invalid." | Điều kiện nghiệp vụ đặc thù: UNAUTHORIZED. |
-| `403` | `FORBIDDEN` | "You do not have permission to perform this action." | Người dùng không đủ quyền RBAC theo quy định. |
-| `404` | `SHIPMENT_NOT_FOUND` | "Shipment not found with the specified ID." | Không tìm thấy bản ghi trong Database tương ứng. |
-| `500` | `INTERNAL_SERVER_ERROR` | "An unexpected error occurred. Please try again later." | Lỗi hệ thống nội bộ chưa được xử lý. |
+| `400` | `VAL_INVALID_INPUT` | "One or more validation errors occurred." | Tham số phân trang hoặc filter không hợp lệ. |
+| `401` | `UNAUTHORIZED` | "Authentication is required to access this resource." | Người dùng chưa đăng nhập hoặc token hết hạn. |
+| `403` | `FORBIDDEN` | "You do not have permission to access or modify this resource." | Không có vai trò phù hợp trong JWT claims. |
+| `500` | `INTERNAL_SERVER_ERROR` | "An unexpected error occurred while processing the request." | Lỗi hệ thống nội bộ. |
 
 ---
 
 ## 6. DANH MỤC ENUM LIÊN QUAN (DOMAIN ENUMS)
-
-Bảng đối chiếu toàn diện giữa trường dữ liệu trong Payload (JSON Field), định dạng lưu trữ Database và chuỗi trả về API để Frontend hiển thị và binding giao diện chính xác:
-
-| Tên trường Payload (JSON Field) | Kiểu C# Enum | Giá trị DB (`integer`) | Giá trị API (`string PascalCase`) | Ý nghĩa nghiệp vụ & Hướng dẫn hiển thị Frontend |
-|:---|:---|:---:|:---|:---|
-| `status` | `ShipmentStatus` | `0` | `ReadyToPick` | **Chờ lấy hàng**: Đã tạo mã vận đơn GHN, chờ bưu tá tới lấy kiện hàng. Badge vàng (Warning). |
-| `status` | `ShipmentStatus` | `1` | `Picking` | **Đang lấy hàng**: Bưu tá đang trên đường đến kho Seller lấy hàng. Badge xanh dương nhạt (Info). |
-| `status` | `ShipmentStatus` | `2` | `Packed` | **Đã đóng gói xong**: Kiện hàng đã đóng gói sẵn sàng bàn giao. Badge xanh dương (Info). |
-| `status` | `ShipmentStatus` | `3` | `HandedOver` | **Đã bàn giao cho vận chuyển**: Kiện hàng đã vào bưu cục trung chuyển. Badge xanh lá nhạt (Primary). |
-| `status` | `ShipmentStatus` | `4` | `InTransit` | **Đang luân chuyển trên đường**: Đang vận chuyển giữa các kho bưu cục. Badge xanh dương (Info). |
-| `status` | `ShipmentStatus` | `5` | `Delivered` | **Giao hàng thành công**: Khách hàng đã ký nhận đơn hàng. Badge xanh lá (Success). |
-| `status` | `ShipmentStatus` | `6` | `DeliveryFailed` | **Giao hàng thất bại**: Không liên lạc được với khách hoặc sai địa chỉ (giao lại sau). Badge đỏ (Danger). |
-| `status` | `ShipmentStatus` | `7` | `Returned` | **Chuyển hoàn về kho Shop**: Đơn hàng giao không thành công 3 lần, hoàn về người gửi. Badge cam (Warning). |
-| `status` | `ShipmentStatus` | `8` | `Cancelled` | **Vận đơn bị hủy**: Hủy trước khi bưu tá đến lấy. Badge xám (Muted). |
-
----
-
-## 7. CHECKLIST HOÀN THÀNH & NGHIỆM THU (COMPLETION CHECKLIST)
-
-- [ ] **1. Tầng Application:** `IShipmentService.cs` và `ShipmentService.cs` đã được triển khai hoàn chỉnh.
-- [ ] **2. Tầng Api:** `ShipmentsController.cs` ghép cặp 1-to-1, route số nhiều, summary XML ngắn gọn.
-- [ ] **3. Bắt lỗi & Validation:** Toàn bộ mã lỗi trong ma trận ở Mục 5 đã được kiểm soát trong code.
-- [ ] **4. Enum Mapping:** Toàn bộ enum ở Mục 6 được lưu integer trong DB và serialize PascalCase ở API.
-- [ ] **5. Kiểm thử tự động:** `dotnet test` vượt qua 100% các bài test (Kèm tên file test: `ShipmentsTests.cs`).
-- [ ] **6. Định tuyến Gateway:** Route YARP `fulfillment-shipments-route` đã được cấu hình trong `appsettings.json` và test thông suốt.
-- [ ] **7. Xác nhận của Sếp (Human Approval):** Đã kiểm thử thực tế và cho phép chuyển sang `docs/api/A_Active/`.
-
-> **Trạng thái nghiệm thu:** `[ ⏳ IN_PROGRESS (Lưu tại B_none) ]`
+* `ShipmentStatus`: `ReadyToPick (0)`, `Picking (1)`, `Packed (2)`, `HandedOver (3)`, `InTransit (4)`, `Delivered (5)`, `DeliveryFailed (6)`, `Returned (7)`, `Cancelled (8)`.

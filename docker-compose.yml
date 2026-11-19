@@ -140,6 +140,13 @@ services:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       ConnectionStrings__DefaultConnection: "${FULFILLMENT_DB_CONNECTION:-}"
       InternalSecurity__ServiceKey: "${INTERNAL_SERVICE_SECRET:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
+      Carriers__DefaultCarrierCode: "GHN"
+      Carriers__GHN__Environment: "${GHN_ENVIRONMENT:-Staging}"
+      Carriers__GHN__BaseUrl: "${GHN_BASE_URL:-https://dev-online-gateway.ghn.vn}"
+      Carriers__GHN__Token: "${GHN_TOKEN:-}"
+      Carriers__GHN__ShopId: "${GHN_SHOP_ID:-}"
+      Carriers__GHN__WebhookSecret: "${GHN_WEBHOOK_SECRET:-ghn-webhook-secret-key}"
+      COMMERCE_SERVICE_URL: "${COMMERCE_SERVICE_URL:-http://commerce-service:8003}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}"
     restart: unless-stopped
 

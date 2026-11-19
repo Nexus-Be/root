@@ -1,95 +1,116 @@
-# [POST] /api/v1/inventories/stock-in
+# [POST] /api/v1/inventories/batch-adjust
 
 > **Phân hệ thụ lý:** `FulfillmentService`  
-> **Tên tính năng:** `Warehouses`  
-> **Mã tham chiếu Excel:** ``FUL-02 + CAT-24``  
+> **Tên tính năng:** `Inventories`  
+> **Mã tham chiếu Excel:** `FUL-02 + CAT-24`  
 > **Trạng thái tài liệu:** `B_none (Chờ hoàn thiện & nghiệm thu)`  
-> **Trạng thái triển khai:** `⏳ IN_PROGRESS`  
+> **Trạng thái triển khai:** `✅ VERIFIED`  
 
 ---
 
 ## 1. MÔ TẢ NGHIỆP VỤ & PHÂN QUYỀN
 
-* **Mô tả chức năng:** thêm hàng vào kho, 1 list, kèm số lượng thêm, kèm chủng loại muốn thêm
+* **Mô tả chức năng:** Nhập hàng hoặc điều chỉnh số lượng tồn kho cho một danh sách nhiều mã sản phẩm/biến thể (SKU) trong một giao dịch nguyên tử (Atomic transaction).
 * **HTTP Method:** `POST`
-* **Đường dẫn chuẩn:** `/api/v1/inventories/stock-in`
-* **Đường dẫn gốc trong Excel:** `/api/v1/inventory/stock-in` (Chuẩn hóa từ '/api/v1/inventory/stock-in' sang chuẩn 100% số nhiều '/api/v1/inventories/stock-in'.)
-* **Quyền hạn truy cập (RBAC):** `Seller`
-* **Yêu cầu Idempotency:** Tùy chọn (Khuyến nghị gửi header `Idempotency-Key: UUIDv4` để tránh gửi lặp)
+* **Đường dẫn chuẩn:** `/api/v1/inventories/batch-adjust` (Hỗ trợ cả endpoint đơn lẻ: `POST /api/v1/inventories/adjust`)
+* **Đường dẫn gốc trong Excel:** `/api/v1/inventory/stock-in`
+* **Quyền hạn truy cập (RBAC):** `Seller`, `Admin` (`[RequireRole("seller", "admin")]`)
+* **Quy tắc sở hữu (Resource Ownership):** Seller chỉ được nhập/điều chỉnh tồn kho cho các sản phẩm tại kho hàng thuộc quyền sở hữu của mình.
 
 ---
 
 ## 2. DẤU VẾT MÃ NGUỒN (CODE TRACE & EXECUTION PATH)
 
-Mọi thay đổi trong hàm nghiệp vụ (thêm validation, ném exception, thêm enum) bắt buộc phải cập nhật đồng bộ vào tài liệu này:
-
-* **Microservice thụ lý:** `src/Services/Fulfillment/`
-* **Cổng Gateway điều phối:** `src/Services/Gateway/Gateway/appsettings.json` (Route: `fulfillment-inventories-route`)
-* **Controller Action:** `Fulfillment.Api/Controllers/WarehousesController.cs` $\rightarrow$ `StockIn()`
-* **Application Interface:** `Fulfillment.Application/Services/Warehouses/IWarehouseService.cs` $\rightarrow$ `StockInAsync()`
-* **Service Implementation:** `Fulfillment.Application/Services/Warehouses/WarehouseService.cs` $\rightarrow$ `StockInAsync()`
-* **Thực thể & Bảng DB:** `Fulfillment.Domain/Entities/InventoryItem.cs` $\rightarrow$ Bảng `InventoryItems` trong PostgreSQL
-* **Typed HTTP Client (nếu có):** N/A (Giao tiếp nội bộ trực tiếp qua DbContext)
+* **Microservice thụ lý:** `src/Services/Fulfillment/` (Cổng 8006)
+* **Cổng Gateway điều phối:** `src/Services/Gateway/Gateway/appsettings.json` (Route: `inventories-route`)
+* **Controller Action:** `Fulfillment.Api/Controllers/Public/InventoriesController.cs` $\rightarrow$ `BatchAdjustInventory([FromBody] BatchAdjustInventoryRequest request)`
+* **Application Interface:** `Fulfillment.Application/Services/Inventory/IInventoryAppService.Items.cs` $\rightarrow$ `BatchAdjustInventoryAsync()`
+* **Thực thể & Bảng DB:** `InventoryItem.cs` (`inventory_items`), `InventoryLedger.cs` (`inventory_ledgers`)
 
 ---
 
 ## 3. QUY CHUẨN VALIDATION & THAM SỐ ĐẦU VÀO
 
-### 3.1. Route Parameters (Tham số đường dẫn)
-*Không có tham số đường dẫn.*
+### 3.1. Request Body Record DTO
+- **Vị trí file:** `Fulfillment.Application/Services/Inventory/InventoryItemDtos.cs`
+- **Tên C# Record:** `BatchAdjustInventoryRequest`
+```csharp
+public sealed record BatchAdjustInventoryRequest(
+    [Required(ErrorMessage = "Items list is required.")]
+    [MinLength(1, ErrorMessage = "At least one inventory adjustment item is required.")]
+    IReadOnlyList<BatchAdjustInventoryItemRequest> Items,
 
-### 3.2. Query Parameters (Tham số truy vấn)
-*Không có tham số truy vấn.*
+    string? Note = null,
+    Guid? WarehouseId = null
+);
 
-### 3.3. Request Body (JSON Payload)
-```json
-Header:
-{
-  "Authorization": "Bearer <JWT>"
-}
+public sealed record BatchAdjustInventoryItemRequest(
+    [Required(ErrorMessage = "SKU ID is required.")]
+    Guid SkuId,
 
-Body:
-{
-"items": [
-{
-"skuId": "uuid",
-"quantity": "int (> 0)"
-}
-]
-}
+    [Required(ErrorMessage = "Adjustment type is required.")]
+    InventoryAdjustmentType Type, // Intake (1) hoặc Adjust (2)
+
+    int Quantity,
+
+    string? Note = null
+);
 ```
 
+### 3.2. JSON Request Body mẫu (camelCase)
+```json
+{
+  "warehouseId": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+  "note": "Nhap kho lo hang dot 1",
+  "items": [
+    {
+      "skuId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+      "type": "Intake",
+      "quantity": 50,
+      "note": "Nhap them 50 ao thun"
+    },
+    {
+      "skuId": "a2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+      "type": "Intake",
+      "quantity": 30,
+      "note": "Nhap them 30 quan jean"
+    }
+  ]
+}
+```
 
 ---
 
 ## 4. PHONG BÌ DỮ LIỆU ĐẦU RA (RESPONSE ENVELOPE)
 
-### 4.1. Phản hồi Phân trang (`ApiResponse<PagedData<T>>`)
-Áp dụng cho API tra cứu danh sách có phân trang:
+### 4.1. Phản hồi Thành công Đơn lẻ (`ApiResponse<BatchAdjustInventoryResponse>`)
 ```json
-200 OK:
+// 200 OK
 {
   "success": true,
   "statusCode": 200,
   "data": {
+    "warehouseId": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+    "totalItemsAdjusted": 2,
     "items": [
       {
-        "skuId": "uuid",
-        "addedQuantity": "int",
-        "stockQuantity": "int"
+        "skuId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "totalQuantity": 150,
+        "reservedQuantity": 10,
+        "availableQuantity": 140,
+        "adjustmentLedgerId": "f1a2b3c4-d5e6-4a7b-8c9d-0e1f2a3b4c5d"
+      },
+      {
+        "skuId": "a2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+        "totalQuantity": 80,
+        "reservedQuantity": 0,
+        "availableQuantity": 80,
+        "adjustmentLedgerId": "f2b3c4d5-e6a7-4b8c-9d0e-1f2a3b4c5d6e"
       }
-    ],
-    "pagination": {
-      "pageIndex": 1,
-      "pageSize": 20,
-      "totalCount": 100,
-      "totalPages": 5,
-      "hasPreviousPage": false,
-      "hasNextPage": true
-    }
+    ]
   },
   "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
-  "timestamp": "2026-10-26T00:00:00Z"
+  "timestamp": "2026-11-19T09:00:00Z"
 }
 ```
 
@@ -97,49 +118,21 @@ Body:
 
 ## 5. MA TRẬN MÃ LỖI (RFC 9110 ERROR MATRIX)
 
-Frontend bắt buộc dựa vào cột `errorCode` để map và hiển thị giao diện phù hợp. Khi backend function bổ sung lệnh ném lỗi, phải cập nhật ngay vào bảng này:
-
-| HTTP Status | errorCode (SCREAMING_SNAKE_CASE) | message (100% English Sentence case) | Điều kiện kích hoạt trong Code Function |
+| HTTP Status | errorCode (SCREAMING_SNAKE_CASE) | message (100% English Sentence case) | Điều kiện kích hoạt trong Code |
 |:---:|:---|:---|:---|
-| `400` | `VAL_INVALID_INPUT` | "One or more validation errors occurred." | Dữ liệu đầu vào vi phạm FluentValidation hoặc model binding. |
-| `401` | `UNAUTHORIZED` | "Authentication token is missing, expired, or invalid." | Người dùng chưa đăng nhập hoặc JWT không hợp lệ. |
-| `503` | `CATALOG_UNAVAILABLE` | "Fulfillment service failed to communicate with catalog service." | Điều kiện nghiệp vụ đặc thù: CATALOG_UNAVAILABLE. |
-| `404` | `SKU_NOT_FOUND` | "One or more SKUs do not exist or have been deleted." | Điều kiện nghiệp vụ đặc thù: SKU_NOT_FOUND. |
-| `403` | `FORBIDDEN` | "One or more SKUs do not belong to the calling seller products." | Điều kiện nghiệp vụ đặc thù: FORBIDDEN. |
-| `401` | `UNAUTHORIZED` | "Token is missing, expired, or invalid." | Điều kiện nghiệp vụ đặc thù: UNAUTHORIZED. |
-| `400` | `VALIDATION_ERROR` | "Items list is empty, quantity <= 0, exceeds 100 SKUs, or duplicate SKUs." | Điều kiện nghiệp vụ đặc thù: VALIDATION_ERROR. |
-| `403` | `FORBIDDEN` | "You do not have permission to perform this action." | Người dùng không đủ quyền RBAC theo quy định. |
-| `404` | `INVENTORYITEM_NOT_FOUND` | "Inventoryitem not found with the specified ID." | Không tìm thấy bản ghi trong Database tương ứng. |
-| `500` | `INTERNAL_SERVER_ERROR` | "An unexpected error occurred. Please try again later." | Lỗi hệ thống nội bộ chưa được xử lý. |
+| `400` | `VAL_INVALID_INPUT` | "Items list is required." | Danh sách điều chỉnh rỗng hoặc số lượng không hợp lệ. |
+| `400` | `INVALID_ADJUSTMENT` | "Total quantity cannot be negative." | Điều chỉnh làm tồn kho âm. |
+| `401` | `UNAUTHORIZED` | "Authentication is required to access this resource." | Thiếu Bearer token. |
+| `403` | `FORBIDDEN` | "You do not have permission to access or modify this resource." | Không sở hữu kho hàng. |
+| `404` | `WAREHOUSE_NOT_FOUND` | "Warehouse not found." | Không tìm thấy kho tương ứng. |
+| `404` | `INVENTORY_NOT_FOUND` | "Inventory item for SKU '{skuId}' was not found." | Chưa khởi tạo tồn kho cho SKU này. |
 
 ---
 
-## 6. DANH MỤC ENUM LIÊN QUAN (DOMAIN ENUMS)
+## 6. DANH MỤC ENUM LIÊN QUAN
 
-Bảng đối chiếu toàn diện giữa trường dữ liệu trong Payload (JSON Field), định dạng lưu trữ Database và chuỗi trả về API để Frontend hiển thị và binding giao diện chính xác:
-
-| Tên trường Payload (JSON Field) | Kiểu C# Enum | Giá trị DB (`integer`) | Giá trị API (`string PascalCase`) | Ý nghĩa nghiệp vụ & Hướng dẫn hiển thị Frontend |
-|:---|:---|:---:|:---|:---|
-| `status` | `ShipmentStatus` | `0` | `ReadyToPick` | **Chờ lấy hàng**: Đã tạo mã vận đơn GHN, chờ bưu tá tới lấy kiện hàng. Badge vàng (Warning). |
-| `status` | `ShipmentStatus` | `1` | `Picking` | **Đang lấy hàng**: Bưu tá đang trên đường đến kho Seller lấy hàng. Badge xanh dương nhạt (Info). |
-| `status` | `ShipmentStatus` | `2` | `Packed` | **Đã đóng gói xong**: Kiện hàng đã đóng gói sẵn sàng bàn giao. Badge xanh dương (Info). |
-| `status` | `ShipmentStatus` | `3` | `HandedOver` | **Đã bàn giao cho vận chuyển**: Kiện hàng đã vào bưu cục trung chuyển. Badge xanh lá nhạt (Primary). |
-| `status` | `ShipmentStatus` | `4` | `InTransit` | **Đang luân chuyển trên đường**: Đang vận chuyển giữa các kho bưu cục. Badge xanh dương (Info). |
-| `status` | `ShipmentStatus` | `5` | `Delivered` | **Giao hàng thành công**: Khách hàng đã ký nhận đơn hàng. Badge xanh lá (Success). |
-| `status` | `ShipmentStatus` | `6` | `DeliveryFailed` | **Giao hàng thất bại**: Không liên lạc được với khách hoặc sai địa chỉ (giao lại sau). Badge đỏ (Danger). |
-| `status` | `ShipmentStatus` | `7` | `Returned` | **Chuyển hoàn về kho Shop**: Đơn hàng giao không thành công 3 lần, hoàn về người gửi. Badge cam (Warning). |
-| `status` | `ShipmentStatus` | `8` | `Cancelled` | **Vận đơn bị hủy**: Hủy trước khi bưu tá đến lấy. Badge xám (Muted). |
-
----
-
-## 7. CHECKLIST HOÀN THÀNH & NGHIỆM THU (COMPLETION CHECKLIST)
-
-- [ ] **1. Tầng Application:** `IWarehouseService.cs` và `WarehouseService.cs` đã được triển khai hoàn chỉnh.
-- [ ] **2. Tầng Api:** `WarehousesController.cs` ghép cặp 1-to-1, route số nhiều, summary XML ngắn gọn.
-- [ ] **3. Bắt lỗi & Validation:** Toàn bộ mã lỗi trong ma trận ở Mục 5 đã được kiểm soát trong code.
-- [ ] **4. Enum Mapping:** Toàn bộ enum ở Mục 6 được lưu integer trong DB và serialize PascalCase ở API.
-- [ ] **5. Kiểm thử tự động:** `dotnet test` vượt qua 100% các bài test (Kèm tên file test: `WarehousesTests.cs`).
-- [ ] **6. Định tuyến Gateway:** Route YARP `fulfillment-inventories-route` đã được cấu hình trong `appsettings.json` và test thông suốt.
-- [ ] **7. Xác nhận của Sếp (Human Approval):** Đã kiểm thử thực tế và cho phép chuyển sang `docs/api/A_Active/`.
-
-> **Trạng thái nghiệm thu:** `[ ⏳ IN_PROGRESS (Lưu tại B_none) ]`
+### 6.1. Loại Điều chỉnh Tồn kho (`InventoryAdjustmentType`)
+| Giá trị DB (int) | Giá trị API (PascalCase) | Ý nghĩa nghiệp vụ |
+|:---:|:---|:---|
+| `1` | `Intake` | Nhập thêm hàng vào kho (Cộng dồn số lượng) |
+| `2` | `Adjust` | Điều chỉnh kiểm kê (Cập nhật trực tiếp số lượng lệch) |

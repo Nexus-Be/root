@@ -1,81 +1,92 @@
-# [POST] /api/v1/shipments/webhook
+# [POST] /api/v1/webhooks/ghn
 
 > **Phân hệ thụ lý:** `FulfillmentService`  
-> **Tên tính năng:** `Shipments`  
-> **Mã tham chiếu Excel:** ``FUL-14``  
+> **Tên tính năng:** `Webhooks`  
+> **Mã tham chiếu Excel:** `FUL-14`  
 > **Trạng thái tài liệu:** `B_none (Chờ hoàn thiện & nghiệm thu)`  
-> **Trạng thái triển khai:** `⏳ IN_PROGRESS`  
+> **Trạng thái triển khai:** `✅ VERIFIED`  
 
 ---
 
 ## 1. MÔ TẢ NGHIỆP VỤ & PHÂN QUYỀN
 
-* **Mô tả chức năng:** nhận thông tin từ ghn.
+* **Mô tả chức năng:** Tiếp nhận webhook thông báo đổi trạng thái đơn hàng từ đối tác Giao Hàng Nhanh (GHN), ghi nhận lịch sử sự kiện, cập nhật trạng thái vận đơn, và kích hoạt Outbox đồng bộ sang Commerce Service.
 * **HTTP Method:** `POST`
-* **Đường dẫn chuẩn:** `/api/v1/shipments/webhook`
-* **Đường dẫn gốc trong Excel:** `/api/v1/shipments/webhook` (Đường dẫn đã tuân thủ chuẩn 100% số nhiều.)
-* **Quyền hạn truy cập (RBAC):** `AllowAnonymous`
-* **Yêu cầu Idempotency:** Tùy chọn (Khuyến nghị gửi header `Idempotency-Key: UUIDv4` để tránh gửi lặp)
+* **Đường dẫn chuẩn:** `/api/v1/webhooks/ghn` (Route tương đương: `/webhooks/ghn`, `/api/v1/webhooks/carriers/ghn`, `/api/v1/fulfillment/webhook/ghn`)
+* **Đường dẫn gốc trong Excel:** `/api/v1/shipments/webhook`
+* **Quyền hạn truy cập (RBAC):** `AllowAnonymous` kèm bộ lọc bảo mật bắt buộc `[RequireGhnWebhookSecret]`.
+* **Cơ chế xác thực Webhook:** Yêu cầu bí mật `token` thông qua query string (`?token=ghn-webhook-secret-key`) hoặc header `X-Webhook-Token`.
+* **Cơ chế chống lặp (Idempotency):** Kiểm tra bảng `WebhookAuditLogs` theo `OrderCode` và `Status`. Nếu đã xử lý, trả về HTTP 200 ngay lập tức mà không xử lý lại.
+* **Cơ chế chịu lỗi (Outbox Pattern):** Khi trạng thái đạt các mốc quan trọng (`HandedOver`, `InTransit`, `Delivered`, `DeliveryFailed`, `Returned`, `Cancelled`), hệ thống xếp hàng Outbox và tự động thử lại tối đa 12 lần sang Commerce Service (`POST /api/v1/sub-orders/{subOrderId}/delivery-status`).
 
 ---
 
 ## 2. DẤU VẾT MÃ NGUỒN (CODE TRACE & EXECUTION PATH)
 
-Mọi thay đổi trong hàm nghiệp vụ (thêm validation, ném exception, thêm enum) bắt buộc phải cập nhật đồng bộ vào tài liệu này:
-
-* **Microservice thụ lý:** `src/Services/Fulfillment/`
-* **Cổng Gateway điều phối:** `src/Services/Gateway/Gateway/appsettings.json` (Route: `fulfillment-shipments-route`)
-* **Controller Action:** `Fulfillment.Api/Controllers/ShipmentsController.cs` $\rightarrow$ `Webhook()`
-* **Application Interface:** `Fulfillment.Application/Services/Shipments/IShipmentService.cs` $\rightarrow$ `WebhookAsync()`
-* **Service Implementation:** `Fulfillment.Application/Services/Shipments/ShipmentService.cs` $\rightarrow$ `WebhookAsync()`
-* **Thực thể & Bảng DB:** `Fulfillment.Domain/Entities/Shipment.cs` $\rightarrow$ Bảng `Shipments` trong PostgreSQL
-* **Typed HTTP Client (nếu có):** N/A (Giao tiếp nội bộ trực tiếp qua DbContext)
+* **Microservice thụ lý:** `src/Services/Fulfillment/` (Cổng 8006)
+* **Cổng Gateway điều phối:** `src/Services/Gateway/Gateway/appsettings.json` (Route: `webhooks-ghn-route`, cấu hình bypass response envelope)
+* **Controller Action:** `Fulfillment.Api/Controllers/Public/GhnWebhookController.cs` $\rightarrow$ `HandleGhnCallback([FromBody] GhnWebhookPayload payload)`
+* **Filter bảo mật:** `Fulfillment.Api/Filters/RequireGhnWebhookSecretAttribute.cs`
+* **Thực thể & Bảng DB:** `WebhookAuditLog.cs` (`webhook_audit_logs`), `Shipment.cs` (`shipments`), `ShipmentEvent.cs` (`shipment_events`)
+* **Outbox Worker:** `Fulfillment.Api/Workers/CommerceDeliveryNotificationWorker.cs`
 
 ---
 
 ## 3. QUY CHUẨN VALIDATION & THAM SỐ ĐẦU VÀO
 
-### 3.1. Route Parameters (Tham số đường dẫn)
-*Không có tham số đường dẫn.*
+### 3.1. Query Parameters
+| Tên tham số | Kiểu dữ liệu | Bắt buộc? | Mô tả |
+|:---|:---|:---:|:---|
+| `token` | `string` | Có (hoặc qua header) | Token bí mật xác thực webhook từ GHN |
 
-### 3.2. Query Parameters (Tham số truy vấn)
-*Không có tham số truy vấn.*
-
-### 3.3. Request Body (JSON Payload)
+### 3.2. Request Header (Tùy chọn thay thế query)
 ```json
-Header:
 {
-  "Authorization": "Bearer <JWT>"
-}
-
-Body:
-{
-  "trackingNumber": "GHN1029384756",
-  "status": "Delivered",
-  "location": "Quan 1, TP.HCM",
-  "note": "Delivered to recipient.",
-  "timestamp": "2026-10-26T16:00:00Z"
+  "X-Webhook-Token": "ghn-webhook-secret-key",
+  "Content-Type": "application/json"
 }
 ```
 
+### 3.3. Request Body (GHN Webhook Payload - PascalCase / camelCase)
+```json
+{
+  "OrderCode": "GHN1029384",
+  "Status": "delivered",
+  "ClientOrderCode": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "Description": "Đã giao hàng thành công đến tay người nhận",
+  "Fee": 28000,
+  "TotalFee": 28000,
+  "ReasonCode": null,
+  "Reason": null,
+  "ShipperName": "Bưu tá Nguyễn Văn A",
+  "ShipperPhone": "0987654321",
+  "Warehouse": "Bưu cục Quận 1",
+  "POD": "https://cdn.ghn.vn/pod/sign_001.jpg",
+  "ConvertedWeight": 500
+}
+```
 
 ---
 
 ## 4. PHONG BÌ DỮ LIỆU ĐẦU RA (RESPONSE ENVELOPE)
 
-### 4.1. Phản hồi Thành công Đơn lẻ (`ApiResponse<T>`)
-Áp dụng cho API trả về 1 đối tượng hoặc kết quả thực thi:
+> **LƯU Ý:** Do GHN Webhook yêu cầu phản hồi dạng JSON phẳng (Flat protocol payload) theo chuẩn của nhà vận chuyển, Gateway tự động bypass `ResponseEnvelopeMiddleware` cho route này.
+
+### 4.1. Phản hồi Thành công (Flat JSON)
 ```json
-200 OK:
+// 200 OK
 {
-  "success": true,
-  "statusCode": 200,
-  "message": "Webhook event processed.",
-  "data": {
-    "success": true
-  },
-  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
-  "timestamp": "2026-10-26T00:00:00Z"
+  "message": "Webhook processed successfully.",
+  "status": "Delivered"
+}
+```
+
+### 4.2. Phản hồi Khi Gặp Sự Kiện Trùng Lặp (Idempotent Acknowledged)
+```json
+// 200 OK
+{
+  "message": "Duplicate webhook event acknowledged.",
+  "status": "delivered"
 }
 ```
 
@@ -83,46 +94,24 @@ Body:
 
 ## 5. MA TRẬN MÃ LỖI (RFC 9110 ERROR MATRIX)
 
-Frontend bắt buộc dựa vào cột `errorCode` để map và hiển thị giao diện phù hợp. Khi backend function bổ sung lệnh ném lỗi, phải cập nhật ngay vào bảng này:
-
-| HTTP Status | errorCode (SCREAMING_SNAKE_CASE) | message (100% English Sentence case) | Điều kiện kích hoạt trong Code Function |
+| HTTP Status | errorCode (SCREAMING_SNAKE_CASE) | message (100% English Sentence case) | Điều kiện kích hoạt trong Code |
 |:---:|:---|:---|:---|
-| `400` | `VAL_INVALID_INPUT` | "One or more validation errors occurred." | Dữ liệu đầu vào vi phạm FluentValidation hoặc model binding. |
-| `401` | `UNAUTHORIZED` | "Authentication token is missing, expired, or invalid." | Người dùng chưa đăng nhập hoặc JWT không hợp lệ. |
-| `404` | `SHIPMENT_NOT_FOUND` | "Tracking number does not match any existing shipment." | Điều kiện nghiệp vụ đặc thù: SHIPMENT_NOT_FOUND. |
-| `400` | `CARRIER_WEBHOOK_INVALID_SIGNATURE` | "Invalid webhook signature from shipping provider." | Điều kiện nghiệp vụ đặc thù: CARRIER_WEBHOOK_INVALID_SIGNATURE. |
-| `403` | `FORBIDDEN` | "You do not have permission to perform this action." | Người dùng không đủ quyền RBAC theo quy định. |
-| `404` | `SHIPMENT_NOT_FOUND` | "Shipment not found with the specified ID." | Không tìm thấy bản ghi trong Database tương ứng. |
-| `500` | `INTERNAL_SERVER_ERROR` | "An unexpected error occurred. Please try again later." | Lỗi hệ thống nội bộ chưa được xử lý. |
+| `400` | `VAL_INVALID_INPUT` | "Invalid webhook payload." | Payload null hoặc thiếu trường `OrderCode`. |
+| `401` | `WEBHOOK_UNAUTHORIZED` | "A valid webhook token is required." | Token bí mật không khớp với cấu hình. |
+| `503` | `WEBHOOK_NOT_CONFIGURED` | "The carrier webhook secret is not configured." | Hệ thống chưa cấu hình secret cho webhook. |
 
 ---
 
-## 6. DANH MỤC ENUM LIÊN QUAN (DOMAIN ENUMS)
+## 6. DANH MỤC ENUM ÁNH XẠ TRẠNG THÁI GHN SANG HỆ THỐNG
 
-Bảng đối chiếu toàn diện giữa trường dữ liệu trong Payload (JSON Field), định dạng lưu trữ Database và chuỗi trả về API để Frontend hiển thị và binding giao diện chính xác:
-
-| Tên trường Payload (JSON Field) | Kiểu C# Enum | Giá trị DB (`integer`) | Giá trị API (`string PascalCase`) | Ý nghĩa nghiệp vụ & Hướng dẫn hiển thị Frontend |
-|:---|:---|:---:|:---|:---|
-| `status` | `ShipmentStatus` | `0` | `ReadyToPick` | **Chờ lấy hàng**: Đã tạo mã vận đơn GHN, chờ bưu tá tới lấy kiện hàng. Badge vàng (Warning). |
-| `status` | `ShipmentStatus` | `1` | `Picking` | **Đang lấy hàng**: Bưu tá đang trên đường đến kho Seller lấy hàng. Badge xanh dương nhạt (Info). |
-| `status` | `ShipmentStatus` | `2` | `Packed` | **Đã đóng gói xong**: Kiện hàng đã đóng gói sẵn sàng bàn giao. Badge xanh dương (Info). |
-| `status` | `ShipmentStatus` | `3` | `HandedOver` | **Đã bàn giao cho vận chuyển**: Kiện hàng đã vào bưu cục trung chuyển. Badge xanh lá nhạt (Primary). |
-| `status` | `ShipmentStatus` | `4` | `InTransit` | **Đang luân chuyển trên đường**: Đang vận chuyển giữa các kho bưu cục. Badge xanh dương (Info). |
-| `status` | `ShipmentStatus` | `5` | `Delivered` | **Giao hàng thành công**: Khách hàng đã ký nhận đơn hàng. Badge xanh lá (Success). |
-| `status` | `ShipmentStatus` | `6` | `DeliveryFailed` | **Giao hàng thất bại**: Không liên lạc được với khách hoặc sai địa chỉ (giao lại sau). Badge đỏ (Danger). |
-| `status` | `ShipmentStatus` | `7` | `Returned` | **Chuyển hoàn về kho Shop**: Đơn hàng giao không thành công 3 lần, hoàn về người gửi. Badge cam (Warning). |
-| `status` | `ShipmentStatus` | `8` | `Cancelled` | **Vận đơn bị hủy**: Hủy trước khi bưu tá đến lấy. Badge xám (Muted). |
-
----
-
-## 7. CHECKLIST HOÀN THÀNH & NGHIỆM THU (COMPLETION CHECKLIST)
-
-- [ ] **1. Tầng Application:** `IShipmentService.cs` và `ShipmentService.cs` đã được triển khai hoàn chỉnh.
-- [ ] **2. Tầng Api:** `ShipmentsController.cs` ghép cặp 1-to-1, route số nhiều, summary XML ngắn gọn.
-- [ ] **3. Bắt lỗi & Validation:** Toàn bộ mã lỗi trong ma trận ở Mục 5 đã được kiểm soát trong code.
-- [ ] **4. Enum Mapping:** Toàn bộ enum ở Mục 6 được lưu integer trong DB và serialize PascalCase ở API.
-- [ ] **5. Kiểm thử tự động:** `dotnet test` vượt qua 100% các bài test (Kèm tên file test: `ShipmentsTests.cs`).
-- [ ] **6. Định tuyến Gateway:** Route YARP `fulfillment-shipments-route` đã được cấu hình trong `appsettings.json` và test thông suốt.
-- [ ] **7. Xác nhận của Sếp (Human Approval):** Đã kiểm thử thực tế và cho phép chuyển sang `docs/api/A_Active/`.
-
-> **Trạng thái nghiệm thu:** `[ ⏳ IN_PROGRESS (Lưu tại B_none) ]`
+| Trạng thái gốc GHN (`Status`) | Ánh xạ ShipmentStatus | Ánh xạ Commerce SubOrderStatus |
+|:---|:---|:---|
+| `ready_to_pick` | `ReadyToPick` | Giữ nguyên `Confirmed` |
+| `picking` | `Picking` | Giữ nguyên `Confirmed` |
+| `storing`, `packed` | `Packed` | Giữ nguyên `Confirmed` |
+| `picked` | `HandedOver` | `Shipped` |
+| `delivering`, `money_collect_delivering` | `InTransit` | `Shipped` |
+| `delivered` | `Delivered` | `Delivered` |
+| `delivery_fail` | `DeliveryFailed` | `DeliveryAttemptFailed` |
+| `return`, `returning`, `returned` | `Returned` | `Returned` |
+| `cancel` | `Cancelled` | `Cancelled` |
