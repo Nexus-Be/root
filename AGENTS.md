@@ -354,3 +354,50 @@ Board: Backlog · Ready · Building · QA · Review · Blocked · Done. Labels r
 | Thông báo lỗi tiếng Anh Sentence case | Middleware xử lý ngoại lệ và Unit Tests | Level 3 (Behavior Tests) |
 | Mã lỗi SCREAMING_SNAKE_CASE | Domain Exceptions và Hợp đồng DTO | Level 3 (Behavior Tests) |
 | Enum Serialization PascalCase | `PascalCaseJsonStringEnumConverter` | Level 2 (Types / Serialization) |
+
+---
+
+<!-- YUI-AGENT-KIT:START -->
+# 🧭 Yui's Agent Harness — Quy Chuẩn Vận Hành Đang Kích Hoạt
+> **Tệp chỉ dẫn tối cao cho Agent:** Tự động điều hướng và chỉ nạp tài liệu khi có lệnh tương ứng, không gây lãng phí token.
+
+## 1. Bản Đồ Tra Cứu Quy Chuẩn Theo Ngữ Cảnh
+| Khi Làm Công Việc Gì? | Lệnh Gọi | Tệp Quy Chuẩn Cần Đọc | Nội Dung Cốt Lõi |
+| :--- | :--- | :--- | :--- |
+| **Tiện Ích Ghi Chép & Không Gian Agent (note/)** | `/note` | [`.agents/rules/note-management.md`](.agents/rules/note-management.md) | Bàn làm việc Agent, nhật ký phiên đơn tệp, lưu tạm thắc mắc dở dang, memo pad giữa các subagent. |
+| **Tiện Ích Quyết Định Chốt & Zero-Doubt (decision/)** | `/decision` | [`.agents/rules/decision-management.md`](.agents/rules/decision-management.md) | Văn bản chốt phương án, nguyên tắc Zero-Doubt Closure (giải quyết hết thắc mắc trong note mới đóng). |
+| **Tiêu Chuẩn Tài Liệu Cho Con Người (doc/)** | `/doc` | [`.agents/rules/doc-management.md`](.agents/rules/doc-management.md) | Hướng dẫn sử dụng, kịch bản test tay manual test, văn phong thuần cho con người, không chứa rác AI. |
+| **Tiện Ích Kế Hoạch & Multi-Agent Handshake (plan/)** | `/plan` | [`.agents/rules/plan-management.md`](.agents/rules/plan-management.md) | Kế hoạch phân tầng 3 cấp có mốc thời gian, giao thức checklist handshake chống race condition đa agent. |
+| **Tiện Ích Quản Lý Kỹ Năng Nội Bộ (skill/)** | `/writing-yuiskill` | [`.agents/rules/skill-management.md`](.agents/rules/skill-management.md) | Quy chuẩn quản lý kỹ năng trong .agents/skills/, nạp động theo nhu cầu, tự động sinh mã kỹ năng mới. |
+| **Ngữ Cảnh Nghiệp Vụ & Nạp Tự Động 7 Header SRS (context/)** | `/srs` | [`.agents/rules/context-and-srs.md`](.agents/rules/context-and-srs.md) | Bộ phân loại tự động nạp yêu cầu vào đúng 7 Header SRS chuẩn mực, đồng bộ GLOSSARY.md. |
+| **Tiêu Chuẩn Lập Trình & Ràng Buộc Kỹ Thuật (rule/)** | `/code` | [`.agents/rules/coding-principles.md`](.agents/rules/coding-principles.md) | (Thử nghiệm) TDD Red-Green, lát cắt dọc Vertical Slices, Public Seams, quy chuẩn Code-to-Docs. |
+| **Phôi Mẫu Nhật Ký Trao Đổi Đơn Tệp (Master Log Template)** | `/template-note` | [`.agents/notes/note-master.template.md`](.agents/notes/note-master.template.md) | Khuôn mẫu ghi chép đơn tệp có timestamp, thắc mắc dở dang, thảo luận và scratchpad. |
+| **Phôi Mẫu Quyết Định Chốt Bất Biến (Decision Template)** | `/template-decision` | [`.agents/decisions/decision-template.md`](.agents/decisions/decision-template.md) | Khuôn mẫu ghi nhận quyết định ngắn gọn, súc tích, làm bằng chứng kiến trúc. |
+| **Phôi Mẫu Kế Hoạch Thực Thi (Plan Template)** | `/template-plan` | [`.agents/plans/plan-template.md`](.agents/plans/plan-template.md) | Khuôn mẫu kế hoạch phân tầng kèm danh sách công tác và vòng lặp kiểm tra. |
+| **Phôi Mẫu Từ Điển Thuật Ngữ Nghiệp Vụ (GLOSSARY.md Template)** | `/template-glossary` | [`.agents/rules/GLOSSARY.template.md`](.agents/rules/GLOSSARY.template.md) | Bảng đối chiếu định nghĩa hai chiều giữa người dùng và Agent cho từng dự án. |
+| **Bộ Ba Spec-Driven Development (Spec, Contracts, Tasks)** | `/spec-kit` | [`.agents/rules/templates/spec-kit`](.agents/rules/templates/spec-kit) | Phôi mẫu đặc tả phần mềm gồm spec.template.md, contracts.template.ts, tasks.template.md. |
+| **Tiện Ích Đóng Băng & Nén Ngữ Cảnh Cuộc Trò Chuyện (conversation/)** | `/freeze-conversation` | [`.agents/rules/conversation-freezing.md`](.agents/rules/conversation-freezing.md) | Đóng băng ngữ cảnh vào .agents/conversations/, nén lượt cũ, giữ độ phân giải cao lượt mới, tạo prompt chuyển giao. |
+| **Kỹ Năng Cài Đặt Môi Trường Làm Việc (/setup-yuikit)** | `/setup-yuikit` | [`.agents/skills/setup-yuikit`](.agents/skills/setup-yuikit) | Mở checklist tương tác chọn các tiện ích môi trường cài vào repo đích và hợp nhất an toàn vào AGENTS.md. |
+| **Kỹ Năng Tối Ưu Hóa & Cập Nhật Môi Trường Làm Việc (/optimize-yuikit)** | `/optimize-yuikit` | [`.agents/skills/optimize-yuikit`](.agents/skills/optimize-yuikit) | Tối ưu hóa và cập nhật công cụ, kỹ năng, tiện ích hoặc quy tắc YuiKit theo phạm vi Local (không tạo record) hoặc Global (sổ cái records và biên dịch). |
+| **Kỹ Năng Tự Động Tạo Kỹ Năng Mới (/writing-yuiskill)** | `/writing-yuiskill` | [`.agents/skills/writing-yuiskill`](.agents/skills/writing-yuiskill) | Tự động sinh mã thư mục .agents/skills/<name>/SKILL.md chuẩn form Cursor / Claude Code. |
+| **Kỹ Năng Đóng Băng Cuộc Trò Chuyện (/freeze-conversation)** | `/freeze-conversation` | [`.agents/skills/freeze-conversation`](.agents/skills/freeze-conversation) | Tự động nén ngữ cảnh phiên chat vào .agents/conversations/ và sinh prompt khởi động cho phiên chat mới. |
+| **Skill Router Điều Phối Ngữ Cảnh Tự Động (/yui-router)** | `/yui-router` | [`.agents/skills/yui-router`](.agents/skills/yui-router) | Tự động phân tích ý định của người dùng và điều phối nạp đúng tiện ích/kỹ năng tương ứng theo nhu cầu. |
+| **Quy Trình Kỹ Sư & Kịch Bản Vận Hành Chuẩn Hóa (workflow/)** | `/workflow` | [`.agents/rules/workflow-management.md`](.agents/rules/workflow-management.md) | Bộ ba Playbook kỹ thuật thực chiến (Feature, Bug-fix, Refactoring) kết hợp nguyên tắc TDD Red-Green, Prove It Works và Zero Broken Links. |
+| **Kỹ Năng Chọn Đội Ngũ Subagent Nhanh (/choose-team)** | `/choose-team` | [`.agents/skills/choose-team`](.agents/skills/choose-team) | Tra cứu và chuyển đổi nhanh Đội ngũ Subagent Active toàn cục ngay trong CLI/chat mà không mở trình duyệt web. |
+| **Kỹ Năng Mở Web Dashboard Quản Lý Subagent Team (/setup-team)** | `/setup-team` | [`.agents/skills/setup-team`](.agents/skills/setup-team) | Khởi chạy server nền an toàn tại cổng 56123 và mở giao diện Web Dashboard quản lý đội ngũ, phân vai Nhạc trưởng và cấu hình subagents. |
+| **Kỹ Năng Master Khởi Động Ý Định Cùng Subagent Team (/your-desire)** | `/your-desire` | [`.agents/skills/your-desire`](.agents/skills/your-desire) | Tiếp nhận bài toán 4 tọa độ (Scale, Goal, Scope, Acceptance), điều phối Lead Orchestrator, tự thế vai linh hoạt và chốt chặn Proof-of-Work. |
+| **Kỹ Năng Hướng Dẫn & Cố Vấn Toàn Diện YuiKit (/helpme-yui)** | `/helpme-yui` | [`.agents/skills/helpme-yui`](.agents/skills/helpme-yui) | Điều hướng và cố vấn kiến trúc trung tâm: giải đáp thắc mắc cách dùng YuiKit, chẩn đoán bài toán, dẫn link quy chuẩn và cung cấp prompt sẵn sàng thực thi. |
+
+## 2. Ranh Giới Bất Biến & An Toàn
+- **Thảo luận vs Thực thi:** Khi người dùng đang trao đổi, tuyệt đối không tự ý sinh mã nguồn hoặc tạo file khi chưa có hiệu lệnh bắt đầu rõ ràng.
+- **Ngữ cảnh nghiệp vụ & Nạp 7 Header SRS:** Mọi thảo luận về yêu cầu, nghiệp vụ bắt buộc phải nạp vào đúng 7 Header chuẩn trong `.agents/contexts/business-context.md` (hoặc spec.md).
+- **Đóng chủ đề Zero-Doubt:** Trước khi đóng một chủ đề hoặc lưu quyết định chốt, Agent bắt buộc phải rà soát note để đảm bảo 0 thắc mắc dở dang; nếu còn phải hỏi người dùng giải quyết dứt điểm.
+- **Checklist Đa Agent Handshake:** Khi nhiều agent cùng làm một nhiệm vụ, agent làm xong chỉ để lại dấu hiệu trong note; chỉ agent tổng hợp cuối cùng mới đánh tích [x] và xóa dấu hiệu.
+- **Toàn vẹn tham chiếu & Cập nhật lan truyền (Cascading References):** Khi đổi tên hoặc thay đổi nội dung tệp/hàm/interface, bắt buộc grep và cập nhật đồng bộ 100% các tệp đang tham chiếu tới nó, cấm để lại liên kết gãy (broken links).
+- **Ghi chép đơn tệp & Tách file:** Mọi thảo luận trong cùng một chủ đề lưu vào DUY NHẤT 1 file note tại `.agents/notes/YYYY-MM-DD-<tên-chủ-đề>.md`. Chỉ được tạo file mới khi chủ đề hiện tại đã xong hoặc chuyển sang chủ đề hoàn toàn khác với cuộc trò chuyện hiện tại.
+- **Tiền tố thời gian ở tên file:** Mọi file bản ghi bắt buộc có tiền tố ngày tháng phía trước: Notes (`YYYY-MM-DD-...`), Decisions (`YYYY-MM-DD-...`), Plans (`YYYY-MM-DD-plan-...`).
+- **Mốc thời gian nội dung:** Đầu mọi file note, decision, plan bắt buộc ghi rõ: Thời gian lập/bắt đầu và Thời gian cập nhật gần nhất.
+- **Văn bản chốt:** Khi chốt phương án, lưu vào `.agents/decisions/YYYY-MM-DD-<tên-quyết-định>.md` ngắn gọn, súc tích.
+- **Kế hoạch phân tầng:** Kế hoạch lưu tại `.agents/plans/YYYY-MM-DD-plan-<tên-kế-hoạch>.md` bắt buộc có mốc thời gian và Phase Check Gates.
+- **Tra cứu thêm:** Xem toàn bộ danh mục kỹ năng tại [`.agents/CATALOG.md`](.agents/CATALOG.md).
+<!-- YUI-AGENT-KIT:END -->
