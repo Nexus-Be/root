@@ -37,6 +37,7 @@ services:
       ReverseProxy__Clusters__notification-cluster__Destinations__notification-service__Address: "${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}"
       ReverseProxy__Clusters__wallet-cluster__Destinations__wallet-service__Address: "${WALLET_SERVICE_URL:-http://wallet-service:8008}"
       ReverseProxy__Clusters__checkheal-cluster__Destinations__checkheal-service__Address: "${CHECKHEAL_SERVICE_URL:-http://checkheal-service:8009}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
     restart: unless-stopped
 
   user-service:
@@ -56,8 +57,17 @@ services:
       Jwt__Audience: "${JWT_AUDIENCE:-shoppingcart-api}"
       Jwt__Signature: "${JWT_SIGNATURE:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
       NOTIFICATION_SERVICE_URL: "${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}"
+      FULFILLMENT_SERVICE_URL: "${FULFILLMENT_SERVICE_URL:-http://fulfillment-service:8006}"
+      COMMERCE_SERVICE_URL: "${COMMERCE_SERVICE_URL:-http://commerce-service:8003}"
+      WALLET_SERVICE_URL: "${WALLET_SERVICE_URL:-http://wallet-service:8008}"
       InternalSecurity__ServiceKey: "${INTERNAL_SERVICE_SECRET:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}"
+      CLOUDINARY_CLOUD_NAME: "${CLOUDINARY_CLOUD_NAME:-}"
+      CLOUDINARY_API_KEY: "${CLOUDINARY_API_KEY:-}"
+      CLOUDINARY_API_SECRET: "${CLOUDINARY_API_SECRET:-}"
+      IMAGE_MODERATION_PROVIDER: "${IMAGE_MODERATION_PROVIDER:-}"
+      IMAGE_MODERATION_API_KEY: "${IMAGE_MODERATION_API_KEY:-}"
+      IMAGE_MODERATION_API_SECRET: "${IMAGE_MODERATION_API_SECRET:-}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
     restart: unless-stopped
 
   catalog-service:
@@ -69,12 +79,20 @@ services:
       - "${CATALOG_SERVICE_PORT:-8002}:8002"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       ConnectionStrings__DefaultConnection: "${CATALOG_DB_CONNECTION:-}"
       FULFILLMENT_SERVICE_URL: "${FULFILLMENT_SERVICE_URL:-http://fulfillment-service:8006}"
+      USER_SERVICE_URL: "${USERS_SERVICE_URL:-${USER_SERVICE_URL:-http://user-service:8001}}"
+      NOTIFICATION_SERVICE_URL: "${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}"
       InternalSecurity__ServiceKey: "${INTERNAL_SERVICE_SECRET:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}"
+      CLOUDINARY_CLOUD_NAME: "${CLOUDINARY_CLOUD_NAME:-}"
+      CLOUDINARY_API_KEY: "${CLOUDINARY_API_KEY:-}"
+      CLOUDINARY_API_SECRET: "${CLOUDINARY_API_SECRET:-}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
     restart: unless-stopped
 
   commerce-service:
@@ -91,8 +109,16 @@ services:
       ConnectionStrings__DefaultConnection: "${COMMERCE_DB_CONNECTION:-}"
       WALLET_SERVICE_URL: "${WALLET_SERVICE_URL:-http://wallet-service:8008}"
       CATALOG_SERVICE_URL: "${CATALOG_SERVICE_URL:-http://catalog-service:8002}"
+      FULFILLMENT_SERVICE_URL: "${FULFILLMENT_SERVICE_URL:-http://fulfillment-service:8006}"
+      USER_SERVICE_URL: "${USERS_SERVICE_URL:-${USER_SERVICE_URL:-http://user-service:8001}}"
+      AUCTION_SERVICE_URL: "${AUCTION_SERVICE_URL:-http://auction-service:8005}"
+      NOTIFICATION_SERVICE_URL: "${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}"
+      Notification__Enabled: "${NOTIFICATION_ENABLED:-true}"
+      DeliveryFailure__BuyerRefusedReasonCodes: "${DELIVERY_FAILURE_REFUSED_CODES-GHN-DCD0A8,GHN-DCD1A5}"
+      DeliveryFailure__BuyerRefusalScoreDelta: "${DELIVERY_FAILURE_SCORE_DELTA:--5}"
+      DeliveryFailure__TableVersion: "${DELIVERY_FAILURE_TABLE_VERSION:-ghn-docs-2026-11-25}"
       InternalSecurity__ServiceKey: "${INTERNAL_SERVICE_SECRET:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
     restart: unless-stopped
 
   log-service:
@@ -108,7 +134,7 @@ services:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       ConnectionStrings__DefaultConnection: "${LOG_DB_CONNECTION:-}"
       InternalSecurity__ServiceKey: "${INTERNAL_SERVICE_SECRET:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
     restart: unless-stopped
 
   auction-service:
@@ -124,7 +150,17 @@ services:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       ConnectionStrings__DefaultConnection: "${AUCTION_DB_CONNECTION:-}"
       InternalSecurity__ServiceKey: "${INTERNAL_SERVICE_SECRET:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}"
+      Catalog__BaseUrl: "${CATALOG_SERVICE_URL:-http://catalog-service:8002}"
+      User__BaseUrl: "${USERS_SERVICE_URL:-${USER_SERVICE_URL:-http://user-service:8001}}"
+      Wallet__BaseUrl: "${WALLET_SERVICE_URL:-http://wallet-service:8008}"
+      Commerce__Enabled: "${COMMERCE_ENABLED:-true}"
+      Commerce__BaseUrl: "${COMMERCE_SERVICE_URL:-http://commerce-service:8003}"
+      Notification__Enabled: "${NOTIFICATION_ENABLED:-true}"
+      Notification__BaseUrl: "${NOTIFICATION_BASE_URL:-${GATEWAY_URL:-http://notification-service:8007}}"
+      Deposit__CallbackBaseUrl: "${DEPOSIT_CALLBACK_BASE_URL:-${AUCTION_SERVICE_URL:-http://auction-service:8005}}"
+      Deposit__AllowedReturnUrlHosts__0: "${DEPOSIT_ALLOWED_RETURN_URL_HOST_0:-localhost}"
+      AdminTimeControls__Enabled: "${ADMIN_TIME_CONTROLS_ENABLED:-true}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
     restart: unless-stopped
 
   fulfillment-service:
@@ -147,7 +183,12 @@ services:
       Carriers__GHN__ShopId: "${GHN_SHOP_ID:-}"
       Carriers__GHN__WebhookSecret: "${GHN_WEBHOOK_SECRET:-ghn-webhook-secret-key}"
       COMMERCE_SERVICE_URL: "${COMMERCE_SERVICE_URL:-http://commerce-service:8003}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}"
+      NOTIFICATION_SERVICE_URL: "${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}"
+      Services__CommerceService__BaseUrl: "${DOCKER_COMMERCE_SERVICE_URL:-${COMMERCE_SERVICE_URL:-http://commerce-service:8003}}"
+      Services__NotificationService__BaseUrl: "${DOCKER_NOTIFICATION_SERVICE_URL:-${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemma-4-31b-it}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
     restart: unless-stopped
 
   notification-service:
@@ -160,7 +201,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      WalletNotificationAuth__ServiceKey: "${WALLET_NOTIFICATION_SERVICE_KEY:-}"
+      AuctionNotificationAuth__SigningKey: "${AUCTION_NOTIFICATION_SIGNING_KEY:-}"
+      AuctionNotificationAuth__ServiceUserId: "${AUCTION_NOTIFICATION_SERVICE_USER_ID:-00000000-0000-0000-0000-0000000000a1}"
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      DatabaseInitialization__ApplyMigrationsOnStartup: "${NOTIFICATION_APPLY_MIGRATIONS:-false}"
       ConnectionStrings__DefaultConnection: "${NOTIFICATION_DB_CONNECTION:-}"
       Jwt__Issuer: "${JWT_ISSUER:-http://localhost:8001}"
       Jwt__Audience: "${JWT_AUDIENCE:-shoppingcart-api}"
@@ -173,7 +218,35 @@ services:
       Smtp__Username: "${SMTP_USERNAME:-}"
       Smtp__Password: "${SMTP_PASSWORD:-}"
       InternalSecurity__ServiceKey: "${INTERNAL_SERVICE_SECRET:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}"
+      USER_SERVICE_URL: "${USERS_SERVICE_URL:-${USER_SERVICE_URL:-http://user-service:8001}}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
+      DeliveryWorker__Enabled: "${NOTIFICATION_DELIVERY_WORKER_ENABLED:-true}"
+      NOTIFICATION_RETRY_LIMIT: "${NOTIFICATION_RETRY_LIMIT:-3}"
+      DeliveryWorker__BaseDelaySeconds: "${NOTIFICATION_DELIVERY_BASE_DELAY_SECONDS:-10}"
+      DeliveryWorker__PollIntervalSeconds: "${NOTIFICATION_DELIVERY_POLL_SECONDS:-5}"
+      DeliveryWorker__AttemptTimeoutSeconds: "${NOTIFICATION_DELIVERY_TIMEOUT_SECONDS:-30}"
+      DeliveryWorker__LeaseSeconds: "${NOTIFICATION_DELIVERY_LEASE_SECONDS:-120}"
+      EventLogRetention__Enabled: "${NOTIFICATION_EVENT_LOG_RETENTION_ENABLED:-false}"
+      EventLogRetention__BatchSize: "${NOTIFICATION_EVENT_LOG_RETENTION_BATCH_SIZE:-500}"
+      EventLogRetention__MaxBatchesPerRun: "${NOTIFICATION_EVENT_LOG_RETENTION_MAX_BATCHES:-20}"
+      EventLogRetention__IntervalSeconds: "${NOTIFICATION_EVENT_LOG_RETENTION_INTERVAL_SECONDS:-3600}"
+      EventLogRetention__RunTimeoutSeconds: "${NOTIFICATION_EVENT_LOG_RETENTION_TIMEOUT_SECONDS:-120}"
+      Health__DatabaseTimeoutSeconds: "${NOTIFICATION_HEALTH_DB_TIMEOUT_SECONDS:-15}"
+      Health__WorkerGraceSeconds: "${NOTIFICATION_HEALTH_WORKER_GRACE_SECONDS:-30}"
+      Health__OtpStallSeconds: "${NOTIFICATION_HEALTH_OTP_STALL_SECONDS:-120}"
+      OtpWorker__Enabled: "${NOTIFICATION_OTP_WORKER_ENABLED:-true}"
+      OtpWorker__PollIntervalSeconds: "${NOTIFICATION_OTP_POLL_SECONDS:-1}"
+      OtpWorker__SendTimeoutSeconds: "${NOTIFICATION_OTP_TIMEOUT_SECONDS:-30}"
+      OtpWorker__LeaseSeconds: "${NOTIFICATION_OTP_LEASE_SECONDS:-120}"
+      OtpWorker__MaxAttempts: "${NOTIFICATION_OTP_MAX_ATTEMPTS:-3}"
+      OtpWorker__BaseDelaySeconds: "${NOTIFICATION_OTP_BASE_DELAY_SECONDS:-5}"
+      OtpProtection__KeyRingPath: "/var/lib/notification/otp-keys"
+      OtpProtection__SharedKeyRingBase64: "${OTP_SHARED_KEY_RING_BASE64:-}"
+      OtpProtection__RequireSharedKeyRing: "${OTP_REQUIRE_SHARED_KEY_RING:-false}"
+      FCM_PROJECT_ID: "${FCM_PROJECT_ID:-}"
+      GOOGLE_APPLICATION_CREDENTIALS: "${FCM_CREDENTIALS_CONTAINER_PATH:-}"
+    volumes:
+      - notification-otp-keys:/var/lib/notification/otp-keys
     restart: unless-stopped
 
   wallet-service:
@@ -193,8 +266,18 @@ services:
       VnPay__PaymentUrl: "${VNPAY_PAYMENT_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}"
       VnPay__ReturnUrl: "${VNPAY_RETURN_URL:-https://localhost:8080/api/v1/wallets/vnpay/return}"
       VnPay__Version: "${VNPAY_VERSION:-2.1.0}"
+      Stripe__SecretKey: "${STRIPE_SECRET_KEY:-}"
+      Stripe__WebhookSecret: "${STRIPE_WEBHOOK_SECRET:-}"
+      Stripe__SuccessUrl: "${STRIPE_SUCCESS_URL:-}"
+      Stripe__CancelUrl: "${STRIPE_CANCEL_URL:-}"
       InternalSecurity__ServiceKey: "${INTERNAL_SERVICE_SECRET:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4317}"
+      InternalSecurity__AuctionServiceKey: "${INTERNAL_SERVICE_SECRET:-eaT0Ombups70WJzd85CBBpp8rAno55SxKn1qvYBGH9e}"
+      NOTIFICATION_SERVICE_URL: "${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}"
+      Services__Notification__ServiceKey: "${NOTIFICATION_SERVICE_KEY:-}"
+      ReleaseFeatures__OrderRefundEnabled: "${ORDER_REFUND_ENABLED:-false}"
+      ReleaseFeatures__LegacyCommerceCreditsEnabled: "${LEGACY_COMMERCE_CREDITS_ENABLED:-false}"
+      ReleaseFeatures__LegacyCommerceSettlementEnabled: "${LEGACY_COMMERCE_SETTLEMENT_ENABLED:-true}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
     restart: unless-stopped
 
   checkheal-service:
@@ -237,6 +320,9 @@ services:
       timeout: 5s
       retries: 3
     restart: unless-stopped
+
+volumes:
+  notification-otp-keys:
 
 networks:
   default:
