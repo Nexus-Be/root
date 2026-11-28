@@ -2,7 +2,7 @@
 
 <!-- SECTION:planning-hierarchy:START -->
 ## 1. Hierarchical Plan Structure & Timestamp Prefix
-- **File Naming & Path:** Saved in `.agents/plans/YYYY-MM-DD_HHmm-plan-<plan-slug>.md` (or `YYYY-MM-DD-plan-<plan-slug>.md`) with starting and last-updated timestamps.
+- **File Naming & Path:** Saved strictly in `.agents/plans/YYYY-MM-DD_HHmm-plan-<plan-slug>.md` with starting and last-updated timestamps. Never create or write into `.agents/plan/` (singular).
 - **User Override:** If the user specifies a custom plan name, the Agent respects the directive without forcing timestamps.
 - **Three-Tier Architecture:**
   1. *Core Goals & Target Artifacts:* Concise 1-2 sentence purpose + list of affected files.

@@ -1,10 +1,12 @@
 # Utility: Human-Centric Documentation & Manual Testing Protocol
 
 <!-- SECTION:doc-audience:START -->
-## 1. Bifurcated Audience Architecture: Share Docs vs Repo Docs
-Human-centric documentation is strictly decoupled from `.agents/notes/` and must be 100% free of internal AI deliberations, scratchpads, prompt reasoning, or raw error logs. It is explicitly bifurcated into two separate branches based on recipient access:
+## 1. Bifurcated Audience Architecture: `.agents/docs/`, Share Docs & Repo Docs
+Human-centric documentation is strictly decoupled from `.agents/notes/` and must be 100% free of internal AI deliberations, scratchpads, prompt reasoning, or raw error logs.
 
-### Branch A: External / Standalone Share Docs (`docs/share/<slug>.md`)
+- **Default Location for User-Requested Human Docs:** Whenever the user asks to write documentation for human readers, save it under `.agents/docs/<slug>.md` (or `docs/share/` / `docs/repo/` when specifically scoped for repo/external handoff) **and MUST process it through the `humanizer` skill** before finalizing.
+
+### Branch A: External / Standalone Share Docs (`docs/share/<slug>.md` or `.agents/docs/<slug>.md`)
 - **Target Audience:** External stakeholders, clients, product managers, or users who **DO NOT have access to the repository**.
 - **Location & Naming:** Stored under `docs/share/` with a clean, semantic kebab-case filename **WITHOUT timestamp prefixes** (e.g., `docs/share/api-overview.md`, `docs/share/user-manual.md`).
 - **Strict Invariant (Zero Repo References):**

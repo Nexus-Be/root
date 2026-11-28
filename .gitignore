@@ -20,18 +20,29 @@ appsettings*.json
 nuget.config
 *.zip
 
-# .agent: track governance and skills, keep local plans and history private
+# .agent: track governance, templates, and skills; keep personal plans/notes/decisions/docs/history/review private
 .agents/*
 !.agents/AGENTS.md
 !.agents/rules/
 !.agents/rules/**
 !.agents/skills/
 !.agents/skills/**
-.agents/plan/
+!.agents/plans/
+.agents/plans/*
+!.agents/plans/plan-template.md
+!.agents/notes/
+.agents/notes/*
+!.agents/notes/note-master.template.md
+!.agents/decisions/
+.agents/decisions/*
+!.agents/decisions/decision-template.md
+.agents/docs/
 .agents/history/
 .agents/review/
 .claude
-.cursor
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .claude/super-board/active
 .claude/super-board/onboard-answers.json
 .claude/super-board/onboard-staged/

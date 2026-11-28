@@ -259,7 +259,7 @@ Hệ thống Nexus phân định ranh giới trách nhiệm tuyệt đối giữ
 ## 7. QUY TRÌNH KIỂM CHỨNG BẮT BUỘC (MANDATORY DEFINITION OF DONE)
 
 Một tác vụ phát triển hoặc refactor bất kỳ chỉ được coi là hoàn tất khi:
-1. **Lập Kế Hoạch Trước Khi Làm (Plan-First Rule)**: Ghi nhận plan chi tiết tại `.agents/plan/PLAN-*.md`.
+1. **Lập Kế Hoạch Trước Khi Làm (Plan-First Rule)**: Ghi nhận plan chi tiết tại `.agents/plans/YYYY-MM-DD_HHmm-plan-*.md`.
 2. **Tuân thủ Phạm Vi Một Chiều (Inward-Only Scoping)**: 100% self-contained bên trong submodule đó.
 3. **Biên dịch Thành Công Tuyệt Đối**: `dotnet build <Solution>.sln -c Release` đạt 0 lỗi, 0 cảnh báo.
 4. **Kiểm thử Vượt Qua 100%**: `dotnet test <Solution>.sln -c Release` đạt tỷ lệ vượt qua 100%.

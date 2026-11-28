@@ -2,8 +2,8 @@
 
 <!-- SECTION:decision-purpose:START -->
 ## 1. Decision Identity & Mandatory Invariants
-- **Purpose:** Serves as an immutable reference point documenting technical choices, architectural boundaries, and agreed scope.
-- **File Naming & Path:** Saved in `.agents/decisions/YYYY-MM-DD_HHmm-<decision-slug>.md` (or `YYYY-MM-DD-<decision-slug>.md` for single daily milestones) with starting and settled timestamps.
+- **Purpose:** Serves as an immutable reference point documenting user confirmations, resolved agent questions, technical choices, architectural boundaries, and agreed scope. Whenever the agent asks the human operator to confirm an approach or decision, record the question and confirmed answer here.
+- **File Naming & Path:** Saved in `.agents/decisions/YYYY-MM-DD_HHmm-<decision-slug>.md` with starting and settled timestamps.
 - **Core Principles:** Concise, factual, unambiguous. Designed for rapid scanning without reading thousands of chat lines.
 - **User Override:** If the user specifies an alternative naming format, the Agent strictly respects the directive.
 <!-- SECTION:decision-purpose:END -->

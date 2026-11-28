@@ -245,22 +245,22 @@ Chi tiết audit: `docs/agents/system-audit.md`, `docs/plans/SCORECARD.md`, `doc
 - Mọi tài liệu khi sửa phải có banner trạng thái theo `docs/plans/DOC_UPDATE_PROTOCOL.md`.
 - Không coi `/health` là bằng chứng service hoạt động vì không kiểm tra DB.
 
-## 📝 NGUYÊN TẮC 8: QUY CHUẨN ĐÓNG PHIÊN, BÁO CÁO & LƯU TRỮ KẾ HOẠCH
-Tuân thủ quy trình đầu/cuối phiên chi tiết tại `docs/agents/session-protocol.md`.
-1. **Lưu trữ Kế hoạch**: Ghi tại `.agents/plan/PLAN-YYYYMMDD-HHMM-[TEN_VAN_DE].md` (Mục tiêu, Hướng giải quyết, Checklist).
-2. **Báo cáo Nhật ký**: Ghi tại `.agents/history/YYYY-MM-DD_session_summary.md` (Tổng thể, Nghiên cứu, Link Plan, Báo cáo cá nhân, Báo cáo toàn team).
+## 📝 NGUYÊN TẮC 8: QUY CHUẨN LƯU TRỮ KẾ HOẠCH, GHI CHÚ, XÁC NHẬN & TÀI LIỆU (YUIKIT WORKSPACE ARTIFACTS)
+Tuân thủ quy trình chi tiết tại `docs/agents/session-protocol.md` và `.agents/rules/workspace-artifacts.md`:
+1. **Lưu trữ Kế hoạch (Plans)**: Bắt buộc ghi tại `.agents/plans/YYYY-MM-DD_HHmm-plan-<slug>.md` (Mục tiêu, Hướng giải quyết, Checklist; CẤM dùng `.agents/plan/` số ít).
+2. **Ghi chú theo Chủ đề (Notes)**: Ghi nhận thao tác, vấn đề gặp & cách xử lý, hoặc lưu ý đọc lại sau tại `.agents/notes/YYYY-MM-DD_HHmm-<topic-slug>.md`. Mỗi file note chỉ phục vụ 1 chủ đề duy nhất; khi chuyển sang chủ đề khác (ví dụ từ mail sang giao hàng) phải tạo file note mới.
+3. **Xác nhận & Quyết định (Decisions)**: Mọi vấn đề Agent hỏi người dùng để xác nhận / chốt phương án phải lưu tại `.agents/decisions/YYYY-MM-DD_HHmm-<decision-slug>.md`.
+4. **Tài liệu cho Con người (Human-Facing Docs)**: Khi người dùng yêu cầu viết tài liệu cho người đọc, bắt buộc áp dụng skill `humanizer` và lưu tại `.agents/docs/<slug>.md`.
+5. **Báo cáo Nhật ký**: Ghi tại `.agents/history/YYYY-MM-DD_session_summary.md` (Tổng thể, Nghiên cứu, Link Plan, Báo cáo cá nhân, Báo cáo toàn team).
 
 ## 📌 NGUYÊN TẮC 9: CƠ CHẾ DUY TRÌ & CẬP NHẬT RULE BỀN VỮNG (PERSISTENT "GHI VÀO RULE" TRIGGER)
 Bất cứ khi nào Người dùng (Sếp) chỉ thị *"ghi vào rule"*, *"thêm vào rule"*, hoặc yêu cầu chuẩn hóa quy chuẩn kỹ thuật:
 1. AI Coding Agent **BẮT BUỘC PHẢI LẬP TỨC GHI NHẬN VÀ ĐỒNG BỘ** vào:
    - `.agents/AGENTS.md`
    - Root `AGENTS.md`
-   - `.cursor/rules/` (`error-handling.mdc`, `api-standards.mdc`, `agent-mission-protocol.mdc`)
+   - `.cursor/rules/` (`error-handling.mdc`, `api-standards.mdc`, `agent-mission-protocol.mdc`, `workspace-artifacts.mdc`)
    - Tất cả các file `AGENTS.md` và `specs/00_AGENT_MISSION_GUARDRAILS.md` của các submodule liên quan (`src/Services/{Service}/`).
 2. Tuyệt đối không được bỏ qua hay trì hoãn việc cập nhật các file rule này, đảm bảo mọi AI Agent trong các phiên làm việc tiếp theo luôn kế thừa đầy đủ và tuân thủ 100%.
-Tuân thủ quy trình đầu/cuối phiên chi tiết tại `docs/agents/session-protocol.md`.
-1. **Lưu trữ Kế hoạch**: Ghi tại `.agents/plan/PLAN-YYYYMMDD-HHMM-[TEN_VAN_DE].md` (Mục tiêu, Hướng giải quyết, Checklist).
-2. **Báo cáo Nhật ký**: Ghi tại `.agents/history/YYYY-MM-DD_session_summary.md` (Tổng thể, Nghiên cứu, Link Plan, Báo cáo cá nhân, Báo cáo toàn team).
 
 <!-- super-board:begin v3.1.2 (managed; edits inside are overwritten on upgrade) -->
 ## Super Board

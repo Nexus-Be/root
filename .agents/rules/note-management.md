@@ -9,8 +9,9 @@
 - **Working Notes vs Informational Files:**
   - *Working Notes & Scratchpads:* MUST carry the compact Date + Time prefix to indicate temporal sequence and distinguish work-in-progress logs.
   - *Informational & Permanent Specs:* Maintained without timestamp prefixes (e.g., `spec.md`, `contracts.ts`, `GLOSSARY.md`).
-- **Single-Topic Discipline:** All discussion within one problem scope remains in a single continuous file. A new file is created only when the current problem is fully resolved or when pivoting to an entirely unrelated topic.
-- **Strict Invocation Guardrail (Anti-Pollution):** The Agent MUST NOT automatically create or update disk notes during casual inquiries, simple question-answering, or passive checks ("check giúp tôi..."). Note creation occurs ONLY when explicitly commanded by the user (e.g., "ghi note lại", "lưu vào note", `/note`) or when deliberately capturing an agreed session.
+- **What to Record:** Operational actions taken, issues encountered and how they were resolved, and reminders/notes worth keeping for future sessions.
+- **Single-Topic Discipline:** All discussion and work notes within one topic remain in a single continuous file (e.g., all email/Brevo notes stay in one email note file). As soon as the work pivots to a new topic (e.g., switching from email to shipping/fulfillment), **create a new note file** in `.agents/notes/YYYY-MM-DD_HHmm-<topic-slug>.md`.
+- **Invocation:** Record notes whenever capturing operational progress, troubleshooting findings, or reminders for later reading, as well as when explicitly commanded by the user.
 - **User Override:** If the user specifies a custom file name or requests omitting timestamps, the Agent strictly obeys and strips internal AI clutter.
 <!-- SECTION:workspace-purpose:END -->
 

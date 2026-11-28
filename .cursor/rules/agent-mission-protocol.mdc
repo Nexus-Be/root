@@ -1,0 +1,40 @@
+---
+description: Operating rules, plan-first workflow, inward-only scoping, and verification for AI agents
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# AI Agent Mission Protocol & Inward Scoping
+
+All AI Coding Agents operating within this codebase must comply with the following governance rules:
+
+## 1. Plan-First Rule
+* Before modifying any code, creating migrations, or altering configurations, the agent must formulate and present an architectural plan and store it in `.agents/plans/YYYY-MM-DD_HHmm-plan-<slug>.md` (never `.agents/plan/`).
+* The plan must state: Objective, Context & Files read, Impact Analysis, Step-by-Step Implementation Checklist, and Verification commands (`dotnet build` and `dotnet test`).
+* Record per-topic operational notes, issues & resolutions, and future reminders in `.agents/notes/YYYY-MM-DD_HHmm-<topic-slug>.md` (one file per topic; create a new file when pivoting to a new topic).
+* Record user confirmations and settled choices asked by the agent in `.agents/decisions/YYYY-MM-DD_HHmm-<decision-slug>.md`.
+* When the user requests documentation for human readers, apply the `humanizer` skill and store the result in `.agents/docs/<slug>.md`.
+
+## 2. Inward-Only Scoping Rule
+* Root repository (`Nexus-Be/`): Allowed to reference downward into service submodules (`src/Services/...`).
+* Submodule repositories (`src/Services/{Service}/`): Must be 100% self-contained. Never reference outward to root (`../../../docs/...`) or to sibling service directories (`../../Catalog/...`).
+
+## 3. Mandatory Verification Checklist
+A task is only complete when:
+* Solution compiles with 0 errors via `dotnet build <Solution>.sln -c Release`.
+* All existing tests pass via `dotnet test <Solution>.sln -c Release`.
+* Completed APIs are fully documented into corresponding API docs (`docs/api/...` and `specs/02_API_REST_CONTRACTS.md`) with error matrix, validation, and completion checklist.
+* Git working tree is clean with no untracked binaries (`bin/`, `obj/`, `.vs/`) or secret files committed.
+
+## 4. Secret Protection
+* Never modify, overwrite, delete, or commit secrets, credentials, or actual `.env` files without explicit human approval.
+* Central shared infrastructure (`redis:6379`, `tempo:3200`, `prometheus:9090`, `grafana:3000`) is managed exclusively in `docker-compose.infra.yml`. Submodules must never declare local Redis instances.
+
+## 5. Persistent Rule Maintenance Trigger ('Ghi vào Rule')
+* Whenever the user explicitly instructs to 'ghi vào rule', 'thêm vào rule', or update coding standards, the AI Coding Agent MUST immediately record, update, and synchronize the requirement into `.agents/AGENTS.md`, root `AGENTS.md`, `.cursor/rules/`, and all relevant submodule `AGENTS.md` files. Never defer or omit updating these persistent rule files.
+
+## 6. Git Commit Standards (Zero Emoji / Icon Rule)
+* Commit messages must strictly follow pure Conventional Commits format: `type(scope): subject` or `type: subject` (e.g. `feat(notification): update otp flow`, `fix(wallet): prevent negative balance`, `chore: bump dependencies`).
+* Strictly PROHIBIT any emojis or icons (`✨`, `🐛`, `🔧`, `♻️`, `🧪`, `📝`, `⚡`, `👷`, `💄`, `🔒`, `🚧`, etc.) in commit messages and PR titles.
+* All commit messages must be written in 100% English, imperative mood, lowercase type, without trailing period.
+

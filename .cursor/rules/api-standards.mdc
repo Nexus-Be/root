@@ -1,0 +1,42 @@
+---
+description: REST API conventions, route naming, data envelope, and controller action guidelines
+globs: ["src/Services/**/*.cs", "specs/**/*.md"]
+alwaysApply: true
+---
+
+# REST API & Routing Standards
+
+All HTTP endpoints exposed across the Nexus ecosystem must strictly conform to RFC 9110 and the following invariants:
+
+## 1. Route Naming Conventions
+* Singular Route Convention for User and AdminUser: Endpoints pertaining to user identity, profiles, and administration must use singular nouns (`/api/v1/user`, `/api/v1/user/{userId}`, `/api/v1/admin/user`, `/api/v1/admin/user/{userId}`, `/api/v1/me`).
+* Plural Route Convention for Domain Collections: All other resource collections must use plural nouns (`/api/v1/wallets`, `/api/v1/products`, `/api/v1/categories`, `/api/v1/auctions`, `/api/v1/notifications`, `/api/v1/shipments`, `/api/v1/orders`, `/api/v1/carts`, `/api/v1/logs`).
+* Base Prefix: All operational routes must start with `/api/v1/`.
+
+## 2. No Duplicate Route Aliases
+* Never declare duplicate route attributes on the same action (e.g. prohibited: `[HttpGet("log/logs")]` and `[HttpGet("admin/logs")]` on a single method).
+* Each controller action must have exactly one official route endpoint.
+
+## 3. Data Envelope Standard
+* Successful Read/Write Responses: Wrap all payload data in `ApiResponse<T>` or `ApiResponse<PagedData<T>>`.
+* Deletion or Empty Operations: Return HTTP `204 NoContent` with no response body.
+* Casing Conventions: Use `PascalCase` for C# DTOs and properties, and `camelCase` for JSON serialization.
+
+## 4. Documentation & XML Comments
+* Use single-line XML `<summary>` tags directly on controller action methods.
+* Do not write multiline section banners, horizontal divider comments, or class-level remarks.
+
+## 5. Idempotent Invocations
+* Mutating inter-service operations (such as payments, wallet debits, stock reservations) must accept an optional `Idempotency-Key` header (UUIDv4) to prevent double processing upon retries.
+
+## 6. API Implementation & Documentation Lifecycle (Mandatory)
+Every API implementation or modification must strictly execute the following lifecycle:
+1. **Application Layer**: Implement `I{Feature}Service.cs`, `{Feature}Service.cs`, `{Feature}Requests.cs`, `{Feature}Responses.cs`.
+2. **API Layer**: Pair with a thin controller (`{Feature}Controller.cs`), enforcing singular/plural conventions, single route attributes, and XML summaries.
+3. **Automated Testing**: Write comprehensive unit/integration test cases, asserting `dotnet test` passes 100%.
+4. **Documentation Filing**: Immediately document/file the API in `docs/api/...`, `docs/api/active/...`, and `specs/02_API_REST_CONTRACTS.md` with:
+   - **Route & RBAC**: Method, path, policy requirements, business intent.
+   - **Validation Rules**: Field constraints, types, required/optional, min/max ranges.
+   - **Error Handling Matrix (RFC 9110)**: HTTP status codes, SCREAMING_SNAKE_CASE error codes, English sentence-case messages, trigger conditions.
+   - **Sample Payloads**: Request body and `ApiResponse<T>` envelope or `204 NoContent`.
+   - **Completion Checklist**: Verification checkboxes (`[x] Implementation`, `[x] Tests Passed`, `[x] Gateway Aligned`, `[x] Status: COMPLETED`).

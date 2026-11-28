@@ -1,0 +1,39 @@
+---
+description: System-wide error message rules, sentence casing, and screaming snake case error codes
+globs: ["src/Services/**/*.cs", "specs/**/*.md"]
+alwaysApply: true
+---
+
+# Error Handling & Message Standards
+
+All error messages, exception details, problem details, validation failures, and response payloads must strictly follow these three universal rules:
+
+## 1. 100% English Language
+* All error messages, failure details, and exception strings must be written in English.
+* Vietnamese error strings are strictly prohibited in runtime client-facing responses and exceptions.
+
+## 2. Sentence Case for Error Messages
+* Capitalize ONLY the first letter of the message sentence.
+* Subsequent words must be lowercase, except for proper nouns or technical identifiers (`ID`, `OTP`, `JWT`, `URL`, `UUID`, `Email`, `API`, `HTTP`).
+* Examples:
+  * Correct: `"Wallet account not found for the specified user."`
+  * Correct: `"Insufficient balance to complete the transaction."`
+  * Correct: `"Email is already registered in the system."`
+  * Incorrect: `"Số dư không đủ"` (Vietnamese prohibited)
+  * Incorrect: `"wallet not found"` (First letter must be uppercase)
+  * Incorrect: `"WALLET NOT FOUND"` (All-caps prohibited for message text)
+  * Incorrect: `"Wallet Not Found Provided"` (Title Case prohibited)
+
+## 3. SCREAMING_SNAKE_CASE for Error Codes
+* Error codes must always be uppercase with underscores separating words (`SCREAMING_SNAKE_CASE`).
+* Prohibit arbitrary `ERR_` prefixes (e.g., use `INVALID_CREDENTIALS`, not `ERR_INVALID_CREDENTIALS`; use `SOD_VIOLATION`, not `ERR_SOD_VIOLATION`). Validation error codes use `VAL_` prefix (e.g. `VAL_INVALID_INPUT`, `VAL_INVALID_EMAIL`).
+* Examples:
+  * Correct: `WALLET_NOT_FOUND`, `INSUFFICIENT_BALANCE`, `EMAIL_ALREADY_EXISTS`, `OTP_EXPIRED`, `OTP_INVALID`, `VAL_INVALID_INPUT`, `UNAUTHORIZED`, `FORBIDDEN`
+  * Incorrect: `ERR_WALLET_NOT_FOUND`, `wallet_not_found`, `WalletNotFound`
+
+## 4. Enum Serialization Boundary Rule
+* Outbound REST API Enum values in JSON responses must be serialized as `PascalCase` strings (`"Active"`, `"PendingVerification"`, `"Delivered"`).
+* Never serialize or document Enums as raw integers or SCREAMING_SNAKE_CASE in JSON responses (prohibited: `"status": "ACTIVE"`, `"status": 1`).
+
+## 5. Persistent Rule Maintenance Trigger ('Ghi vào Rule')
+* Whenever the user explicitly instructs to 'ghi vào rule' or 'thêm vào rule', the AI Coding Agent MUST immediately record and synchronize the updated rule into `.agents/AGENTS.md`, root `AGENTS.md`, `.cursor/rules/`, and all submodule `AGENTS.md` files.

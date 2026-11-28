@@ -79,7 +79,7 @@ Run the phases in order. A phase may be skipped only when it genuinely does not 
 - [ ] Run GitNexus impact on every symbol that will change: `node .gitnexus/run.cjs impact "<symbol>" --direction upstream --repo .`. Record callers and risk.
 - [ ] If risk is `HIGH` or `CRITICAL`, stop and report before editing. If risk is `UNKNOWN`, resolve it with text search.
 - [ ] Decide the contract: method, path, RBAC policy, ownership rule, idempotency, pagination, cross-service calls, and database changes.
-- [ ] Create `.agents/plan/PLAN-YYYYMMDD-HHMM-<NAME>.md` with objective, files, impact, checklist, and verification commands.
+- [ ] Create `.agents/plans/YYYY-MM-DD_HHmm-plan-<slug>.md` with objective, files, impact, checklist, and verification commands.
 - [ ] If the contract is ambiguous, ask the operator. Do not guess a route or an error code.
 
 ## 6. Phase 1 - Contract design & Pre-Code Documentation
